@@ -28,6 +28,7 @@ use crate::modules::analyze::traceability_core::{
 };
 use crate::modules::analyze::{
     FileOwnership, ModuleCouplingInput, ProviderModuleAnalysis, build_dependency_summary,
+    emit_analysis_status,
     read_owned_file_text, visit_owned_texts,
 };
 
@@ -91,6 +92,8 @@ pub(crate) struct TypeScriptRepoAnalysisContext {
 pub(crate) fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],
+    _scoped_source_files: Option<&[PathBuf]>,
+    traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
@@ -107,6 +110,7 @@ pub(crate) fn build_repo_analysis_context(
         match build_traceability_analysis_for_typescript(
             root,
             source_files,
+            traceability_graph_facts,
             parsed_repo,
             parsed_architecture,
             file_ownership,
@@ -193,20 +197,23 @@ impl TraceabilityLanguagePack for TypeScriptTraceabilityPack {
 fn build_traceability_analysis_for_typescript(
     root: &Path,
     source_files: &[PathBuf],
+    traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
 ) -> Result<TraceabilityAnalysis> {
-    let source_graphs = parse_typescript_source_graphs(root, source_files);
+    let (source_graphs, tool_call_edges) =
+        decode_traceability_graph_facts(traceability_graph_facts).unwrap_or_else(|| {
+            let source_graphs = parse_typescript_source_graphs(root, source_files);
+            let tool_call_edges = build_tool_call_edges(root, &source_graphs)?;
+            Ok((source_graphs, tool_call_edges))
+        })?;
     let repo_items = collect_repo_items(&source_graphs, file_ownership);
     let mut graph = TraceGraph {
         edges: build_parser_call_edges(&source_graphs),
         root_supports: BTreeMap::new(),
     };
-    merge_trace_graph_edges(
-        &mut graph.edges,
-        build_tool_call_edges(root, &source_graphs)?,
-    );
+    merge_trace_graph_edges(&mut graph.edges, tool_call_edges);
     graph.root_supports = build_root_supports(parsed_repo, &source_graphs, |path, body| {
         parse_source_graph(path, body)
             .and_then(|graph| graph.items.first().map(|item| item.span.start_line))
@@ -216,6 +223,50 @@ fn build_traceability_analysis_for_typescript(
         repo_items,
         graph,
     }))
+}
+
+pub(crate) fn build_traceability_scope_facts(
+    root: &Path,
+    source_files: &[PathBuf],
+) -> Result<Vec<u8>> {
+    let facts = TypeScriptTraceabilityScopeFacts {
+        adjacency: build_tool_module_graph(root, source_files)?,
+    };
+    Ok(serde_json::to_vec(&facts)?)
+}
+
+pub(crate) fn expand_traceability_closure_from_facts(
+    source_files: &[PathBuf],
+    scoped_source_files: &[PathBuf],
+    facts: &[u8],
+) -> Result<Vec<PathBuf>> {
+    let seed_files = scoped_source_files.to_vec();
+    if seed_files.is_empty() {
+        return Ok(source_files.to_vec());
+    }
+    let facts: TypeScriptTraceabilityScopeFacts = serde_json::from_slice(facts)?;
+    let closure_files = expand_file_closure(source_files, &seed_files, &facts.adjacency);
+    emit_analysis_status(&format!(
+        "typescript scoped traceability closure covers {} of {} file(s)",
+        closure_files.len(),
+        source_files.len()
+    ));
+    Ok(closure_files)
+}
+
+pub(crate) fn build_traceability_graph_facts(
+    root: &Path,
+    source_files: &[PathBuf],
+) -> Result<Vec<u8>> {
+    let source_graphs = parse_typescript_source_graphs(root, source_files);
+    let facts = TypeScriptTraceabilityGraphFacts {
+        source_graphs: source_graphs
+            .iter()
+            .map(|(path, graph)| (path.clone(), CachedParsedSourceGraph::from_parsed(graph)))
+            .collect(),
+        tool_call_edges: build_tool_call_edges(root, &source_graphs)?,
+    };
+    Ok(serde_json::to_vec(&facts)?)
 }
 
 fn is_typescript_path(path: &Path) -> bool {
@@ -520,6 +571,7 @@ fn build_tool_call_edges(
     };
 
     let input = ToolTraceInput {
+        mode: ToolRequestMode::TraceEdges,
         root: root.display().to_string(),
         source_files: source_graphs
             .keys()
@@ -601,6 +653,345 @@ fn build_tool_call_edges(
             .insert(edge.callee);
     }
     Ok(edges)
+}
+
+fn build_tool_module_graph(
+    root: &Path,
+    source_files: &[PathBuf],
+) -> Result<BTreeMap<PathBuf, BTreeSet<PathBuf>>> {
+    if source_files.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+
+    let Some((node_binary, node_modules_root)) = typescript_runtime() else {
+        return Ok(BTreeMap::new());
+    };
+    let Some(script) = write_embedded_tool_script(
+        "special-typescript-trace-edges.cjs",
+        include_str!("assets/typescript_trace_edges.cjs"),
+    ) else {
+        return Err(anyhow!("failed to write embedded TypeScript trace helper"));
+    };
+
+    let absolute_files = source_files
+        .iter()
+        .map(|path| root.join(path))
+        .collect::<Vec<_>>();
+    let absolute_index = absolute_files
+        .iter()
+        .zip(source_files.iter())
+        .map(|(absolute, relative)| (normalize_path(absolute), relative.clone()))
+        .collect::<BTreeMap<_, _>>();
+    let input = ToolTraceInput {
+        mode: ToolRequestMode::ModuleGraph,
+        root: root.display().to_string(),
+        source_files: absolute_files
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect(),
+        items: Vec::new(),
+    };
+    let json_input = serde_json::to_vec(&input)?;
+
+    let mut child = Command::new(node_binary)
+        .args([
+            script.path().to_string_lossy().as_ref(),
+            node_modules_root.to_string_lossy().as_ref(),
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    if let Some(stdin) = child.stdin.as_mut() {
+        stdin.write_all(&json_input)?;
+    }
+    let _ = child.stdin.take();
+
+    let output = child.wait_with_output()?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(anyhow!(
+            "TypeScript trace helper exited with status {}{}",
+            output.status,
+            if stderr.is_empty() {
+                String::new()
+            } else {
+                format!(": {stderr}")
+            }
+        ));
+    }
+
+    let tool_output: ToolTraceOutput = serde_json::from_slice(&output.stdout)?;
+    let mut graph: BTreeMap<PathBuf, BTreeSet<PathBuf>> = BTreeMap::new();
+    for edge in tool_output.file_edges {
+        let Some(from) = absolute_index.get(&normalize_path(Path::new(&edge.from))).cloned() else {
+            continue;
+        };
+        let Some(to) = absolute_index.get(&normalize_path(Path::new(&edge.to))).cloned() else {
+            continue;
+        };
+        if from == to {
+            continue;
+        }
+        graph.entry(from.clone()).or_default().insert(to.clone());
+        graph.entry(to).or_default().insert(from);
+    }
+    Ok(graph)
+}
+
+#[derive(Serialize, Deserialize)]
+struct TypeScriptTraceabilityScopeFacts {
+    adjacency: BTreeMap<PathBuf, BTreeSet<PathBuf>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct TypeScriptTraceabilityGraphFacts {
+    source_graphs: BTreeMap<PathBuf, CachedParsedSourceGraph>,
+    tool_call_edges: BTreeMap<String, BTreeSet<String>>,
+}
+
+fn decode_traceability_graph_facts(
+    facts: Option<&[u8]>,
+) -> Option<Result<(BTreeMap<PathBuf, ParsedSourceGraph>, BTreeMap<String, BTreeSet<String>>)>> {
+    let facts = facts?;
+    Some(
+        serde_json::from_slice::<TypeScriptTraceabilityGraphFacts>(facts)
+            .map_err(anyhow::Error::from)
+            .map(|facts| {
+            (
+                facts
+                    .source_graphs
+                    .into_iter()
+                    .map(|(path, graph)| (path, graph.into_parsed()))
+                    .collect(),
+                facts.tool_call_edges,
+            )
+        }),
+    )
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedParsedSourceGraph {
+    items: Vec<CachedSourceItem>,
+}
+
+impl CachedParsedSourceGraph {
+    fn from_parsed(graph: &ParsedSourceGraph) -> Self {
+        Self {
+            items: graph.items.iter().map(CachedSourceItem::from_parsed).collect(),
+        }
+    }
+
+    fn into_parsed(self) -> ParsedSourceGraph {
+        ParsedSourceGraph {
+            language: crate::syntax::SourceLanguage::new("typescript"),
+            items: self
+                .items
+                .into_iter()
+                .map(CachedSourceItem::into_parsed)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedSourceItem {
+    source_path: String,
+    stable_id: String,
+    name: String,
+    qualified_name: String,
+    module_path: Vec<String>,
+    container_path: Vec<String>,
+    shape_fingerprint: String,
+    shape_node_count: usize,
+    kind: CachedSourceItemKind,
+    span: CachedSourceSpan,
+    public: bool,
+    root_visible: bool,
+    is_test: bool,
+    calls: Vec<CachedSourceCall>,
+}
+
+impl CachedSourceItem {
+    fn from_parsed(item: &crate::syntax::SourceItem) -> Self {
+        Self {
+            source_path: item.source_path.clone(),
+            stable_id: item.stable_id.clone(),
+            name: item.name.clone(),
+            qualified_name: item.qualified_name.clone(),
+            module_path: item.module_path.clone(),
+            container_path: item.container_path.clone(),
+            shape_fingerprint: item.shape_fingerprint.clone(),
+            shape_node_count: item.shape_node_count,
+            kind: CachedSourceItemKind::from_parsed(item.kind),
+            span: CachedSourceSpan::from_parsed(item.span),
+            public: item.public,
+            root_visible: item.root_visible,
+            is_test: item.is_test,
+            calls: item.calls.iter().map(CachedSourceCall::from_parsed).collect(),
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceItem {
+        crate::syntax::SourceItem {
+            source_path: self.source_path,
+            stable_id: self.stable_id,
+            name: self.name,
+            qualified_name: self.qualified_name,
+            module_path: self.module_path,
+            container_path: self.container_path,
+            shape_fingerprint: self.shape_fingerprint,
+            shape_node_count: self.shape_node_count,
+            kind: self.kind.into_parsed(),
+            span: self.span.into_parsed(),
+            public: self.public,
+            root_visible: self.root_visible,
+            is_test: self.is_test,
+            calls: self
+                .calls
+                .into_iter()
+                .map(CachedSourceCall::into_parsed)
+                .collect(),
+            invocations: Vec::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum CachedSourceItemKind {
+    Function,
+    Method,
+}
+
+impl CachedSourceItemKind {
+    fn from_parsed(kind: crate::syntax::SourceItemKind) -> Self {
+        match kind {
+            crate::syntax::SourceItemKind::Function => Self::Function,
+            crate::syntax::SourceItemKind::Method => Self::Method,
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceItemKind {
+        match self {
+            Self::Function => crate::syntax::SourceItemKind::Function,
+            Self::Method => crate::syntax::SourceItemKind::Method,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedSourceSpan {
+    start_line: usize,
+    end_line: usize,
+    start_column: usize,
+    end_column: usize,
+    start_byte: usize,
+    end_byte: usize,
+}
+
+impl CachedSourceSpan {
+    fn from_parsed(span: crate::syntax::SourceSpan) -> Self {
+        Self {
+            start_line: span.start_line,
+            end_line: span.end_line,
+            start_column: span.start_column,
+            end_column: span.end_column,
+            start_byte: span.start_byte,
+            end_byte: span.end_byte,
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceSpan {
+        crate::syntax::SourceSpan {
+            start_line: self.start_line,
+            end_line: self.end_line,
+            start_column: self.start_column,
+            end_column: self.end_column,
+            start_byte: self.start_byte,
+            end_byte: self.end_byte,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedSourceCall {
+    name: String,
+    qualifier: Option<String>,
+    syntax: CachedCallSyntaxKind,
+    span: CachedSourceSpan,
+}
+
+impl CachedSourceCall {
+    fn from_parsed(call: &crate::syntax::SourceCall) -> Self {
+        Self {
+            name: call.name.clone(),
+            qualifier: call.qualifier.clone(),
+            syntax: CachedCallSyntaxKind::from_parsed(&call.syntax),
+            span: CachedSourceSpan::from_parsed(call.span),
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceCall {
+        crate::syntax::SourceCall {
+            name: self.name,
+            qualifier: self.qualifier,
+            syntax: self.syntax.into_parsed(),
+            span: self.span.into_parsed(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum CachedCallSyntaxKind {
+    Identifier,
+    ScopedIdentifier,
+    Field,
+}
+
+impl CachedCallSyntaxKind {
+    fn from_parsed(kind: &crate::syntax::CallSyntaxKind) -> Self {
+        match kind {
+            crate::syntax::CallSyntaxKind::Identifier => Self::Identifier,
+            crate::syntax::CallSyntaxKind::ScopedIdentifier => Self::ScopedIdentifier,
+            crate::syntax::CallSyntaxKind::Field => Self::Field,
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::CallSyntaxKind {
+        match self {
+            Self::Identifier => crate::syntax::CallSyntaxKind::Identifier,
+            Self::ScopedIdentifier => crate::syntax::CallSyntaxKind::ScopedIdentifier,
+            Self::Field => crate::syntax::CallSyntaxKind::Field,
+        }
+    }
+}
+
+fn expand_file_closure(
+    candidate_files: &[PathBuf],
+    seed_files: &[PathBuf],
+    adjacency: &BTreeMap<PathBuf, BTreeSet<PathBuf>>,
+) -> Vec<PathBuf> {
+    let candidate_set = candidate_files.iter().cloned().collect::<BTreeSet<_>>();
+    let mut closure = seed_files.iter().cloned().collect::<BTreeSet<_>>();
+    let mut frontier = seed_files.to_vec();
+
+    while let Some(file) = frontier.pop() {
+        let Some(neighbors) = adjacency.get(&file) else {
+            continue;
+        };
+        for neighbor in neighbors {
+            if !candidate_set.contains(neighbor) || !closure.insert(neighbor.clone()) {
+                continue;
+            }
+            frontier.push(neighbor.clone());
+        }
+    }
+
+    candidate_files
+        .iter()
+        .filter(|path| closure.contains(*path))
+        .cloned()
+        .collect()
 }
 
 fn collect_callable_items(
@@ -785,7 +1176,15 @@ fn write_embedded_tool_script(file_name: &str, contents: &str) -> Option<Embedde
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+enum ToolRequestMode {
+    TraceEdges,
+    ModuleGraph,
+}
+
+#[derive(Serialize)]
 struct ToolTraceInput {
+    mode: ToolRequestMode,
     root: String,
     source_files: Vec<String>,
     items: Vec<ToolTraceItemInput>,
@@ -803,13 +1202,22 @@ struct ToolTraceItemInput {
 
 #[derive(Deserialize)]
 struct ToolTraceOutput {
+    #[serde(default)]
     edges: Vec<ToolTraceEdge>,
+    #[serde(default)]
+    file_edges: Vec<ToolFileEdge>,
 }
 
 #[derive(Deserialize)]
 struct ToolTraceEdge {
     caller: String,
     callee: String,
+}
+
+#[derive(Deserialize)]
+struct ToolFileEdge {
+    from: String,
+    to: String,
 }
 
 #[cfg(test)]

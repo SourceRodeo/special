@@ -376,6 +376,73 @@ fn concurrent_health_runs_wait_cleanly_for_a_shared_cache_fill() {
 }
 
 #[test]
+fn repo_health_emits_progress_to_stderr_in_noninteractive_runs() {
+    let root = temp_repo_dir("special-cli-health-progress-stderr");
+    write_duplicate_item_signals_module_analysis_fixture(&root);
+
+    let output = run_special(&root, &["health", "--json"]);
+    assert!(output.status.success());
+
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("special health: resolving project root"));
+    assert!(stderr.contains("special health: building health view"));
+    assert!(stderr.contains("special health: computing repo ownership signals"));
+    assert!(stderr.contains("special health: building language analysis contexts"));
+    assert!(stderr.contains("special health: cache activity:"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+fn repo_scope_progress_limits_traceability_contexts_to_scoped_languages() {
+    let root = temp_repo_dir("special-cli-health-scoped-language-progress");
+    fs::create_dir_all(root.join("_project")).expect("architecture dir should be created");
+    fs::create_dir_all(root.join("specs")).expect("specs dir should be created");
+    fs::create_dir_all(root.join("src")).expect("src dir should be created");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("_project/ARCHITECTURE.md"),
+        "# Architecture\n\n### `@area DEMO`\nDemo root.\n\n### `@module DEMO.TS`\nTypeScript module.\n\n### `@module DEMO.RUST`\nRust module.\n",
+    )
+    .expect("architecture fixture should be written");
+    fs::write(
+        root.join("specs/root.md"),
+        "### `@group APP`\nApp root.\n\n### `@spec APP.TS`\nTypeScript flow.\n\n### `@spec APP.RUST`\nRust flow.\n",
+    )
+    .expect("specs fixture should be written");
+    fs::write(
+        root.join("src/app.ts"),
+        "// @fileimplements DEMO.TS\nexport function liveImpl() {\n    return helper();\n}\n\nfunction helper() {\n    return 1;\n}\n",
+    )
+    .expect("typescript fixture should be written");
+    fs::write(
+        root.join("src/app.test.ts"),
+        "import { liveImpl } from \"./app\";\n\n// @verifies APP.TS\nexport function verifies_live_impl() {\n    return liveImpl();\n}\n",
+    )
+    .expect("typescript test fixture should be written");
+    fs::write(
+        root.join("main.rs"),
+        "// @fileimplements DEMO.RUST\npub fn live_impl() {}\n",
+    )
+    .expect("rust fixture should be written");
+    fs::write(
+        root.join("tests.rs"),
+        "// @verifies APP.RUST\n#[test]\nfn verifies_live_impl() {\n    crate::live_impl();\n}\n",
+    )
+    .expect("rust test fixture should be written");
+
+    let output = run_special(&root, &["health", "src/app.ts", "--json"]);
+    assert!(output.status.success());
+
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("building typescript analysis context"));
+    assert!(!stderr.contains("building rust analysis context"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 fn repo_metrics_json_includes_traceability_metrics_when_requested() {
     let root = temp_repo_dir("special-cli-repo-metrics-traceability-json");
     write_typescript_traceability_fixture(&root);

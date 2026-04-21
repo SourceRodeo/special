@@ -47,6 +47,48 @@ pub(super) fn repo_analysis_fingerprint(
     Ok(hasher.finish())
 }
 
+pub(super) fn scoped_repo_analysis_fingerprint(
+    root: &Path,
+    ignore_patterns: &[String],
+    version: SpecialVersion,
+    parsed_repo: &ParsedRepo,
+    scoped_paths: &[std::path::PathBuf],
+) -> Result<u64> {
+    let mut hasher = DefaultHasher::new();
+    repo_analysis_fingerprint(root, ignore_patterns, version, parsed_repo)?.hash(&mut hasher);
+    for path in analyze::normalized_scope_paths(root, scoped_paths) {
+        path.hash(&mut hasher);
+    }
+    Ok(hasher.finish())
+}
+
+pub(super) fn language_pack_scope_facts_fingerprint(
+    root: &Path,
+    language_id: &str,
+    source_files: &[std::path::PathBuf],
+    environment_fingerprint: &str,
+) -> Result<u64> {
+    let mut hasher = DefaultHasher::new();
+    super::CACHE_SCHEMA_VERSION.hash(&mut hasher);
+    root.hash(&mut hasher);
+    language_id.hash(&mut hasher);
+    environment_fingerprint.hash(&mut hasher);
+    for path in source_files {
+        path.hash(&mut hasher);
+        if let Ok(metadata) = fs::metadata(path) {
+            metadata.len().hash(&mut hasher);
+            if let Ok(modified) = metadata.modified()
+                && let Ok(duration) = modified.duration_since(UNIX_EPOCH)
+            {
+                duration.as_secs().hash(&mut hasher);
+                duration.subsec_nanos().hash(&mut hasher);
+            }
+        }
+        hash_file_contents(path, &mut hasher);
+    }
+    Ok(hasher.finish())
+}
+
 pub(super) fn architecture_analysis_fingerprint(
     root: &Path,
     ignore_patterns: &[String],

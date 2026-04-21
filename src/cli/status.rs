@@ -21,15 +21,18 @@ impl StatusStep {
 pub(super) struct CommandStatus {
     label: &'static str,
     enabled: bool,
+    interactive: bool,
     started_at: Instant,
     plan: Option<&'static [StatusStep]>,
 }
 
 impl CommandStatus {
     pub(super) fn with_plan(label: &'static str, plan: &'static [StatusStep]) -> Self {
+        let interactive = io::stderr().is_terminal();
         Self {
             label,
-            enabled: io::stderr().is_terminal(),
+            enabled: true,
+            interactive,
             started_at: Instant::now(),
             plan: Some(plan),
         }
@@ -37,7 +40,9 @@ impl CommandStatus {
 
     pub(super) fn phase(&self, phase: &str) {
         if self.enabled {
-            if let Some(progress) = self.phase_progress(phase) {
+            if self.interactive
+                && let Some(progress) = self.phase_progress(phase)
+            {
                 eprintln!(
                     "{}: {}... ({}{})",
                     self.label,

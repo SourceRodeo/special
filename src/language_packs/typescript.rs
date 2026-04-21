@@ -8,7 +8,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use super::{LanguagePackAnalysisContext, LanguagePackDescriptor};
+use super::{
+    LanguagePackAnalysisContext, LanguagePackDescriptor, TraceabilityGraphFactsDescriptor,
+    TraceabilityScopeFactsDescriptor,
+};
 use crate::model::{
     ArchitectureTraceabilitySummary, ImplementRef, ModuleAnalysisOptions, ParsedArchitecture,
     ParsedRepo,
@@ -25,6 +28,17 @@ pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     parse_source_graph: parse_source_graph,
     build_repo_analysis_context: build_repo_analysis_context,
     analysis_environment_fingerprint: analysis_environment_fingerprint,
+    traceability_scope_facts: Some(&TRACEABILITY_SCOPE_FACTS),
+    traceability_graph_facts: Some(&TRACEABILITY_GRAPH_FACTS),
+};
+
+const TRACEABILITY_SCOPE_FACTS: TraceabilityScopeFactsDescriptor = TraceabilityScopeFactsDescriptor {
+    build_facts: build_traceability_scope_facts,
+    expand_closure: expand_traceability_closure_from_facts,
+};
+
+const TRACEABILITY_GRAPH_FACTS: TraceabilityGraphFactsDescriptor = TraceabilityGraphFactsDescriptor {
+    build_facts: build_traceability_graph_facts,
 };
 
 impl LanguagePackAnalysisContext for analyze::TypeScriptRepoAnalysisContext {
@@ -50,6 +64,8 @@ impl LanguagePackAnalysisContext for analyze::TypeScriptRepoAnalysisContext {
 fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],
+    scoped_source_files: Option<&[PathBuf]>,
+    traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
@@ -58,6 +74,8 @@ fn build_repo_analysis_context(
     Box::new(analyze::build_repo_analysis_context(
         root,
         source_files,
+        scoped_source_files,
+        traceability_graph_facts,
         parsed_repo,
         parsed_architecture,
         file_ownership,
@@ -67,6 +85,23 @@ fn build_repo_analysis_context(
 
 fn analysis_environment_fingerprint(_root: &Path) -> String {
     analyze::analysis_environment_fingerprint()
+}
+
+fn build_traceability_scope_facts(root: &Path, source_files: &[PathBuf]) -> Result<Vec<u8>> {
+    analyze::build_traceability_scope_facts(root, source_files)
+}
+
+fn expand_traceability_closure_from_facts(
+    source_files: &[PathBuf],
+    scoped_source_files: &[PathBuf],
+    _file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    facts: &[u8],
+) -> Result<Vec<PathBuf>> {
+    analyze::expand_traceability_closure_from_facts(source_files, scoped_source_files, facts)
+}
+
+fn build_traceability_graph_facts(root: &Path, source_files: &[PathBuf]) -> Result<Vec<u8>> {
+    analyze::build_traceability_graph_facts(root, source_files)
 }
 
 fn is_typescript_path(path: &Path) -> bool {

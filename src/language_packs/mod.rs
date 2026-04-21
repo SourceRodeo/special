@@ -32,11 +32,33 @@ pub(crate) trait LanguagePackAnalysisContext {
 pub(crate) type BuildRepoAnalysisContextFn = for<'a> fn(
     &Path,
     &[PathBuf],
+    Option<&[PathBuf]>,
+    Option<&[u8]>,
     &ParsedRepo,
     &ParsedArchitecture,
     &BTreeMap<PathBuf, FileOwnership<'a>>,
     bool,
 ) -> Box<dyn LanguagePackAnalysisContext>;
+
+pub(crate) type BuildTraceabilityScopeFactsFn = fn(&Path, &[PathBuf]) -> Result<Vec<u8>>;
+
+pub(crate) type ExpandTraceabilityClosureFromFactsFn = fn(
+    &[PathBuf],
+    &[PathBuf],
+    &BTreeMap<PathBuf, FileOwnership<'_>>,
+    &[u8],
+) -> Result<Vec<PathBuf>>;
+
+pub(crate) struct TraceabilityScopeFactsDescriptor {
+    pub(crate) build_facts: BuildTraceabilityScopeFactsFn,
+    pub(crate) expand_closure: ExpandTraceabilityClosureFromFactsFn,
+}
+
+pub(crate) type BuildTraceabilityGraphFactsFn = fn(&Path, &[PathBuf]) -> Result<Vec<u8>>;
+
+pub(crate) struct TraceabilityGraphFactsDescriptor {
+    pub(crate) build_facts: BuildTraceabilityGraphFactsFn,
+}
 
 pub(crate) struct LanguagePackDescriptor {
     pub(crate) language: SourceLanguage,
@@ -44,6 +66,8 @@ pub(crate) struct LanguagePackDescriptor {
     pub(crate) parse_source_graph: fn(&Path, &str) -> Option<ParsedSourceGraph>,
     pub(crate) build_repo_analysis_context: BuildRepoAnalysisContextFn,
     pub(crate) analysis_environment_fingerprint: fn(&Path) -> String,
+    pub(crate) traceability_scope_facts: Option<&'static TraceabilityScopeFactsDescriptor>,
+    pub(crate) traceability_graph_facts: Option<&'static TraceabilityGraphFactsDescriptor>,
 }
 
 include!(concat!(env!("OUT_DIR"), "/language_pack_registry.rs"));

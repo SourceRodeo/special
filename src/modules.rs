@@ -10,7 +10,7 @@ use anyhow::Result;
 
 use crate::cache::{
     load_or_build_architecture_analysis, load_or_build_repo_analysis_summary,
-    load_or_parse_architecture, load_or_parse_repo,
+    load_or_build_scoped_repo_analysis_summary, load_or_parse_architecture, load_or_parse_repo,
 };
 use crate::config::SpecialVersion;
 use crate::model::{
@@ -77,16 +77,18 @@ pub fn build_repo_document(
     let parsed = load_or_parse_architecture(root, ignore_patterns)?;
     let lint = lint::build_module_lint_report(&parsed);
     let parsed_repo = load_or_parse_repo(root, ignore_patterns, version)?;
-    let mut summary =
-        load_or_build_repo_analysis_summary(root, ignore_patterns, version, &parsed, &parsed_repo)?;
-    if let Some(scoped_paths) = scoped_paths {
-        analyze::filter_repo_analysis_summary_to_scope(
+    let mut summary = if let Some(scoped_paths) = scoped_paths {
+        load_or_build_scoped_repo_analysis_summary(
             root,
             ignore_patterns,
+            version,
+            &parsed,
+            &parsed_repo,
             scoped_paths,
-            &mut summary,
-        )?;
-    }
+        )?
+    } else {
+        load_or_build_repo_analysis_summary(root, ignore_patterns, version, &parsed, &parsed_repo)?
+    };
     if let Some(symbol) = symbol {
         analyze::filter_repo_analysis_summary_to_symbol(symbol, &mut summary);
     }
@@ -110,16 +112,18 @@ pub(crate) fn build_repo_document_from_parsed(
     scoped_paths: Option<&[PathBuf]>,
     symbol: Option<&str>,
 ) -> Result<RepoDocument> {
-    let mut summary =
-        load_or_build_repo_analysis_summary(root, ignore_patterns, version, parsed, parsed_repo)?;
-    if let Some(scoped_paths) = scoped_paths {
-        analyze::filter_repo_analysis_summary_to_scope(
+    let mut summary = if let Some(scoped_paths) = scoped_paths {
+        load_or_build_scoped_repo_analysis_summary(
             root,
             ignore_patterns,
+            version,
+            parsed,
+            parsed_repo,
             scoped_paths,
-            &mut summary,
-        )?;
-    }
+        )?
+    } else {
+        load_or_build_repo_analysis_summary(root, ignore_patterns, version, parsed, parsed_repo)?
+    };
     if let Some(symbol) = symbol {
         analyze::filter_repo_analysis_summary_to_symbol(symbol, &mut summary);
     }

@@ -9,6 +9,27 @@ function loadTypeScript(moduleRoot) {
   return require(path.join(moduleRoot, 'typescript'));
 }
 
+function resolveImportedFiles(ts, sourceFile, options, host, trackedFiles) {
+  const imported = ts.preProcessFile(sourceFile.text, true, true).importedFiles || [];
+  const resolved = new Set();
+  for (const entry of imported) {
+    const moduleName = entry.fileName;
+    const resolution = ts.resolveModuleName(
+      moduleName,
+      sourceFile.fileName,
+      options,
+      host
+    );
+    const resolvedFileName = resolution.resolvedModule && resolution.resolvedModule.resolvedFileName;
+    if (!resolvedFileName) continue;
+    const normalized = normalize(resolvedFileName);
+    if (trackedFiles.has(normalized)) {
+      resolved.add(normalized);
+    }
+  }
+  return resolved;
+}
+
 function groupItemsByPath(items) {
   const grouped = new Map();
   for (const item of items) {
@@ -87,6 +108,7 @@ function main() {
 
   const ts = loadTypeScript(moduleRoot);
   const input = JSON.parse(fs.readFileSync(0, 'utf8'));
+  const mode = input.mode || 'trace_edges';
   const grouped = groupItemsByPath(input.items);
   const trackedFiles = new Set(input.source_files.map(normalize));
 
@@ -135,6 +157,31 @@ function main() {
   const languageService = ts.createLanguageService(languageServiceHost);
   const program = languageService.getProgram() || ts.createProgram({ rootNames, options });
   const checker = program.getTypeChecker();
+
+  if (mode === 'module_graph') {
+    const fileEdgeSet = new Set();
+    for (const sourceFile of program.getSourceFiles()) {
+      if (sourceFile.isDeclarationFile) continue;
+      const normalized = normalize(sourceFile.fileName);
+      if (!trackedFiles.has(normalized)) continue;
+      for (const importedFile of resolveImportedFiles(
+        ts,
+        sourceFile,
+        options,
+        languageServiceHost,
+        trackedFiles
+      )) {
+        fileEdgeSet.add(`${normalized}\t${importedFile}`);
+      }
+    }
+    const file_edges = Array.from(fileEdgeSet).map((entry) => {
+      const [from, to] = entry.split('\t');
+      return { from, to };
+    });
+    process.stdout.write(JSON.stringify({ file_edges }));
+    return;
+  }
+
   const edgeSet = new Set();
 
   function visit(sourceFile, node) {

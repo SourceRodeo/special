@@ -18,7 +18,7 @@ use self::surface::{GoSurfaceSummary, is_go_path};
 use self::traceability::GoTraceabilityPack;
 use crate::modules::analyze::source_item_signals::summarize_source_item_signals;
 use crate::modules::analyze::traceability_core::{
-    TraceabilityAnalysis, TraceabilityLanguagePack, build_traceability_analysis,
+    TraceabilityAnalysis, TraceabilityLanguagePack,
 };
 use crate::modules::analyze::{FileOwnership, ProviderModuleAnalysis, visit_owned_texts};
 
@@ -91,9 +91,15 @@ pub(crate) struct GoRepoAnalysisContext {
     pub(crate) traceability_unavailable_reason: Option<String>,
 }
 
+pub(crate) fn build_traceability_graph_facts(root: &Path, source_files: &[PathBuf]) -> Result<Vec<u8>> {
+    traceability::build_traceability_graph_facts(root, source_files)
+}
+
 pub(crate) fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],
+    scoped_source_files: Option<&[PathBuf]>,
+    traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
@@ -104,16 +110,28 @@ pub(crate) fn build_repo_analysis_context(
         .backward_trace_availability()
         .unavailable_reason()
         .map(ToString::to_string);
-    let traceability =
-        (include_traceability && traceability_unavailable_reason.is_none()).then(|| {
-            build_traceability_analysis(traceability_pack.build_inputs(
+    let traceability = (include_traceability && traceability_unavailable_reason.is_none()).then(|| {
+        if let Some(scoped_source_files) = scoped_source_files.filter(|files| !files.is_empty()) {
+            traceability::build_scoped_traceability_analysis_from_cached_or_live_graph_facts(
                 root,
                 source_files,
+                scoped_source_files,
+                traceability_graph_facts,
+                parsed_repo,
+                file_ownership,
+            )
+        } else {
+            traceability::build_traceability_analysis_from_cached_or_live_graph_facts(
+                root,
+                source_files,
+                traceability_graph_facts,
                 parsed_repo,
                 parsed_architecture,
                 file_ownership,
-            ))
-        });
+                &traceability_pack,
+            )
+        }
+    });
     GoRepoAnalysisContext {
         traceability_pack,
         traceability,

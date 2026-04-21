@@ -26,12 +26,15 @@ mod provider_merge;
 mod registry;
 mod repo_scope;
 pub(crate) mod source_item_signals;
+mod status;
 pub(crate) mod traceability_core;
 mod unreached_code;
 
 pub(crate) use coupling::ModuleCouplingInput;
 pub(crate) use ownership::{FileOwnership, display_path, read_owned_file_text, visit_owned_texts};
 pub(crate) use provider_merge::build_dependency_summary;
+pub(crate) use repo_scope::normalized_scope_paths;
+pub(crate) use status::{emit_analysis_status, with_analysis_status_notifier};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct ArchitectureAnalysis {
@@ -69,6 +72,7 @@ pub(crate) fn build_architecture_analysis(
                 registry::build_repo_analysis_contexts(
                     root,
                     &files,
+                    None,
                     parsed_repo,
                     parsed,
                     &file_ownership,
@@ -107,52 +111,67 @@ pub(crate) fn build_repo_analysis_summary(
     })?
     .source_files;
     let scoped_files = repo_scope::scope_source_files(root, &all_files, scoped_paths)?;
+    if scoped_files.len() == all_files.len() {
+        status::emit_analysis_status(&format!(
+            "repo health analysis considers {} analyzable source files",
+            all_files.len()
+        ));
+    } else {
+        status::emit_analysis_status(&format!(
+            "repo health scope matches {} of {} analyzable source files",
+            scoped_files.len(),
+            all_files.len()
+        ));
+    }
     let file_ownership = ownership::index_file_ownership(parsed);
 
     let mut repo_signals = coverage::build_repo_signals_summary();
+    status::emit_analysis_status(&format!(
+        "computing repo ownership signals from {} scoped source files",
+        scoped_files.len()
+    ));
     unreached_code::apply_unowned_item_summary(
         root,
         &scoped_files,
         &file_ownership,
         &mut repo_signals,
     )?;
+    status::emit_analysis_status("computing duplicate-logic signals across owned implementation");
     duplication::apply_duplicate_item_summary(root, parsed, &file_ownership, &mut repo_signals)?;
     if scoped_files.len() != all_files.len() {
         repo_scope::filter_repo_signals_to_scope(root, &scoped_files, &mut repo_signals);
     }
 
+    let traceability_files = repo_scope::traceability_source_files(&all_files, &scoped_files);
+    status::emit_analysis_status(&format!(
+        "building language analysis contexts from {} source files",
+        traceability_files.len()
+    ));
     let repo_contexts = registry::build_repo_analysis_contexts(
         root,
-        &all_files,
+        &traceability_files,
+        Some(&scoped_files),
         parsed_repo,
         parsed,
         &file_ownership,
         true,
     );
-    let traceability =
-        build_repo_traceability_summary(root, &all_files, &repo_contexts).map(|mut summary| {
+    let traceability = build_repo_traceability_summary(root, &traceability_files, &repo_contexts)
+        .map(|mut summary| {
             if scoped_files.len() != all_files.len() {
+                status::emit_analysis_status("filtering repo traceability to the requested scope");
                 repo_scope::filter_traceability_to_scope(root, &scoped_files, &mut summary);
             }
             summary
         });
     let traceability_unavailable_reason =
-        build_repo_traceability_unavailable_reason(&scoped_files, &repo_contexts);
+        build_repo_traceability_unavailable_reason(&traceability_files, &repo_contexts);
 
     Ok(ArchitectureAnalysisSummary {
         repo_signals: Some(repo_signals),
         traceability,
         traceability_unavailable_reason,
     })
-}
-
-pub(crate) fn filter_repo_analysis_summary_to_scope(
-    root: &Path,
-    ignore_patterns: &[String],
-    scoped_paths: &[PathBuf],
-    summary: &mut ArchitectureAnalysisSummary,
-) -> Result<()> {
-    repo_scope::filter_repo_analysis_summary_to_scope(root, ignore_patterns, scoped_paths, summary)
 }
 
 pub(crate) fn filter_repo_analysis_summary_to_symbol(

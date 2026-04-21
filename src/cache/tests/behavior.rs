@@ -8,7 +8,8 @@ use crate::model::ModuleAnalysisOptions;
 
 use super::super::storage::cache_file_path;
 use super::super::{
-    CACHE_SCHEMA_VERSION, load_or_build_architecture_analysis, load_or_build_repo_analysis_summary,
+    CACHE_SCHEMA_VERSION, load_or_build_architecture_analysis, load_or_build_language_pack_blob,
+    load_or_build_repo_analysis_summary, load_or_build_scoped_repo_analysis_summary,
     load_or_parse_architecture, load_or_parse_repo, reset_cache_stats, snapshot_cache_stats,
 };
 use super::support::{cache_test_lock, temp_root, write_repo_fixture};
@@ -99,6 +100,78 @@ fn repo_analysis_cache_hits_on_second_load() {
     let second = snapshot_cache_stats();
     assert_eq!(second.repo_analysis_hits, 1);
     assert_eq!(second.repo_analysis_misses, 1);
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
+fn scoped_repo_analysis_cache_hits_on_second_load() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-scoped-repo-analysis-hit");
+    write_repo_fixture(&root);
+    let parsed_repo =
+        load_or_parse_repo(&root, &[], SpecialVersion::V1).expect("parse should succeed");
+    let parsed_arch = load_or_parse_architecture(&root, &[]).expect("parse should succeed");
+    let scoped_paths = vec![std::path::PathBuf::from("app.rs")];
+
+    reset_cache_stats();
+    let _ = load_or_build_scoped_repo_analysis_summary(
+        &root,
+        &[],
+        SpecialVersion::V1,
+        &parsed_arch,
+        &parsed_repo,
+        &scoped_paths,
+    )
+    .expect("scoped analysis should succeed");
+    let first = snapshot_cache_stats();
+    assert_eq!(first.repo_analysis_hits, 0);
+    assert_eq!(first.repo_analysis_misses, 1);
+
+    let _ = load_or_build_scoped_repo_analysis_summary(
+        &root,
+        &[],
+        SpecialVersion::V1,
+        &parsed_arch,
+        &parsed_repo,
+        &scoped_paths,
+    )
+    .expect("cached scoped analysis should succeed");
+    let second = snapshot_cache_stats();
+    assert_eq!(second.repo_analysis_hits, 1);
+    assert_eq!(second.repo_analysis_misses, 1);
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
+fn language_pack_scope_facts_cache_reuses_fact_blob() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-language-pack-scope-facts-hit");
+    write_repo_fixture(&root);
+    let source_files = vec![root.join("app.rs")];
+
+    let first = load_or_build_language_pack_blob(
+        &root,
+        "test-facts",
+        "rust",
+        &source_files,
+        "toolchain=v1",
+        || Ok(b"scope-facts-v1".to_vec()),
+    )
+    .expect("initial fact build should succeed");
+    assert_eq!(first, b"scope-facts-v1");
+
+    let second = load_or_build_language_pack_blob(
+        &root,
+        "test-facts",
+        "rust",
+        &source_files,
+        "toolchain=v1",
+        || panic!("cached fact blob should be reused"),
+    )
+    .expect("cached fact load should succeed");
+    assert_eq!(second, b"scope-facts-v1");
 
     std::fs::remove_dir_all(&root).expect("temp root should be removed");
 }

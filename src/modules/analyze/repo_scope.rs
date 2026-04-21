@@ -9,32 +9,11 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureRepoSignalsSummary, ArchitectureTraceabilityItem,
     ArchitectureTraceabilitySummary,
 };
-
-pub(crate) fn filter_repo_analysis_summary_to_scope(
-    root: &Path,
-    ignore_patterns: &[String],
-    scoped_paths: &[PathBuf],
-    summary: &mut ArchitectureAnalysisSummary,
-) -> Result<()> {
-    let all_files = discover_annotation_files(DiscoveryConfig {
-        root,
-        ignore_patterns,
-    })?
-    .source_files;
-    let scoped_files = scope_source_files(root, &all_files, Some(scoped_paths))?;
-    if let Some(repo_signals) = &mut summary.repo_signals {
-        filter_repo_signals_to_scope(root, &scoped_files, repo_signals);
-    }
-    if let Some(traceability) = &mut summary.traceability {
-        filter_traceability_to_scope(root, &scoped_files, traceability);
-    }
-    Ok(())
-}
+use crate::syntax::SourceLanguage;
 
 pub(crate) fn filter_repo_analysis_summary_to_symbol(
     symbol: &str,
@@ -81,10 +60,7 @@ pub(super) fn scope_source_files(
         return Ok(all_files.to_vec());
     }
 
-    let scope_roots = scoped_paths
-        .iter()
-        .map(|path| normalize_scope_path(root, path))
-        .collect::<Vec<_>>();
+    let scope_roots = normalized_scope_paths(root, scoped_paths);
 
     let scoped_files = all_files
         .iter()
@@ -102,6 +78,28 @@ pub(super) fn scope_source_files(
     }
 
     Ok(scoped_files)
+}
+
+pub(super) fn traceability_source_files(
+    all_files: &[PathBuf],
+    scoped_files: &[PathBuf],
+) -> Vec<PathBuf> {
+    let scoped_languages: BTreeSet<SourceLanguage> = scoped_files
+        .iter()
+        .filter_map(|path| SourceLanguage::from_path(path))
+        .collect();
+    if scoped_languages.is_empty() {
+        return all_files.to_vec();
+    }
+
+    all_files
+        .iter()
+        .filter(|path| {
+            SourceLanguage::from_path(path)
+                .is_some_and(|language| scoped_languages.contains(&language))
+        })
+        .cloned()
+        .collect()
 }
 
 pub(super) fn filter_repo_signals_to_scope(
@@ -150,6 +148,16 @@ fn normalize_scope_path(root: &Path, path: &Path) -> PathBuf {
         root.join(path)
     };
     fs::canonicalize(&joined).unwrap_or(joined)
+}
+
+pub(crate) fn normalized_scope_paths(root: &Path, scoped_paths: &[PathBuf]) -> Vec<PathBuf> {
+    let mut normalized = scoped_paths
+        .iter()
+        .map(|path| normalize_scope_path(root, path))
+        .collect::<Vec<_>>();
+    normalized.sort();
+    normalized.dedup();
+    normalized
 }
 
 fn retain_traceability_items(

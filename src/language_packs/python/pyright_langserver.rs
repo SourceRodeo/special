@@ -8,6 +8,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, Stdio};
 use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::{Context, Result, anyhow};
 use serde::Deserialize;
@@ -46,15 +47,12 @@ pub(super) fn build_reachable_call_edges(
     root: &Path,
     items: &[PyrightCallableItem],
 ) -> Result<BTreeMap<String, BTreeSet<String>>> {
-    let mut client = PyrightClient::start(root)?;
-    client.open_files(items)?;
-    std::thread::sleep(Duration::from_millis(1500));
-
+    let started_at = Instant::now();
+    let (mut client, index) = start_client_for_items(root, items, started_at, "starting pyright call graph", None)?;
     let item_by_id = items
         .iter()
         .map(|item| (item.stable_id.clone(), item))
         .collect::<BTreeMap<_, _>>();
-    let index = PyrightItemIndex::new(root, items);
     let mut edges: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let seed_ids = items
         .iter()
@@ -104,6 +102,74 @@ pub(super) fn build_reachable_call_edges(
     }
 
     client.shutdown()?;
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "pyright built reachable call graph in {:.1}s",
+        started_at.elapsed().as_secs_f32()
+    ));
+    Ok(edges)
+}
+
+pub(super) fn build_reverse_reachable_call_edges(
+    root: &Path,
+    items: &[PyrightCallableItem],
+    seed_ids: &BTreeSet<String>,
+    parser_edges: &BTreeMap<String, BTreeSet<String>>,
+) -> Result<BTreeMap<String, BTreeSet<String>>> {
+    let started_at = Instant::now();
+    let (mut client, index) = start_client_for_items(
+        root,
+        items,
+        started_at,
+        "starting pyright reverse caller walk",
+        Some(seed_ids.len()),
+    )?;
+    let item_by_id = items
+        .iter()
+        .map(|item| (item.stable_id.clone(), item))
+        .collect::<BTreeMap<_, _>>();
+    let mut reverse_parser_edges: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for (caller, callees) in parser_edges {
+        for callee in callees {
+            reverse_parser_edges
+                .entry(callee.clone())
+                .or_default()
+                .insert(caller.clone());
+        }
+    }
+    let mut edges: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    let mut visited = BTreeSet::new();
+    let mut pending = VecDeque::from_iter(seed_ids.iter().cloned());
+    while let Some(callee_id) = pending.pop_front() {
+        if !visited.insert(callee_id.clone()) {
+            continue;
+        }
+        let Some(callee) = item_by_id.get(&callee_id) else {
+            continue;
+        };
+        let mut callers = reverse_parser_edges
+            .get(&callee_id)
+            .cloned()
+            .unwrap_or_default();
+        for caller_id in client.reference_callers(callee, &index)? {
+            if caller_id != callee.stable_id {
+                edges
+                    .entry(caller_id.clone())
+                    .or_default()
+                    .insert(callee.stable_id.clone());
+                callers.insert(caller_id);
+            }
+        }
+        for caller_id in callers {
+            if item_by_id.contains_key(&caller_id) && !visited.contains(&caller_id) {
+                pending.push_back(caller_id);
+            }
+        }
+    }
+    client.shutdown()?;
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "pyright built reverse reachable callers in {:.1}s",
+        started_at.elapsed().as_secs_f32()
+    ));
     Ok(edges)
 }
 
@@ -443,6 +509,36 @@ impl PyrightClient {
         self.stdout.read_exact(&mut body)?;
         Ok(serde_json::from_slice(&body)?)
     }
+}
+
+fn start_client_for_items(
+    root: &Path,
+    items: &[PyrightCallableItem],
+    started_at: Instant,
+    phase: &str,
+    seed_count: Option<usize>,
+) -> Result<(PyrightClient, PyrightItemIndex)> {
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "{phase} for {} file(s), {} callable item(s){}",
+        items.iter().map(|item| &item.path).collect::<BTreeSet<_>>().len(),
+        items.len(),
+        seed_count
+            .map(|count| format!(", {} seed root(s)", count))
+            .unwrap_or_default()
+    ));
+    let mut client = PyrightClient::start(root)?;
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "pyright started in {:.1}s",
+        started_at.elapsed().as_secs_f32()
+    ));
+    client.open_files(items)?;
+    std::thread::sleep(Duration::from_millis(1500));
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "pyright opened {} file(s) in {:.1}s",
+        items.iter().map(|item| &item.path).collect::<BTreeSet<_>>().len(),
+        started_at.elapsed().as_secs_f32()
+    ));
+    Ok((client, PyrightItemIndex::new(root, items)))
 }
 
 #[derive(Debug)]

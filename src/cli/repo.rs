@@ -16,7 +16,7 @@ use super::status::{CommandStatus, StatusStep};
 use crate::cache::{format_cache_stats_summary, reset_cache_stats, with_cache_status_notifier};
 use crate::config::resolve_project_root;
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
-use crate::modules::build_repo_document;
+use crate::modules::{analyze::with_analysis_status_notifier, build_repo_document};
 use crate::render::{render_lint_text, render_repo_html, render_repo_json, render_repo_text};
 
 #[derive(Debug, Args)]
@@ -122,15 +122,19 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
     }
 
     status.phase("building health view");
-    let (document, lint) = with_cache_status_notifier(status.notifier(), || {
-        build_repo_document(
-            &root,
-            &resolution.ignore_patterns,
-            resolution.version,
-            args.metrics,
-            (!scope_paths.is_empty()).then_some(scope_paths.as_slice()),
-            args.symbol.as_deref(),
-        )
+    let cache_notifier = status.notifier();
+    let analysis_notifier = status.notifier();
+    let (document, lint) = with_cache_status_notifier(cache_notifier, || {
+        with_analysis_status_notifier(analysis_notifier, || {
+            build_repo_document(
+                &root,
+                &resolution.ignore_patterns,
+                resolution.version,
+                args.metrics,
+                (!scope_paths.is_empty()).then_some(scope_paths.as_slice()),
+                args.symbol.as_deref(),
+            )
+        })
     })?;
     report_cache_stats(&status);
 

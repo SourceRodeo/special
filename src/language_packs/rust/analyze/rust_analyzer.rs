@@ -8,6 +8,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::{Context, Result, anyhow};
 use serde::Deserialize;
@@ -32,14 +33,18 @@ pub(super) fn build_reachable_call_edges(
     seed_ids: &BTreeSet<String>,
     parser_call_edges: &BTreeMap<String, BTreeSet<String>>,
 ) -> Result<BTreeMap<String, BTreeSet<String>>> {
-    let mut client = RustAnalyzerClient::start(root)?;
-    client.open_files(items)?;
-    std::thread::sleep(Duration::from_millis(500));
+    let started_at = Instant::now();
+    let (mut client, index) = start_client_for_items(
+        root,
+        items,
+        started_at,
+        "starting rust-analyzer call graph",
+        seed_ids.len(),
+    )?;
     let item_by_id = items
         .iter()
         .map(|item| (item.stable_id.clone(), item))
         .collect::<BTreeMap<_, _>>();
-    let index = RustAnalyzerItemIndex::new(root, items);
     let mut edges = parser_call_edges.clone();
     let mut visited = BTreeSet::new();
     let mut pending = VecDeque::new();
@@ -87,6 +92,10 @@ pub(super) fn build_reachable_call_edges(
         edges.entry(caller_id).or_default().extend(callees);
     }
 
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "rust-analyzer resolving incoming callers for {} callable item(s)",
+        items.len()
+    ));
     for callee in items {
         for caller_id in client.reference_callers(callee, &index)? {
             if caller_id != callee.stable_id {
@@ -99,7 +108,79 @@ pub(super) fn build_reachable_call_edges(
     }
 
     client.shutdown()?;
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "rust-analyzer built reachable call graph in {:.1}s",
+        started_at.elapsed().as_secs_f32()
+    ));
     Ok(edges)
+}
+
+pub(super) fn build_reverse_reachable_call_edges(
+    root: &Path,
+    items: &[RustAnalyzerCallableItem],
+    seed_ids: &BTreeSet<String>,
+    parser_call_edges: &BTreeMap<String, BTreeSet<String>>,
+) -> Result<BTreeMap<String, BTreeSet<String>>> {
+    let started_at = Instant::now();
+    let (mut client, index) = start_client_for_items(
+        root,
+        items,
+        started_at,
+        "starting rust-analyzer reverse caller walk",
+        seed_ids.len(),
+    )?;
+    let item_by_id = items
+        .iter()
+        .map(|item| (item.stable_id.clone(), item))
+        .collect::<BTreeMap<_, _>>();
+    let mut reverse_parser_edges: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for (caller, callees) in parser_call_edges {
+        for callee in callees {
+            reverse_parser_edges
+                .entry(callee.clone())
+                .or_default()
+                .insert(caller.clone());
+        }
+    }
+    let mut semantic_edges = BTreeMap::<String, BTreeSet<String>>::new();
+    let mut visited = BTreeSet::new();
+    let mut pending = seed_ids.iter().cloned().collect::<VecDeque<_>>();
+
+    while let Some(callee_id) = pending.pop_front() {
+        if !visited.insert(callee_id.clone()) {
+            continue;
+        }
+        let Some(callee) = item_by_id.get(&callee_id) else {
+            continue;
+        };
+
+        let mut callers = reverse_parser_edges
+            .get(&callee_id)
+            .cloned()
+            .unwrap_or_default();
+        for caller_id in client.reference_callers(callee, &index)? {
+            if caller_id != callee_id {
+                semantic_edges
+                    .entry(caller_id.clone())
+                    .or_default()
+                    .insert(callee_id.clone());
+                callers.insert(caller_id);
+            }
+        }
+
+        for caller_id in callers {
+            if item_by_id.contains_key(&caller_id) && !visited.contains(&caller_id) {
+                pending.push_back(caller_id);
+            }
+        }
+    }
+
+    client.shutdown()?;
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "rust-analyzer built reverse reachable callers in {:.1}s",
+        started_at.elapsed().as_secs_f32()
+    ));
+    Ok(semantic_edges)
 }
 
 #[derive(Debug, Clone)]
@@ -436,6 +517,34 @@ impl RustAnalyzerClient {
         self.stdout.read_exact(&mut body)?;
         Ok(serde_json::from_slice(&body)?)
     }
+}
+
+fn start_client_for_items(
+    root: &Path,
+    items: &[RustAnalyzerCallableItem],
+    started_at: Instant,
+    phase: &str,
+    seed_count: usize,
+) -> Result<(RustAnalyzerClient, RustAnalyzerItemIndex)> {
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "{phase} for {} file(s), {} callable item(s), {} seed root(s)",
+        items.iter().map(|item| &item.path).collect::<BTreeSet<_>>().len(),
+        items.len(),
+        seed_count
+    ));
+    let mut client = RustAnalyzerClient::start(root)?;
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "rust-analyzer started in {:.1}s",
+        started_at.elapsed().as_secs_f32()
+    ));
+    client.open_files(items)?;
+    std::thread::sleep(Duration::from_millis(500));
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "rust-analyzer opened {} file(s) in {:.1}s",
+        items.iter().map(|item| &item.path).collect::<BTreeSet<_>>().len(),
+        started_at.elapsed().as_secs_f32()
+    ));
+    Ok((client, RustAnalyzerItemIndex::new(root, items)))
 }
 
 #[derive(Debug)]

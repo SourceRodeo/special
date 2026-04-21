@@ -8,7 +8,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use super::{LanguagePackAnalysisContext, LanguagePackDescriptor};
+use super::{
+    LanguagePackAnalysisContext, LanguagePackDescriptor, TraceabilityGraphFactsDescriptor,
+};
 use crate::model::{
     ArchitectureTraceabilitySummary, ImplementRef, ModuleAnalysisOptions, ParsedArchitecture,
     ParsedRepo,
@@ -25,6 +27,12 @@ pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     parse_source_graph: parse_source_graph,
     build_repo_analysis_context: build_repo_analysis_context,
     analysis_environment_fingerprint: analysis_environment_fingerprint,
+    traceability_scope_facts: None,
+    traceability_graph_facts: Some(&TRACEABILITY_GRAPH_FACTS),
+};
+
+const TRACEABILITY_GRAPH_FACTS: TraceabilityGraphFactsDescriptor = TraceabilityGraphFactsDescriptor {
+    build_facts: build_traceability_graph_facts,
 };
 
 impl LanguagePackAnalysisContext for analyze::RustRepoAnalysisContext {
@@ -50,6 +58,8 @@ impl LanguagePackAnalysisContext for analyze::RustRepoAnalysisContext {
 fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],
+    scoped_source_files: Option<&[PathBuf]>,
+    traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
@@ -58,6 +68,8 @@ fn build_repo_analysis_context(
     Box::new(analyze::build_repo_analysis_context(
         root,
         source_files,
+        scoped_source_files,
+        traceability_graph_facts,
         parsed_repo,
         parsed_architecture,
         file_ownership,
@@ -67,6 +79,10 @@ fn build_repo_analysis_context(
 
 fn analysis_environment_fingerprint(root: &Path) -> String {
     analyze::analysis_environment_fingerprint(root)
+}
+
+fn build_traceability_graph_facts(root: &Path, source_files: &[PathBuf]) -> Result<Vec<u8>> {
+    analyze::build_traceability_graph_facts(root, source_files)
 }
 
 fn is_rust_path(path: &Path) -> bool {

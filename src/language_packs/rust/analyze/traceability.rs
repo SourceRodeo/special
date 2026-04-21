@@ -6,6 +6,9 @@ Builds conservative Rust implementation traceability from analyzable Rust source
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+
 use crate::model::{
     ArchitectureTraceabilitySummary, ImplementRef, ModuleItemKind, ParsedArchitecture, ParsedRepo,
 };
@@ -18,6 +21,7 @@ use crate::modules::analyze::{
     traceability_core::{
         BackwardTraceAvailability, TraceGraph, TraceabilityAnalysis, TraceabilityInputs,
         TraceabilityLanguagePack, TraceabilityOwnedItem, build_root_supports,
+        merge_trace_graph_edges,
         owned_module_ids_for_path,
         summarize_repo_traceability as summarize_shared_repo_traceability,
     },
@@ -129,33 +133,16 @@ fn build_rust_trace_graph(
     toolchain_project: Option<&RustToolchainProject>,
     semantic_fact_source: Option<RustSemanticFactSourceKind>,
 ) -> TraceGraph {
-    let cargo_binary_entrypoints = toolchain_project
-        .map(|project| collect_toolchain_binary_entrypoints(project, source_graphs))
-        .unwrap_or_else(|| collect_cargo_binary_entrypoints(root, source_graphs));
-    let crate_root_aliases = toolchain_project
-        .map(RustToolchainProject::crate_root_aliases)
-        .unwrap_or_else(|| collect_crate_root_aliases(root));
+    let parser_edges =
+        build_parser_call_edges_with_toolchain(root, source_files, source_graphs, toolchain_project);
 
-    let parser_edges = build_parser_call_edges(
+    let edges = build_full_trace_edges(
         root,
-        source_files,
         source_graphs,
-        cargo_binary_entrypoints.clone(),
-        crate_root_aliases,
-    );
-
-    let edges = if matches!(
+        toolchain_project,
         semantic_fact_source,
-        Some(RustSemanticFactSourceKind::RustAnalyzer)
-    ) {
-        build_rust_analyzer_call_edges(root, source_graphs, cargo_binary_entrypoints, &parser_edges)
-            .unwrap_or_else(|error| {
-                eprintln!("rust-analyzer backward trace failed: {error:#}");
-                parser_edges
-            })
-    } else {
-        parser_edges
-    };
+        &parser_edges,
+    );
 
     TraceGraph {
         edges,
@@ -169,10 +156,26 @@ fn build_traceability_inputs(
     parsed_repo: &ParsedRepo,
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
-    mut graph: TraceGraph,
+    graph: TraceGraph,
 ) -> TraceabilityInputs {
     let mediated_reasons = collect_mediated_reasons(root, source_files, source_graphs);
-    let repo_items = collect_repo_items(source_graphs, file_ownership, &mediated_reasons);
+    build_traceability_inputs_from_parts(
+        parsed_repo,
+        source_graphs,
+        file_ownership,
+        graph,
+        &mediated_reasons,
+    )
+}
+
+fn build_traceability_inputs_from_parts(
+    parsed_repo: &ParsedRepo,
+    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    mut graph: TraceGraph,
+    mediated_reasons: &BTreeMap<String, RustMediatedReason>,
+) -> TraceabilityInputs {
+    let repo_items = collect_repo_items(source_graphs, file_ownership, mediated_reasons);
 
     graph.root_supports = build_root_supports(parsed_repo, source_graphs, |path, body| {
         parse_source_graph(path, body)
@@ -187,6 +190,212 @@ pub(super) fn summarize_repo_traceability(
 ) -> ArchitectureTraceabilitySummary {
     summarize_shared_repo_traceability(root, analysis)
 }
+
+pub(super) fn build_traceability_graph_facts(
+    root: &Path,
+    source_files: &[PathBuf],
+) -> Result<Vec<u8>> {
+    let source_graphs = parse_rust_source_graphs(root, source_files);
+    let toolchain_project = super::toolchain::probe_local_toolchain_project(root);
+    let parser_edges = build_parser_call_edges_with_toolchain(
+        root,
+        source_files,
+        &source_graphs,
+        toolchain_project.as_ref(),
+    );
+    let facts = RustTraceabilityGraphFacts {
+        source_graphs: source_graphs
+            .iter()
+            .map(|(path, graph)| (path.clone(), CachedParsedSourceGraph::from_parsed(graph)))
+            .collect(),
+        parser_edges,
+        mediated_reasons: collect_mediated_reasons(root, source_files, &source_graphs)
+            .into_iter()
+            .map(|(stable_id, reason)| (stable_id, CachedRustMediatedReason::from_parsed(reason)))
+            .collect(),
+    };
+    Ok(serde_json::to_vec(&facts)?)
+}
+
+pub(super) fn build_traceability_analysis_from_cached_or_live_graph_facts(
+    root: &Path,
+    source_files: &[PathBuf],
+    graph_facts: Option<&[u8]>,
+    parsed_repo: &ParsedRepo,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    traceability_pack: &RustTraceabilityPack,
+) -> TraceabilityAnalysis {
+    let (source_graphs, parser_edges, mediated_reasons) = decode_traceability_graph_facts(graph_facts)
+        .unwrap_or_else(|| {
+            let source_graphs = parse_rust_source_graphs(root, source_files);
+            let parser_edges = build_parser_call_edges_with_toolchain(
+                root,
+                source_files,
+                &source_graphs,
+                traceability_pack.toolchain_project.as_ref(),
+            );
+            let mediated_reasons = collect_mediated_reasons(root, source_files, &source_graphs);
+            (source_graphs, parser_edges, mediated_reasons)
+        });
+    let edges = build_full_trace_edges(
+        root,
+        &source_graphs,
+        traceability_pack.toolchain_project.as_ref(),
+        traceability_pack.semantic_fact_source,
+        &parser_edges,
+    );
+    crate::modules::analyze::traceability_core::build_traceability_analysis(
+        build_traceability_inputs_from_parts(
+            parsed_repo,
+            &source_graphs,
+            file_ownership,
+            TraceGraph {
+                edges,
+                root_supports: BTreeMap::new(),
+            },
+            &mediated_reasons,
+        ),
+    )
+}
+
+pub(super) fn build_scoped_traceability_analysis_from_cached_or_live_graph_facts(
+    root: &Path,
+    source_files: &[PathBuf],
+    scoped_source_files: &[PathBuf],
+    graph_facts: Option<&[u8]>,
+    parsed_repo: &ParsedRepo,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    traceability_pack: &RustTraceabilityPack,
+) -> TraceabilityAnalysis {
+    let (source_graphs, parser_edges, mediated_reasons) = decode_traceability_graph_facts(graph_facts)
+        .unwrap_or_else(|| {
+            let source_graphs = parse_rust_source_graphs(root, source_files);
+            let parser_edges = build_parser_call_edges_with_toolchain(
+                root,
+                source_files,
+                &source_graphs,
+                traceability_pack.toolchain_project.as_ref(),
+            );
+            let mediated_reasons = collect_mediated_reasons(root, source_files, &source_graphs);
+            (source_graphs, parser_edges, mediated_reasons)
+        });
+    let repo_items = select_scoped_repo_items(
+        collect_repo_items(&source_graphs, file_ownership, &mediated_reasons),
+        scoped_source_files,
+    );
+    let scoped_seed_ids = repo_items
+        .iter()
+        .map(|item| item.stable_id.clone())
+        .collect::<BTreeSet<_>>();
+    crate::modules::analyze::emit_analysis_status(&format!(
+        "rust scoped traceability targets {} item(s) across {} file(s)",
+        scoped_seed_ids.len(),
+        repo_items
+            .iter()
+            .map(|item| item.path.clone())
+            .collect::<BTreeSet<_>>()
+            .len()
+    ));
+    let mut edges = parser_edges.clone();
+    if matches!(
+        traceability_pack.semantic_fact_source,
+        Some(RustSemanticFactSourceKind::RustAnalyzer)
+    ) {
+        match super::rust_analyzer::build_reverse_reachable_call_edges(
+            root,
+            &collect_rust_analyzer_reference_items(&source_graphs),
+            &scoped_seed_ids,
+            &parser_edges,
+        ) {
+            Ok(semantic_edges) => merge_trace_graph_edges(&mut edges, semantic_edges),
+            Err(error) => {
+                eprintln!("rust-analyzer backward trace failed: {error:#}");
+            }
+        }
+    }
+    let mut graph = TraceGraph {
+        edges,
+        root_supports: BTreeMap::new(),
+    };
+    graph.root_supports = build_root_supports(parsed_repo, &source_graphs, |path, body| {
+        parse_source_graph(path, body).and_then(|graph| graph.items.first().map(|item| item.span.start_line))
+    });
+    crate::modules::analyze::traceability_core::build_traceability_analysis(TraceabilityInputs {
+        repo_items,
+        graph,
+    })
+}
+
+fn build_full_trace_edges(
+    root: &Path,
+    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
+    toolchain_project: Option<&RustToolchainProject>,
+    semantic_fact_source: Option<RustSemanticFactSourceKind>,
+    parser_edges: &BTreeMap<String, BTreeSet<String>>,
+) -> BTreeMap<String, BTreeSet<String>> {
+    let cargo_binary_entrypoints = toolchain_project
+        .map(|project| collect_toolchain_binary_entrypoints(project, source_graphs))
+        .unwrap_or_else(|| collect_cargo_binary_entrypoints(root, source_graphs));
+
+    if matches!(
+        semantic_fact_source,
+        Some(RustSemanticFactSourceKind::RustAnalyzer)
+    ) {
+        build_rust_analyzer_call_edges(root, source_graphs, cargo_binary_entrypoints, parser_edges)
+            .unwrap_or_else(|error| {
+                eprintln!("rust-analyzer backward trace failed: {error:#}");
+                parser_edges.clone()
+            })
+    } else {
+        parser_edges.clone()
+    }
+}
+
+fn build_parser_call_edges_with_toolchain(
+    root: &Path,
+    source_files: &[PathBuf],
+    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
+    toolchain_project: Option<&RustToolchainProject>,
+) -> BTreeMap<String, BTreeSet<String>> {
+    let cargo_binary_entrypoints = toolchain_project
+        .map(|project| collect_toolchain_binary_entrypoints(project, source_graphs))
+        .unwrap_or_else(|| collect_cargo_binary_entrypoints(root, source_graphs));
+    let crate_root_aliases = toolchain_project
+        .map(RustToolchainProject::crate_root_aliases)
+        .unwrap_or_else(|| collect_crate_root_aliases(root));
+
+    build_parser_call_edges(
+        root,
+        source_files,
+        source_graphs,
+        cargo_binary_entrypoints,
+        crate_root_aliases,
+    )
+}
+
+fn select_scoped_repo_items(
+    repo_items: Vec<TraceabilityOwnedItem>,
+    scoped_source_files: &[PathBuf],
+) -> Vec<TraceabilityOwnedItem> {
+    let scoped_file_set = scoped_source_files.iter().cloned().collect::<BTreeSet<_>>();
+    let scoped_module_ids = repo_items
+        .iter()
+        .filter(|item| scoped_file_set.contains(&item.path))
+        .flat_map(|item| item.module_ids.iter().cloned())
+        .collect::<BTreeSet<_>>();
+
+    repo_items
+        .into_iter()
+        .filter(|item| {
+            scoped_file_set.contains(&item.path)
+                || item
+                    .module_ids
+                    .iter()
+                    .any(|module_id| scoped_module_ids.contains(module_id))
+        })
+        .collect()
+}
+
 
 fn collect_owned_items(
     root: &Path,
@@ -856,6 +1065,22 @@ fn qualified_name_candidates(
         .collect()
 }
 
+fn collect_rust_analyzer_reference_items(
+    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
+) -> Vec<RustAnalyzerCallableItem> {
+    collect_callable_items(source_graphs)
+        .into_iter()
+        .map(|item| RustAnalyzerCallableItem {
+            stable_id: item.stable_id,
+            name: item.name,
+            path: item.path,
+            span: item.span,
+            calls: item.calls,
+            invocation_targets: BTreeSet::new(),
+        })
+        .collect()
+}
+
 fn qualifier_prefix_candidates(
     caller: &SourceCallableItem,
     qualifier: &str,
@@ -952,5 +1177,308 @@ fn source_item_kind(kind: crate::syntax::SourceItemKind) -> ModuleItemKind {
     match kind {
         crate::syntax::SourceItemKind::Function => ModuleItemKind::Function,
         crate::syntax::SourceItemKind::Method => ModuleItemKind::Method,
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct RustTraceabilityGraphFacts {
+    source_graphs: BTreeMap<PathBuf, CachedParsedSourceGraph>,
+    parser_edges: BTreeMap<String, BTreeSet<String>>,
+    mediated_reasons: BTreeMap<String, CachedRustMediatedReason>,
+}
+
+fn decode_traceability_graph_facts(
+    facts: Option<&[u8]>,
+) -> Option<(
+    BTreeMap<PathBuf, ParsedSourceGraph>,
+    BTreeMap<String, BTreeSet<String>>,
+    BTreeMap<String, RustMediatedReason>,
+)> {
+    let facts = facts?;
+    let facts = serde_json::from_slice::<RustTraceabilityGraphFacts>(facts).ok()?;
+    Some((
+        facts
+            .source_graphs
+            .into_iter()
+            .map(|(path, graph)| (path, graph.into_parsed()))
+            .collect(),
+        facts.parser_edges,
+        facts
+            .mediated_reasons
+            .into_iter()
+            .map(|(stable_id, reason)| (stable_id, reason.into_parsed()))
+            .collect(),
+    ))
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedParsedSourceGraph {
+    items: Vec<CachedSourceItem>,
+}
+
+impl CachedParsedSourceGraph {
+    fn from_parsed(graph: &ParsedSourceGraph) -> Self {
+        Self {
+            items: graph.items.iter().map(CachedSourceItem::from_parsed).collect(),
+        }
+    }
+
+    fn into_parsed(self) -> ParsedSourceGraph {
+        ParsedSourceGraph {
+            language: crate::syntax::SourceLanguage::new("rust"),
+            items: self
+                .items
+                .into_iter()
+                .map(CachedSourceItem::into_parsed)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedSourceItem {
+    source_path: String,
+    stable_id: String,
+    name: String,
+    qualified_name: String,
+    module_path: Vec<String>,
+    container_path: Vec<String>,
+    shape_fingerprint: String,
+    shape_node_count: usize,
+    kind: CachedSourceItemKind,
+    span: CachedSourceSpan,
+    public: bool,
+    root_visible: bool,
+    is_test: bool,
+    calls: Vec<CachedSourceCall>,
+    invocations: Vec<CachedSourceInvocation>,
+}
+
+impl CachedSourceItem {
+    fn from_parsed(item: &crate::syntax::SourceItem) -> Self {
+        Self {
+            source_path: item.source_path.clone(),
+            stable_id: item.stable_id.clone(),
+            name: item.name.clone(),
+            qualified_name: item.qualified_name.clone(),
+            module_path: item.module_path.clone(),
+            container_path: item.container_path.clone(),
+            shape_fingerprint: item.shape_fingerprint.clone(),
+            shape_node_count: item.shape_node_count,
+            kind: CachedSourceItemKind::from_parsed(item.kind),
+            span: CachedSourceSpan::from_parsed(item.span),
+            public: item.public,
+            root_visible: item.root_visible,
+            is_test: item.is_test,
+            calls: item.calls.iter().map(CachedSourceCall::from_parsed).collect(),
+            invocations: item
+                .invocations
+                .iter()
+                .map(CachedSourceInvocation::from_parsed)
+                .collect(),
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceItem {
+        crate::syntax::SourceItem {
+            source_path: self.source_path,
+            stable_id: self.stable_id,
+            name: self.name,
+            qualified_name: self.qualified_name,
+            module_path: self.module_path,
+            container_path: self.container_path,
+            shape_fingerprint: self.shape_fingerprint,
+            shape_node_count: self.shape_node_count,
+            kind: self.kind.into_parsed(),
+            span: self.span.into_parsed(),
+            public: self.public,
+            root_visible: self.root_visible,
+            is_test: self.is_test,
+            calls: self
+                .calls
+                .into_iter()
+                .map(CachedSourceCall::into_parsed)
+                .collect(),
+            invocations: self
+                .invocations
+                .into_iter()
+                .map(CachedSourceInvocation::into_parsed)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum CachedSourceItemKind {
+    Function,
+    Method,
+}
+
+impl CachedSourceItemKind {
+    fn from_parsed(kind: crate::syntax::SourceItemKind) -> Self {
+        match kind {
+            crate::syntax::SourceItemKind::Function => Self::Function,
+            crate::syntax::SourceItemKind::Method => Self::Method,
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceItemKind {
+        match self {
+            Self::Function => crate::syntax::SourceItemKind::Function,
+            Self::Method => crate::syntax::SourceItemKind::Method,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedSourceSpan {
+    start_line: usize,
+    end_line: usize,
+    start_column: usize,
+    end_column: usize,
+    start_byte: usize,
+    end_byte: usize,
+}
+
+impl CachedSourceSpan {
+    fn from_parsed(span: crate::syntax::SourceSpan) -> Self {
+        Self {
+            start_line: span.start_line,
+            end_line: span.end_line,
+            start_column: span.start_column,
+            end_column: span.end_column,
+            start_byte: span.start_byte,
+            end_byte: span.end_byte,
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceSpan {
+        crate::syntax::SourceSpan {
+            start_line: self.start_line,
+            end_line: self.end_line,
+            start_column: self.start_column,
+            end_column: self.end_column,
+            start_byte: self.start_byte,
+            end_byte: self.end_byte,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedSourceCall {
+    name: String,
+    qualifier: Option<String>,
+    syntax: CachedCallSyntaxKind,
+    span: CachedSourceSpan,
+}
+
+impl CachedSourceCall {
+    fn from_parsed(call: &crate::syntax::SourceCall) -> Self {
+        Self {
+            name: call.name.clone(),
+            qualifier: call.qualifier.clone(),
+            syntax: CachedCallSyntaxKind::from_parsed(&call.syntax),
+            span: CachedSourceSpan::from_parsed(call.span),
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceCall {
+        crate::syntax::SourceCall {
+            name: self.name,
+            qualifier: self.qualifier,
+            syntax: self.syntax.into_parsed(),
+            span: self.span.into_parsed(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum CachedCallSyntaxKind {
+    Identifier,
+    ScopedIdentifier,
+    Field,
+}
+
+impl CachedCallSyntaxKind {
+    fn from_parsed(kind: &crate::syntax::CallSyntaxKind) -> Self {
+        match kind {
+            crate::syntax::CallSyntaxKind::Identifier => Self::Identifier,
+            crate::syntax::CallSyntaxKind::ScopedIdentifier => Self::ScopedIdentifier,
+            crate::syntax::CallSyntaxKind::Field => Self::Field,
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::CallSyntaxKind {
+        match self {
+            Self::Identifier => crate::syntax::CallSyntaxKind::Identifier,
+            Self::ScopedIdentifier => crate::syntax::CallSyntaxKind::ScopedIdentifier,
+            Self::Field => crate::syntax::CallSyntaxKind::Field,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedSourceInvocation {
+    kind: CachedSourceInvocationKind,
+    span: CachedSourceSpan,
+}
+
+impl CachedSourceInvocation {
+    fn from_parsed(invocation: &crate::syntax::SourceInvocation) -> Self {
+        Self {
+            kind: CachedSourceInvocationKind::from_parsed(&invocation.kind),
+            span: CachedSourceSpan::from_parsed(invocation.span),
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceInvocation {
+        crate::syntax::SourceInvocation {
+            kind: self.kind.into_parsed(),
+            span: self.span.into_parsed(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum CachedSourceInvocationKind {
+    LocalCargoBinary { binary_name: String },
+}
+
+impl CachedSourceInvocationKind {
+    fn from_parsed(kind: &crate::syntax::SourceInvocationKind) -> Self {
+        match kind {
+            crate::syntax::SourceInvocationKind::LocalCargoBinary { binary_name } => {
+                Self::LocalCargoBinary {
+                    binary_name: binary_name.clone(),
+                }
+            }
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceInvocationKind {
+        match self {
+            Self::LocalCargoBinary { binary_name } => {
+                crate::syntax::SourceInvocationKind::LocalCargoBinary { binary_name }
+            }
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum CachedRustMediatedReason {
+    TraitImplEntrypoint,
+}
+
+impl CachedRustMediatedReason {
+    fn from_parsed(reason: RustMediatedReason) -> Self {
+        match reason {
+            RustMediatedReason::TraitImplEntrypoint => Self::TraitImplEntrypoint,
+        }
+    }
+
+    fn into_parsed(self) -> RustMediatedReason {
+        match self {
+            Self::TraitImplEntrypoint => RustMediatedReason::TraitImplEntrypoint,
+        }
     }
 }

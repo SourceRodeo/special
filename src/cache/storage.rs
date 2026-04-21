@@ -123,6 +123,20 @@ pub(super) fn write_architecture_analysis_cache(
     )
 }
 
+pub(super) fn read_blob_cache(path: &Path, fingerprint: u64) -> Result<Option<Vec<u8>>> {
+    read_analysis_cache::<BlobCacheEnvelope, _>(path, fingerprint, |envelope| envelope.value)
+}
+
+pub(super) fn write_blob_cache(path: &Path, fingerprint: u64, value: &[u8]) -> Result<()> {
+    write_serialized_cache(
+        path,
+        &BlobCacheEnvelope {
+            fingerprint,
+            value: value.to_vec(),
+        },
+    )
+}
+
 fn read_analysis_cache<T, U>(
     path: &Path,
     fingerprint: u64,
@@ -218,6 +232,18 @@ impl AnalysisCacheEnvelopeValue for RepoAnalysisCacheEnvelope {
 }
 
 impl AnalysisCacheEnvelopeValue for ArchitectureAnalysisCacheEnvelope {
+    fn fingerprint(&self) -> u64 {
+        self.fingerprint
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct BlobCacheEnvelope {
+    fingerprint: u64,
+    value: Vec<u8>,
+}
+
+impl AnalysisCacheEnvelopeValue for BlobCacheEnvelope {
     fn fingerprint(&self) -> u64 {
         self.fingerprint
     }
