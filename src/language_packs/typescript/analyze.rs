@@ -159,31 +159,6 @@ impl TraceabilityLanguagePack for TypeScriptTraceabilityPack {
         }
     }
 
-    fn build_inputs(
-        &self,
-        root: &Path,
-        source_files: &[PathBuf],
-        parsed_repo: &ParsedRepo,
-        _parsed_architecture: &ParsedArchitecture,
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
-    ) -> TraceabilityInputs {
-        let source_graphs = parse_typescript_source_graphs(root, source_files);
-        let repo_items = collect_repo_items(&source_graphs, file_ownership);
-        let mut graph = TraceGraph {
-            edges: build_parser_call_edges(&source_graphs),
-            root_supports: BTreeMap::new(),
-        };
-        merge_trace_graph_edges(
-            &mut graph.edges,
-            build_tool_call_edges(root, &source_graphs).unwrap_or_default(),
-        );
-        graph.root_supports = build_root_supports(parsed_repo, &source_graphs, |path, body| {
-            parse_source_graph(path, body)
-                .and_then(|graph| graph.items.first().map(|item| item.span.start_line))
-        });
-        TraceabilityInputs { repo_items, graph }
-    }
-
     fn owned_items_for_implementations(
         &self,
         root: &Path,

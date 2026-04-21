@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use crate::model::{
     ArchitectureTraceabilityItem, ArchitectureTraceabilitySummary, ImplementRef, ModuleItemKind,
-    ModuleTraceabilityItem, ModuleTraceabilitySummary, ParsedArchitecture, ParsedRepo,
+    ModuleTraceabilityItem, ModuleTraceabilitySummary, ParsedRepo,
 };
 use crate::syntax::ParsedSourceGraph;
 
@@ -95,15 +95,6 @@ impl BackwardTraceAvailability {
 
 pub(crate) trait TraceabilityLanguagePack {
     fn backward_trace_availability(&self) -> BackwardTraceAvailability;
-
-    fn build_inputs(
-        &self,
-        root: &Path,
-        source_files: &[PathBuf],
-        parsed_repo: &ParsedRepo,
-        parsed_architecture: &ParsedArchitecture,
-        file_ownership: &std::collections::BTreeMap<PathBuf, FileOwnership<'_>>,
-    ) -> TraceabilityInputs;
 
     fn owned_items_for_implementations(
         &self,

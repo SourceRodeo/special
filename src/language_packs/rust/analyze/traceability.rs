@@ -10,7 +10,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::model::{
-    ArchitectureTraceabilitySummary, ImplementRef, ModuleItemKind, ParsedArchitecture, ParsedRepo,
+    ArchitectureTraceabilitySummary, ImplementRef, ModuleItemKind, ParsedRepo,
 };
 use crate::syntax::{
     ParsedSourceGraph, SourceCall, SourceInvocation, parse_source_graph, rust::file_module_segments,
@@ -56,32 +56,6 @@ impl TraceabilityLanguagePack for RustTraceabilityPack {
         }
     }
 
-    fn build_inputs(
-        &self,
-        root: &Path,
-        source_files: &[PathBuf],
-        parsed_repo: &ParsedRepo,
-        _parsed_architecture: &ParsedArchitecture,
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
-    ) -> TraceabilityInputs {
-        let source_graphs = parse_rust_source_graphs(root, source_files);
-        let graph = build_rust_trace_graph(
-            root,
-            source_files,
-            &source_graphs,
-            self.toolchain_project.as_ref(),
-            self.semantic_fact_source,
-        );
-        build_traceability_inputs(
-            root,
-            source_files,
-            parsed_repo,
-            &source_graphs,
-            file_ownership,
-            graph,
-        )
-    }
-
     fn owned_items_for_implementations(
         &self,
         root: &Path,
@@ -124,48 +98,6 @@ impl RustMediatedReason {
             Self::TraitImplEntrypoint => "trait impl entrypoint",
         }
     }
-}
-
-fn build_rust_trace_graph(
-    root: &Path,
-    source_files: &[PathBuf],
-    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    toolchain_project: Option<&RustToolchainProject>,
-    semantic_fact_source: Option<RustSemanticFactSourceKind>,
-) -> TraceGraph {
-    let parser_edges =
-        build_parser_call_edges_with_toolchain(root, source_files, source_graphs, toolchain_project);
-
-    let edges = build_full_trace_edges(
-        root,
-        source_graphs,
-        toolchain_project,
-        semantic_fact_source,
-        &parser_edges,
-    );
-
-    TraceGraph {
-        edges,
-        root_supports: BTreeMap::new(),
-    }
-}
-
-fn build_traceability_inputs(
-    root: &Path,
-    source_files: &[PathBuf],
-    parsed_repo: &ParsedRepo,
-    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
-    graph: TraceGraph,
-) -> TraceabilityInputs {
-    let mediated_reasons = collect_mediated_reasons(root, source_files, source_graphs);
-    build_traceability_inputs_from_parts(
-        parsed_repo,
-        source_graphs,
-        file_ownership,
-        graph,
-        &mediated_reasons,
-    )
 }
 
 fn build_traceability_inputs_from_parts(
