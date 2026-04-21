@@ -6,6 +6,8 @@ Tracks cache-hit, rebuild, and lock-contention statistics plus status notificati
 use std::cell::RefCell;
 use std::sync::{Mutex, OnceLock};
 
+type StatusNotifier = Box<dyn Fn(&str)>;
+
 #[derive(Debug, Clone, Copy, Default)]
 pub struct CacheStats {
     pub repo_hits: usize,
@@ -21,7 +23,7 @@ pub struct CacheStats {
 }
 
 thread_local! {
-    static CACHE_STATUS_NOTIFIER: RefCell<Option<Box<dyn Fn(&str)>>> = RefCell::new(None);
+    static CACHE_STATUS_NOTIFIER: RefCell<Option<StatusNotifier>> = RefCell::new(None);
 }
 
 pub(super) fn reset_cache_stats() {

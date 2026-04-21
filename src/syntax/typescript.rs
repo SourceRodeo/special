@@ -305,8 +305,8 @@ fn collect_exported_names_from_statement(
 fn collect_exported_names_from_clause(node: Node<'_>, source: &[u8], names: &mut BTreeSet<String>) {
     let mut cursor = node.walk();
     for child in node.named_children(&mut cursor) {
-        if child.kind() == "export_specifier" {
-            if let Some(name) = child
+        if child.kind() == "export_specifier"
+            && let Some(name) = child
                 .child_by_field_name("name")
                 .or_else(|| child.child_by_field_name("alias"))
                 .or_else(|| {
@@ -314,9 +314,8 @@ fn collect_exported_names_from_clause(node: Node<'_>, source: &[u8], names: &mut
                     child.named_children(&mut inner).next()
                 })
                 .and_then(|value| value.utf8_text(source).ok())
-            {
-                names.insert(name.trim_matches('"').to_string());
-            }
+        {
+            names.insert(name.trim_matches('"').to_string());
         }
     }
 }

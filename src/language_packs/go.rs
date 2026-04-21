@@ -24,9 +24,9 @@ pub(crate) mod analyze;
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("go"),
     matches_path: is_go_path,
-    parse_source_graph: parse_source_graph,
-    build_repo_analysis_context: build_repo_analysis_context,
-    analysis_environment_fingerprint: analysis_environment_fingerprint,
+    parse_source_graph,
+    build_repo_analysis_context,
+    analysis_environment_fingerprint,
     traceability_scope_facts: None,
     traceability_graph_facts: Some(&TRACEABILITY_GRAPH_FACTS),
 };
@@ -55,6 +55,7 @@ impl LanguagePackAnalysisContext for analyze::GoRepoAnalysisContext {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],

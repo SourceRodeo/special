@@ -23,19 +23,24 @@ pub fn write_modules_fixture(root: &Path) {
 }
 
 pub fn write_markdown_declarations_fixture(root: &Path) {
-    fs::create_dir_all(root.join("_project")).expect("architecture dir should be created");
     fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
         .expect("special.toml should be written");
+    fs::create_dir_all(root.join("docs")).expect("docs dir should be created");
     fs::write(
-        root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo root module.\n\n### `@module DEMO.API`\nAPI module.\n",
+        root.join("docs/specs.md"),
+        "### `@group DEMO`\nDemo root group.\n\n### `@spec DEMO.MARKDOWN`\nDemo root claim.\n",
     )
-    .expect("markdown architecture fixture should be written");
+    .expect("markdown specs fixture should be written");
+    fs::write(
+        root.join("docs/architecture.md"),
+        "### `@area DEMO`\nDemo architecture root.\n\n### `@area DEMO.AREA`\nDemo architecture area.\n\n### `@module DEMO.MODULE`\nDemo architecture module.\n",
+    )
+    .expect("markdown modules fixture should be written");
     fs::write(
         root.join("main.rs"),
-        "// @fileimplements DEMO\n\n// @implements DEMO.API\nfn serves_api() {}\n",
+        "// @fileimplements DEMO.MODULE\nfn implements_demo_module() {}\n",
     )
-    .expect("module implementation fixture should be written");
+    .expect("markdown module implementation fixture should be written");
 }
 
 pub fn write_unimplemented_child_module_fixture(root: &Path) {

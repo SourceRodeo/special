@@ -578,7 +578,7 @@ fn repo_scope_limits_traceability_to_matching_files() {
                 .as_array()
                 .expect("unexplained items should be an array")
                 .iter()
-                .any(|item| item["name"] == Value::from("orphanImpl"))
+                .any(|item| item["name"] == "orphanImpl")
         );
         assert_eq!(
             json["analysis"]["traceability_unavailable_reason"],
@@ -754,7 +754,7 @@ fn repo_surfaces_python_traceability() {
                 .as_array()
                 .expect("unexplained items should be an array")
                 .iter()
-                .any(|item| item["name"] == Value::from("orphan_impl"))
+                .any(|item| item["name"] == "orphan_impl")
         );
         assert_eq!(
             json["analysis"]["traceability_unavailable_reason"],
@@ -795,7 +795,7 @@ fn repo_surfaces_python_tool_traceability() {
                 .as_array()
                 .expect("unexplained items should be an array")
                 .iter()
-                .any(|item| item["name"] == Value::from("orphan_impl"))
+                .any(|item| item["name"] == "orphan_impl")
         );
     } else {
         assert_python_traceability_unavailable(&json);
@@ -832,7 +832,7 @@ fn repo_surfaces_python_reference_backed_traceability() {
                 .as_array()
                 .expect("unexplained items should be an array")
                 .iter()
-                .any(|item| item["name"] == Value::from("orphan_impl"))
+                .any(|item| item["name"] == "orphan_impl")
         );
     } else {
         assert_python_traceability_unavailable(&json);
@@ -859,7 +859,7 @@ fn repo_traceability_keeps_all_supporting_roots_for_one_item() {
             .expect("current spec items should be an array");
         let shared_helper = current_items
             .iter()
-            .find(|item| item["name"] == Value::from("shared_helper"))
+            .find(|item| item["name"] == "shared_helper")
             .expect("shared helper should be current");
 
         assert_eq!(
@@ -1074,9 +1074,7 @@ fn repo_surfaces_typescript_traceability() {
             .as_array()
             .expect("unexplained items should be an array");
         assert!(unexplained.iter().any(|item| {
-            item["name"] == Value::from("orphanImpl")
-                && item["review_surface"] == Value::from(true)
-                && item["public"] == Value::from(true)
+            item["name"] == "orphanImpl" && item["review_surface"] == true && item["public"] == true
         }));
         assert_eq!(
             traceability["unexplained_review_surface_items"],
@@ -1106,27 +1104,22 @@ fn repo_surfaces_typescript_tool_backed_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/left.ts") && item["name"] == Value::from("sharedValue")
-        }));
         assert!(
             current_items
                 .iter()
-                .any(|item| item["name"] == Value::from("liveImpl"))
+                .any(|item| { item["path"] == "src/left.ts" && item["name"] == "sharedValue" })
         );
-        assert!(
-            current_items
-                .iter()
-                .any(|item| item["name"] == Value::from("helper"))
-        );
+        assert!(current_items.iter().any(|item| item["name"] == "liveImpl"));
+        assert!(current_items.iter().any(|item| item["name"] == "helper"));
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/right.ts")
-                && item["name"] == Value::from("sharedValue")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/right.ts" && item["name"] == "sharedValue" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1154,30 +1147,24 @@ fn repo_surfaces_typescript_reference_backed_traceability() {
         assert!(
             current_items
                 .iter()
-                .any(|item| item["path"] == Value::from("src/live.ts")
-                    && item["name"] == Value::from("liveCallback"))
+                .any(|item| item["path"] == "src/live.ts" && item["name"] == "liveCallback")
         );
-        assert!(
-            current_items
-                .iter()
-                .any(|item| item["name"] == Value::from("runLive"))
-        );
-        assert!(
-            current_items
-                .iter()
-                .any(|item| item["name"] == Value::from("invoke"))
-        );
+        assert!(current_items.iter().any(|item| item["name"] == "runLive"));
+        assert!(current_items.iter().any(|item| item["name"] == "invoke"));
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/dead.ts")
-                && item["name"] == Value::from("deadCallback")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/app.ts") && item["name"] == Value::from("orphanImpl")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/dead.ts" && item["name"] == "deadCallback" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/app.ts" && item["name"] == "orphanImpl" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1201,27 +1188,35 @@ fn repo_surfaces_typescript_react_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/page.tsx") && item["name"] == Value::from("HomePage")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/shared.tsx") && item["name"] == Value::from("Shell")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/shared.tsx")
-                && item["name"] == Value::from("PrimaryButton")
-        }));
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/page.tsx" && item["name"] == "HomePage" })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/shared.tsx" && item["name"] == "Shell" })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/shared.tsx" && item["name"] == "PrimaryButton"
+            })
+        );
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/page.tsx") && item["name"] == Value::from("OrphanPage")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/shared.tsx")
-                && item["name"] == Value::from("OrphanWidget")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/page.tsx" && item["name"] == "OrphanPage" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/shared.tsx" && item["name"] == "OrphanWidget" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1245,27 +1240,28 @@ fn repo_surfaces_typescript_next_client_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "app/page.tsx" && item["name"] == "Page" })
+        );
         assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("app/page.tsx") && item["name"] == Value::from("Page")
+            item["path"] == "components/counter-panel.tsx" && item["name"] == "CounterPanel"
         }));
         assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("components/counter-panel.tsx")
-                && item["name"] == Value::from("CounterPanel")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("components/counter-panel.tsx")
-                && item["name"] == Value::from("CounterButton")
+            item["path"] == "components/counter-panel.tsx" && item["name"] == "CounterButton"
         }));
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "app/page.tsx" && item["name"] == "OrphanPage" })
+        );
         assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("app/page.tsx") && item["name"] == Value::from("OrphanPage")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("components/counter-panel.tsx")
-                && item["name"] == Value::from("OrphanWidget")
+            item["path"] == "components/counter-panel.tsx" && item["name"] == "OrphanWidget"
         }));
     } else {
         assert_typescript_traceability_unavailable(&json);
@@ -1290,36 +1286,45 @@ fn repo_surfaces_typescript_event_callback_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/Button.tsx")
-                && item["name"] == Value::from("CounterButton")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("handleIncrement")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("updateCount")
-        }));
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "App" })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/Button.tsx" && item["name"] == "CounterButton"
+            })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/actions.ts" && item["name"] == "handleIncrement"
+            })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "updateCount" })
+        );
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("orphanAction")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/Button.tsx")
-                && item["name"] == Value::from("OrphanWidget")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "orphanAction" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "OrphanPage" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/Button.tsx" && item["name"] == "OrphanWidget" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1343,39 +1348,50 @@ fn repo_surfaces_typescript_forwarded_callback_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/Button.tsx")
-                && item["name"] == Value::from("CounterButton")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/Button.tsx") && item["name"] == Value::from("Toolbar")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("handleIncrement")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("updateCount")
-        }));
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "App" })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/Button.tsx" && item["name"] == "CounterButton"
+            })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/Button.tsx" && item["name"] == "Toolbar" })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/actions.ts" && item["name"] == "handleIncrement"
+            })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "updateCount" })
+        );
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("orphanAction")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/Button.tsx")
-                && item["name"] == Value::from("OrphanWidget")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "orphanAction" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "OrphanPage" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/Button.tsx" && item["name"] == "OrphanWidget" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1399,43 +1415,55 @@ fn repo_surfaces_typescript_hook_callback_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/Button.tsx")
-                && item["name"] == Value::from("CounterButton")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/hooks.ts")
-                && item["name"] == Value::from("useCounterAction")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("handleIncrement")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("updateCount")
-        }));
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "App" })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/Button.tsx" && item["name"] == "CounterButton"
+            })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/hooks.ts" && item["name"] == "useCounterAction"
+            })
+        );
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/actions.ts" && item["name"] == "handleIncrement"
+            })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "updateCount" })
+        );
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("orphanAction")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/Button.tsx")
-                && item["name"] == Value::from("OrphanWidget")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/hooks.ts") && item["name"] == Value::from("orphanHook")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "orphanAction" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "OrphanPage" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/Button.tsx" && item["name"] == "OrphanWidget" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/hooks.ts" && item["name"] == "orphanHook" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1459,28 +1487,35 @@ fn repo_surfaces_typescript_effect_callback_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/effects.ts")
-                && item["name"] == Value::from("syncCount")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/effects.ts")
-                && item["name"] == Value::from("flushCount")
-        }));
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "App" })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/effects.ts" && item["name"] == "syncCount" })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/effects.ts" && item["name"] == "flushCount" })
+        );
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/effects.ts")
-                && item["name"] == Value::from("orphanEffect")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "OrphanPage" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/effects.ts" && item["name"] == "orphanEffect" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1504,44 +1539,51 @@ fn repo_surfaces_typescript_context_callback_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "App" })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "CounterButton" })
+        );
         assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
+            item["path"] == "src/context.tsx" && item["name"] == "CounterProvider"
         }));
         assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx")
-                && item["name"] == Value::from("CounterButton")
+            item["path"] == "src/context.tsx" && item["name"] == "useCounterContext"
         }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/context.tsx")
-                && item["name"] == Value::from("CounterProvider")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/context.tsx")
-                && item["name"] == Value::from("useCounterContext")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("handleIncrement")
-        }));
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("updateCount")
-        }));
+        assert!(
+            current_items.iter().any(|item| {
+                item["path"] == "src/actions.ts" && item["name"] == "handleIncrement"
+            })
+        );
+        assert!(
+            current_items
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "updateCount" })
+        );
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/context.tsx")
-                && item["name"] == Value::from("orphanContext")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("src/actions.ts")
-                && item["name"] == Value::from("orphanAction")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/App.tsx" && item["name"] == "OrphanPage" })
+        );
+        assert!(
+            unexplained.iter().any(|item| {
+                item["path"] == "src/context.tsx" && item["name"] == "orphanContext"
+            })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "src/actions.ts" && item["name"] == "orphanAction" })
+        );
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
@@ -1578,9 +1620,7 @@ fn repo_surfaces_go_traceability() {
             .as_array()
             .expect("unexplained items should be an array");
         assert!(unexplained.iter().any(|item| {
-            item["name"] == Value::from("OrphanImpl")
-                && item["review_surface"] == Value::from(true)
-                && item["public"] == Value::from(true)
+            item["name"] == "OrphanImpl" && item["review_surface"] == true && item["public"] == true
         }));
         assert_eq!(
             traceability["unexplained_review_surface_items"],
@@ -1610,28 +1650,22 @@ fn repo_surfaces_go_tool_backed_traceability() {
         let current_items = traceability["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
-        assert!(current_items.iter().any(|item| {
-            item["path"] == Value::from("left/shared.go")
-                && item["name"] == Value::from("SharedValue")
-        }));
         assert!(
             current_items
                 .iter()
-                .any(|item| item["name"] == Value::from("LiveImpl"))
+                .any(|item| { item["path"] == "left/shared.go" && item["name"] == "SharedValue" })
         );
-        assert!(
-            current_items
-                .iter()
-                .any(|item| item["name"] == Value::from("helper"))
-        );
+        assert!(current_items.iter().any(|item| item["name"] == "LiveImpl"));
+        assert!(current_items.iter().any(|item| item["name"] == "helper"));
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("right/shared.go")
-                && item["name"] == Value::from("SharedValue")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "right/shared.go" && item["name"] == "SharedValue" })
+        );
     } else {
         assert_go_traceability_unavailable(&json);
     }
@@ -1659,30 +1693,24 @@ fn repo_surfaces_go_reference_backed_traceability() {
         assert!(
             current_items
                 .iter()
-                .any(|item| item["path"] == Value::from("live/live.go")
-                    && item["name"] == Value::from("LiveCallback"))
+                .any(|item| item["path"] == "live/live.go" && item["name"] == "LiveCallback")
         );
-        assert!(
-            current_items
-                .iter()
-                .any(|item| item["name"] == Value::from("LiveImpl"))
-        );
-        assert!(
-            current_items
-                .iter()
-                .any(|item| item["name"] == Value::from("invoke"))
-        );
+        assert!(current_items.iter().any(|item| item["name"] == "LiveImpl"));
+        assert!(current_items.iter().any(|item| item["name"] == "invoke"));
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
             .expect("unexplained items should be an array");
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("dead/dead.go")
-                && item["name"] == Value::from("DeadCallback")
-        }));
-        assert!(unexplained.iter().any(|item| {
-            item["path"] == Value::from("app/main.go") && item["name"] == Value::from("OrphanImpl")
-        }));
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "dead/dead.go" && item["name"] == "DeadCallback" })
+        );
+        assert!(
+            unexplained
+                .iter()
+                .any(|item| { item["path"] == "app/main.go" && item["name"] == "OrphanImpl" })
+        );
     } else {
         assert_go_traceability_unavailable(&json);
     }
@@ -1746,12 +1774,12 @@ fn repo_review_surface_excludes_public_test_helpers() {
             .expect("unexplained items should be an array");
         let public_names = unexplained
             .iter()
-            .filter(|item| item["public"] == Value::from(true))
+            .filter(|item| item["public"] == true)
             .map(|item| {
                 (
                     item["name"].as_str().expect("name should be present"),
-                    item["review_surface"] == Value::from(true),
-                    item["test_file"] == Value::from(true),
+                    item["review_surface"] == true,
+                    item["test_file"] == true,
                 )
             })
             .collect::<Vec<_>>();
@@ -1759,11 +1787,11 @@ fn repo_review_surface_excludes_public_test_helpers() {
         assert!(public_names.contains(&("test_public_orphan", false, true)));
         let internal_names = unexplained
             .iter()
-            .filter(|item| item["public"] == Value::from(false))
+            .filter(|item| item["public"] == false)
             .map(|item| {
                 (
                     item["name"].as_str().expect("name should be present"),
-                    item["review_surface"] == Value::from(true),
+                    item["review_surface"] == true,
                 )
             })
             .collect::<Vec<_>>();

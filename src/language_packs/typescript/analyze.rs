@@ -89,6 +89,7 @@ pub(crate) struct TypeScriptRepoAnalysisContext {
     pub(crate) traceability_unavailable_reason: Option<String>,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],
@@ -565,12 +566,9 @@ fn build_tool_call_edges(
             .collect(),
     };
 
-    let json_input = match serde_json::to_vec(&input) {
-        Ok(json_input) => json_input,
-        Err(error) => return Err(error.into()),
-    };
+    let json_input = serde_json::to_vec(&input)?;
 
-    let mut child = match Command::new(node_binary)
+    let mut child = Command::new(node_binary)
         .args([
             script.path().to_string_lossy().as_ref(),
             node_modules_root.to_string_lossy().as_ref(),
@@ -578,16 +576,12 @@ fn build_tool_call_edges(
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()
-    {
-        Ok(child) => child,
-        Err(error) => return Err(error.into()),
-    };
+        .spawn()?;
 
-    if let Some(stdin) = child.stdin.as_mut() {
-        if stdin.write_all(&json_input).is_err() {
-            return Err(anyhow!("failed to write input to TypeScript trace helper"));
-        }
+    if let Some(stdin) = child.stdin.as_mut()
+        && stdin.write_all(&json_input).is_err()
+    {
+        return Err(anyhow!("failed to write input to TypeScript trace helper"));
     }
     let _ = child.stdin.take();
 
@@ -608,10 +602,7 @@ fn build_tool_call_edges(
         Err(error) => return Err(error.into()),
     };
 
-    let tool_output: ToolTraceOutput = match serde_json::from_slice(&output.stdout) {
-        Ok(tool_output) => tool_output,
-        Err(error) => return Err(error.into()),
-    };
+    let tool_output: ToolTraceOutput = serde_json::from_slice(&output.stdout)?;
 
     let callable_ids = callable_items
         .iter()
@@ -725,9 +716,14 @@ struct TypeScriptTraceabilityGraphFacts {
     tool_call_edges: BTreeMap<String, BTreeSet<String>>,
 }
 
+type TypeScriptGraphFactsDecoded = Result<(
+    BTreeMap<PathBuf, ParsedSourceGraph>,
+    BTreeMap<String, BTreeSet<String>>,
+)>;
+
 fn decode_traceability_graph_facts(
     facts: Option<&[u8]>,
-) -> Option<Result<(BTreeMap<PathBuf, ParsedSourceGraph>, BTreeMap<String, BTreeSet<String>>)>> {
+) -> Option<TypeScriptGraphFactsDecoded> {
     let facts = facts?;
     Some(
         serde_json::from_slice::<TypeScriptTraceabilityGraphFacts>(facts)

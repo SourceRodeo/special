@@ -38,9 +38,9 @@ mod pyright_langserver;
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("python"),
     matches_path: is_python_path,
-    parse_source_graph: parse_source_graph,
-    build_repo_analysis_context: build_repo_analysis_context,
-    analysis_environment_fingerprint: analysis_environment_fingerprint,
+    parse_source_graph,
+    build_repo_analysis_context,
+    analysis_environment_fingerprint,
     traceability_scope_facts: None,
     traceability_graph_facts: Some(&TRACEABILITY_GRAPH_FACTS),
 };
@@ -122,6 +122,7 @@ impl TraceabilityLanguagePack for PythonTraceabilityPack {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],
@@ -607,12 +608,14 @@ struct PythonTraceabilityGraphFacts {
     parser_edges: BTreeMap<String, BTreeSet<String>>,
 }
 
-fn decode_traceability_graph_facts(
-    facts: Option<&[u8]>,
-) -> Option<(
+type PythonGraphFactsDecoded = (
     BTreeMap<PathBuf, ParsedSourceGraph>,
     BTreeMap<String, BTreeSet<String>>,
-)> {
+);
+
+fn decode_traceability_graph_facts(
+    facts: Option<&[u8]>,
+) -> Option<PythonGraphFactsDecoded> {
     let facts = facts?;
     let facts = serde_json::from_slice::<PythonTraceabilityGraphFacts>(facts).ok()?;
     Some((

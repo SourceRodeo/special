@@ -501,6 +501,28 @@ pub fn current_revision() -> String {
         .to_string()
 }
 
+pub fn tag_exists(tag: &str) -> bool {
+    let output = Command::new("jj")
+        .args(["tag", "list"])
+        .current_dir(repo_root())
+        .output()
+        .expect("jj tag list should run");
+    assert!(
+        output.status.success(),
+        "stdout:\n{}\n\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout)
+        .expect("tag output should be utf-8")
+        .lines()
+        .filter_map(|line| {
+            line.split_once(':')
+                .map(|(name, _)| name.trim().to_string())
+        })
+        .any(|name| name == tag)
+}
+
 pub fn tag_points_at_current_revision(tag: &str) -> bool {
     let output = Command::new("jj")
         .args(["tag", "list", "-r", "@-"])

@@ -5,8 +5,10 @@ Thread-local analysis status notifier used to surface long-running repo-analysis
 // @fileimplements SPECIAL.MODULES.ANALYZE.STATUS
 use std::cell::RefCell;
 
+type StatusNotifier = Box<dyn Fn(&str)>;
+
 thread_local! {
-    static ANALYSIS_STATUS_NOTIFIER: RefCell<Option<Box<dyn Fn(&str)>>> = RefCell::new(None);
+    static ANALYSIS_STATUS_NOTIFIER: RefCell<Option<StatusNotifier>> = RefCell::new(None);
 }
 
 pub(crate) fn with_analysis_status_notifier<T>(

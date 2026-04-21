@@ -76,10 +76,10 @@ pub(super) fn build_reachable_call_edges(
             .unwrap_or_default();
         callees.extend(caller.invocation_targets.clone());
         for target in client.definition_targets(caller)? {
-            if let Some(stable_id) = index.resolve(&target) {
-                if stable_id != caller_id {
-                    callees.insert(stable_id);
-                }
+            if let Some(stable_id) = index.resolve(&target)
+                && stable_id != caller_id
+            {
+                callees.insert(stable_id);
             }
         }
 

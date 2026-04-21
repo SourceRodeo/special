@@ -102,6 +102,7 @@ pub fn build_repo_document(
     ))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn build_repo_document_from_parsed(
     root: &Path,
     ignore_patterns: &[String],
@@ -267,6 +268,7 @@ fn build_architecture_metrics(nodes: &[ModuleNode]) -> ArchitectureMetricsSummar
     summary
 }
 
+#[allow(clippy::too_many_arguments)]
 fn append_architecture_metrics(
     nodes: &[ModuleNode],
     summary: &mut ArchitectureMetricsSummary,

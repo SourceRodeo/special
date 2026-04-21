@@ -395,7 +395,7 @@ fn build_go_list_package_edges(
             }
             edges
                 .entry(item.stable_id.clone())
-                .or_insert_with(BTreeSet::new)
+                .or_default()
                 .insert(candidates[0].clone());
         }
     }
@@ -744,12 +744,14 @@ struct GoTraceabilityGraphFacts {
     static_edges: BTreeMap<String, BTreeSet<String>>,
 }
 
-fn decode_traceability_graph_facts(
-    facts: Option<&[u8]>,
-) -> Option<(
+type GoGraphFactsDecoded = (
     BTreeMap<PathBuf, ParsedSourceGraph>,
     BTreeMap<String, BTreeSet<String>>,
-)> {
+);
+
+fn decode_traceability_graph_facts(
+    facts: Option<&[u8]>,
+) -> Option<GoGraphFactsDecoded> {
     let facts = facts?;
     let facts = serde_json::from_slice::<GoTraceabilityGraphFacts>(facts).ok()?;
     Some((

@@ -91,10 +91,14 @@ pub(crate) struct GoRepoAnalysisContext {
     pub(crate) traceability_unavailable_reason: Option<String>,
 }
 
-pub(crate) fn build_traceability_graph_facts(root: &Path, source_files: &[PathBuf]) -> Result<Vec<u8>> {
+pub(crate) fn build_traceability_graph_facts(
+    root: &Path,
+    source_files: &[PathBuf],
+) -> Result<Vec<u8>> {
     traceability::build_traceability_graph_facts(root, source_files)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],

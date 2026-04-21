@@ -937,7 +937,7 @@ fn collect_trait_impl_method_qualified_names<'a>(
                     };
                     qualified_names.insert(build_local_qualified_name(
                         module_path,
-                        &[type_name.clone()],
+                        std::slice::from_ref(&type_name),
                         &method.sig.ident.to_string(),
                     ));
                 }
@@ -1119,13 +1119,15 @@ struct RustTraceabilityGraphFacts {
     mediated_reasons: BTreeMap<String, CachedRustMediatedReason>,
 }
 
-fn decode_traceability_graph_facts(
-    facts: Option<&[u8]>,
-) -> Option<(
+type RustGraphFactsDecoded = (
     BTreeMap<PathBuf, ParsedSourceGraph>,
     BTreeMap<String, BTreeSet<String>>,
     BTreeMap<String, RustMediatedReason>,
-)> {
+);
+
+fn decode_traceability_graph_facts(
+    facts: Option<&[u8]>,
+) -> Option<RustGraphFactsDecoded> {
     let facts = facts?;
     let facts = serde_json::from_slice::<RustTraceabilityGraphFacts>(facts).ok()?;
     Some((

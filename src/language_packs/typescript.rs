@@ -25,9 +25,9 @@ mod analyze;
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("typescript"),
     matches_path: is_typescript_path,
-    parse_source_graph: parse_source_graph,
-    build_repo_analysis_context: build_repo_analysis_context,
-    analysis_environment_fingerprint: analysis_environment_fingerprint,
+    parse_source_graph,
+    build_repo_analysis_context,
+    analysis_environment_fingerprint,
     traceability_scope_facts: Some(&TRACEABILITY_SCOPE_FACTS),
     traceability_graph_facts: Some(&TRACEABILITY_GRAPH_FACTS),
 };
@@ -61,6 +61,7 @@ impl LanguagePackAnalysisContext for analyze::TypeScriptRepoAnalysisContext {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_repo_analysis_context(
     root: &Path,
     source_files: &[PathBuf],

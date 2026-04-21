@@ -5,7 +5,7 @@ Generates the compile-time language-pack registry consumed by the shared pack lo
 // @fileimplements SPECIAL.LANGUAGE_PACKS.REGISTRY_GENERATION
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 fn main() {
     println!("cargo:rerun-if-changed=src/language_packs");
@@ -48,6 +48,6 @@ fn main() {
     fs::write(output_path, generated).expect("write generated language pack registry");
 }
 
-fn rust_path_attr_literal(path: &PathBuf) -> String {
+fn rust_path_attr_literal(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }

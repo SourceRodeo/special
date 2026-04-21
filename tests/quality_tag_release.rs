@@ -34,7 +34,7 @@ use serde_json::Value;
 
 use support::{
     current_package_version, current_python_executable, release_tag_command_output,
-    release_tag_dry_run, release_tag_live_output, release_tag_live_output_with_input,
+    release_tag_dry_run, release_tag_live_output, release_tag_live_output_with_input, tag_exists,
     tag_points_at_current_revision,
 };
 
@@ -260,7 +260,7 @@ fn release_tag_dry_run_pushes_main_bookmark_and_release_tag() {
         payload["push_tag_command"]
             .as_array()
             .expect("push_tag_command should be an array"),
-        &if tag_points_at_current_revision(&format!("v{version}")) {
+        &if tag_exists(&format!("v{version}")) {
             vec![
                 Value::String("git".to_string()),
                 Value::String("push".to_string()),

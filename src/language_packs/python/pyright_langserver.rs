@@ -72,10 +72,10 @@ pub(super) fn build_reachable_call_edges(
 
         let mut callees = BTreeSet::new();
         for target in client.definition_targets(caller)? {
-            if let Some(stable_id) = index.resolve(&target) {
-                if stable_id != caller_id {
-                    callees.insert(stable_id);
-                }
+            if let Some(stable_id) = index.resolve(&target)
+                && stable_id != caller_id
+            {
+                callees.insert(stable_id);
             }
         }
 

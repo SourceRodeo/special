@@ -39,7 +39,7 @@ pub(in crate::render) fn render_repo_html(document: &RepoDocument, verbose: bool
     format!(
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>special health</title><style>{}</style></head><body><main><h1>special health</h1><p class=\"lede\">Repo-wide quality signals for the current repository.</p>{}{}</main></body></html>",
         SPEC_HTML_STYLE,
-        format!("{metrics_html}{repo_signals_html}"),
+        metrics_html + &repo_signals_html,
         traceability_html
     )
 }
