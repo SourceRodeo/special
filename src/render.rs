@@ -9,6 +9,7 @@ use crate::model::{LintReport, ModuleDocument, OverviewDocument, RepoDocument, S
 
 mod common;
 mod html;
+mod html_common;
 mod json;
 mod projection;
 mod templates;

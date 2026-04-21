@@ -13,8 +13,11 @@ use crate::model::{
     ArchitectureTraceabilitySummary, ImplementRef, ModuleAnalysisOptions, ParsedArchitecture,
     ParsedRepo,
 };
-use crate::modules::analyze::{self, FileOwnership, ProviderModuleAnalysis};
+use crate::modules::analyze::{FileOwnership, ProviderModuleAnalysis};
 use crate::syntax::{ParsedSourceGraph, SourceLanguage};
+
+#[path = "rust/analyze.rs"]
+pub(crate) mod analyze;
 
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("rust"),
@@ -24,13 +27,13 @@ pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     analysis_environment_fingerprint: analysis_environment_fingerprint,
 };
 
-impl LanguagePackAnalysisContext for analyze::rust::RustRepoAnalysisContext {
+impl LanguagePackAnalysisContext for analyze::RustRepoAnalysisContext {
     fn summarize_repo_traceability(&self, root: &Path) -> Option<ArchitectureTraceabilitySummary> {
-        analyze::rust::summarize_repo_traceability(root, self)
+        analyze::summarize_repo_traceability(root, self)
     }
 
     fn traceability_unavailable_reason(&self) -> Option<String> {
-        analyze::rust::traceability_unavailable_reason(self).map(ToString::to_string)
+        analyze::traceability_unavailable_reason(self).map(ToString::to_string)
     }
 
     fn analyze_module(
@@ -40,13 +43,7 @@ impl LanguagePackAnalysisContext for analyze::rust::RustRepoAnalysisContext {
         file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
         options: ModuleAnalysisOptions,
     ) -> Result<ProviderModuleAnalysis> {
-        analyze::rust::analyze_module(
-            root,
-            implementations,
-            file_ownership,
-            self,
-            options.traceability,
-        )
+        analyze::analyze_module(root, implementations, file_ownership, self, options.traceability)
     }
 }
 
@@ -58,7 +55,7 @@ fn build_repo_analysis_context(
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
     include_traceability: bool,
 ) -> Box<dyn LanguagePackAnalysisContext> {
-    Box::new(analyze::rust::build_repo_analysis_context(
+    Box::new(analyze::build_repo_analysis_context(
         root,
         source_files,
         parsed_repo,
@@ -69,7 +66,7 @@ fn build_repo_analysis_context(
 }
 
 fn analysis_environment_fingerprint(root: &Path) -> String {
-    analyze::rust::analysis_environment_fingerprint(root)
+    analyze::analysis_environment_fingerprint(root)
 }
 
 fn is_rust_path(path: &Path) -> bool {

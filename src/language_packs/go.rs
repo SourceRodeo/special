@@ -13,8 +13,11 @@ use crate::model::{
     ArchitectureTraceabilitySummary, ImplementRef, ModuleAnalysisOptions, ParsedArchitecture,
     ParsedRepo,
 };
-use crate::modules::analyze::{self, FileOwnership, ProviderModuleAnalysis};
+use crate::modules::analyze::{FileOwnership, ProviderModuleAnalysis};
 use crate::syntax::{ParsedSourceGraph, SourceLanguage};
+
+#[path = "go/analyze.rs"]
+pub(crate) mod analyze;
 
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("go"),
@@ -24,9 +27,9 @@ pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     analysis_environment_fingerprint: analysis_environment_fingerprint,
 };
 
-impl LanguagePackAnalysisContext for analyze::go::GoRepoAnalysisContext {
+impl LanguagePackAnalysisContext for analyze::GoRepoAnalysisContext {
     fn summarize_repo_traceability(&self, root: &Path) -> Option<ArchitectureTraceabilitySummary> {
-        analyze::go::summarize_repo_traceability(root, self)
+        analyze::summarize_repo_traceability(root, self)
     }
 
     fn traceability_unavailable_reason(&self) -> Option<String> {
@@ -40,13 +43,7 @@ impl LanguagePackAnalysisContext for analyze::go::GoRepoAnalysisContext {
         file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
         options: ModuleAnalysisOptions,
     ) -> Result<ProviderModuleAnalysis> {
-        analyze::go::analyze_module(
-            root,
-            implementations,
-            file_ownership,
-            self,
-            options.traceability,
-        )
+        analyze::analyze_module(root, implementations, file_ownership, self, options.traceability)
     }
 }
 
@@ -58,7 +55,7 @@ fn build_repo_analysis_context(
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
     include_traceability: bool,
 ) -> Box<dyn LanguagePackAnalysisContext> {
-    Box::new(analyze::go::build_repo_analysis_context(
+    Box::new(analyze::build_repo_analysis_context(
         root,
         source_files,
         parsed_repo,
@@ -69,7 +66,7 @@ fn build_repo_analysis_context(
 }
 
 fn analysis_environment_fingerprint(_root: &Path) -> String {
-    analyze::go::analysis_environment_fingerprint()
+    analyze::analysis_environment_fingerprint()
 }
 
 fn is_go_path(path: &Path) -> bool {

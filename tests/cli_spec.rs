@@ -268,6 +268,28 @@ fn spec_scopes_to_matching_id_and_descendants() {
 }
 
 #[test]
+// @verifies SPECIAL.SPEC_COMMAND
+fn spec_text_output_preserves_inline_code_when_description_starts_with_code() {
+    let root = temp_repo_dir("special-cli-spec-inline-code");
+    fs::create_dir_all(root.join("specs")).expect("specs dir should be created");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("config should be written");
+    fs::write(
+        root.join("specs/demo.md"),
+        "### `@group DEMO`\nDemo command surfaces.\n\n### `@spec DEMO.CMD`\n`paypal login` captures a reusable local developer session.\n",
+    )
+    .expect("markdown spec should be written");
+
+    let output = run_special(&root, &["specs", "--current"]);
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("`paypal login` captures a reusable local developer session."));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.SPEC_COMMAND.UNVERIFIED
 fn spec_unverified_filters_current_items_without_support() {
     let root = temp_repo_dir("special-cli-unsupported");
@@ -523,7 +545,7 @@ fn spec_verbose_json_includes_support_bodies() {
         .expect("DEMO node should be present");
     let verify = demo["verifies"]
         .as_array()
-        .and_then(|verifies| verifies.first())
+        .and_then(|verifies: &Vec<Value>| verifies.first())
         .expect("verify should be present");
     assert_eq!(
         verify["body"],
@@ -554,7 +576,7 @@ fn spec_verbose_json_includes_file_attest_scope() {
         .expect("DEMO node should be present");
     let attest = demo["attests"]
         .as_array()
-        .and_then(|attests| attests.first())
+        .and_then(|attests: &Vec<Value>| attests.first())
         .expect("attest should be present");
     assert_eq!(attest["scope"], Value::String("file".to_string()));
     assert!(

@@ -1,3 +1,6 @@
+#[allow(dead_code)]
+#[path = "../src/language_packs/rust/test_fixtures.rs"]
+mod rust_test_fixtures;
 /**
 @module SPECIAL.TESTS.CLI_OVERVIEW
 Bare `special` overview command tests in `tests/cli_overview.rs`.
@@ -5,15 +8,17 @@ Bare `special` overview command tests in `tests/cli_overview.rs`.
 // @fileimplements SPECIAL.TESTS.CLI_OVERVIEW
 #[path = "support/cli.rs"]
 mod support;
+#[allow(dead_code)]
+#[path = "../src/language_packs/typescript/test_fixtures.rs"]
+mod typescript_test_fixtures;
 
 use std::fs;
 
 use serde_json::Value;
 
-use support::{
-    run_special, temp_repo_dir, write_lint_error_fixture,
-    write_traceability_module_analysis_fixture, write_typescript_traceability_fixture,
-};
+use rust_test_fixtures::write_traceability_module_analysis_fixture;
+use support::{run_special, temp_repo_dir, write_lint_error_fixture};
+use typescript_test_fixtures::write_typescript_traceability_fixture;
 
 #[test]
 // @verifies SPECIAL.OVERVIEW.COMMAND

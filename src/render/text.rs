@@ -1,302 +1,33 @@
 /**
 @module SPECIAL.RENDER.TEXT
-Renders projected specs, modules, and lint diagnostics into human-readable text output.
+Renders projected specs, modules, repo health, overviews, and lint diagnostics into human-readable text output while centralizing shared text metric helpers.
 */
 // @fileimplements SPECIAL.RENDER.TEXT
+use crate::model::{
+    ArchitectureMetricsSummary, GroupedCount, RepoMetricsSummary, RepoTraceabilityMetrics,
+    SpecMetricsSummary,
+};
+
 mod analysis;
 mod attachments;
+#[path = "text/lint.rs"]
+mod lint;
+#[path = "text/module.rs"]
+mod module;
+#[path = "text/overview.rs"]
+mod overview;
+#[path = "text/repo.rs"]
+mod repo;
+#[path = "text/spec.rs"]
+mod spec;
 
-use std::fmt::Write;
+pub(super) use self::lint::render_lint_text;
+pub(super) use self::module::render_module_text;
+pub(super) use self::overview::render_overview_text;
+pub(super) use self::repo::render_repo_text;
+pub(super) use self::spec::render_spec_text;
 
-use askama::Template;
-
-use crate::model::{
-    ArchitectureKind, ArchitectureMetricsSummary, DiagnosticSeverity, GroupedCount, LintReport,
-    ModuleDocument, ModuleNode, OverviewDocument, RepoDocument, RepoMetricsSummary,
-    RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary, SpecNode,
-};
-
-use self::analysis::{
-    format_repo_signals, format_repo_traceability, render_projected_module_analysis,
-};
-use self::attachments::{
-    render_attest_section, render_implementation_section, render_verify_section,
-};
-use super::common::{deprecated_badge_text, planned_badge_text};
-use super::projection::{
-    project_document, project_module_analysis_view, project_module_document,
-    project_repo_signals_view, project_repo_traceability_view,
-};
-use super::templates::{render_template, text_indent};
-
-#[derive(Template)]
-#[template(path = "render/spec_page.txt", escape = "none")]
-struct SpecPageTextTemplate<'a> {
-    nodes: &'a [SpecNode],
-    verbose: bool,
-}
-
-impl SpecPageTextTemplate<'_> {
-    fn render_nodes(&self) -> String {
-        self.nodes
-            .iter()
-            .enumerate()
-            .map(|(index, node)| {
-                let rendered = render_template(&SpecNodeTextTemplate {
-                    node,
-                    depth: 0,
-                    verbose: self.verbose,
-                });
-                if index == 0 {
-                    rendered
-                } else {
-                    format!("\n{rendered}")
-                }
-            })
-            .collect()
-    }
-}
-
-#[derive(Template)]
-#[template(path = "render/spec_node.txt", escape = "none")]
-struct SpecNodeTextTemplate<'a> {
-    node: &'a SpecNode,
-    depth: usize,
-    verbose: bool,
-}
-
-impl SpecNodeTextTemplate<'_> {
-    fn indent(&self) -> String {
-        text_indent(self.depth)
-    }
-
-    fn is_group(&self) -> bool {
-        self.node.kind() == crate::model::NodeKind::Group
-    }
-
-    fn planned_badge(&self) -> String {
-        planned_badge_text(self.node.planned_release())
-    }
-
-    fn deprecated_badge(&self) -> String {
-        deprecated_badge_text(self.node.deprecated_release())
-    }
-
-    fn verbose_section(&self) -> String {
-        if !self.verbose {
-            return String::new();
-        }
-
-        let indent = self.indent();
-        let mut output = String::new();
-        writeln!(
-            output,
-            "{}  declared at: {}:{}",
-            indent,
-            self.node.location.path.display(),
-            self.node.location.line
-        )
-        .expect("string writes should succeed");
-
-        render_verify_section(&mut output, &indent, self.depth, &self.node.verifies);
-        render_attest_section(&mut output, &indent, self.depth, &self.node.attests);
-
-        output
-    }
-
-    fn children_section(&self) -> String {
-        self.node
-            .children
-            .iter()
-            .map(|child| {
-                render_template(&SpecNodeTextTemplate {
-                    node: child,
-                    depth: self.depth + 1,
-                    verbose: self.verbose,
-                })
-            })
-            .collect()
-    }
-}
-
-#[derive(Template)]
-#[template(path = "render/module_page.txt", escape = "none")]
-struct ModulePageTextTemplate<'a> {
-    document: &'a ModuleDocument,
-    verbose: bool,
-}
-
-impl ModulePageTextTemplate<'_> {
-    fn render_nodes(&self) -> String {
-        self.document
-            .nodes
-            .iter()
-            .enumerate()
-            .map(|(index, node)| {
-                let rendered = render_template(&ModuleNodeTextTemplate {
-                    node,
-                    depth: 0,
-                    verbose: self.verbose,
-                });
-                if index == 0 {
-                    rendered
-                } else {
-                    format!("\n{rendered}")
-                }
-            })
-            .collect()
-    }
-}
-
-#[derive(Template)]
-#[template(path = "render/module_node.txt", escape = "none")]
-struct ModuleNodeTextTemplate<'a> {
-    node: &'a ModuleNode,
-    depth: usize,
-    verbose: bool,
-}
-
-impl ModuleNodeTextTemplate<'_> {
-    fn indent(&self) -> String {
-        text_indent(self.depth)
-    }
-
-    fn is_area(&self) -> bool {
-        self.node.kind() == ArchitectureKind::Area
-    }
-
-    fn planned_badge(&self) -> String {
-        planned_badge_text(self.node.planned_release())
-    }
-
-    fn analysis_section(&self) -> String {
-        let indent = self.indent();
-        project_module_analysis_view(self.node, self.verbose)
-            .map(|analysis| render_projected_module_analysis(&indent, &analysis))
-            .unwrap_or_default()
-    }
-
-    fn verbose_section(&self) -> String {
-        if !self.verbose {
-            return String::new();
-        }
-
-        let indent = self.indent();
-        let mut output = String::new();
-        writeln!(
-            output,
-            "{}  declared at: {}:{}",
-            indent,
-            self.node.location.path.display(),
-            self.node.location.line
-        )
-        .expect("string writes should succeed");
-
-        render_implementation_section(&mut output, &indent, self.depth, &self.node.implements);
-
-        output
-    }
-
-    fn children_section(&self) -> String {
-        self.node
-            .children
-            .iter()
-            .map(|child| {
-                render_template(&ModuleNodeTextTemplate {
-                    node: child,
-                    depth: self.depth + 1,
-                    verbose: self.verbose,
-                })
-            })
-            .collect()
-    }
-}
-
-#[derive(Template)]
-#[template(path = "render/lint.txt", escape = "none")]
-struct LintTextTemplate<'a> {
-    report: &'a LintReport,
-}
-
-impl LintTextTemplate<'_> {
-    fn severity_label(&self, severity: &DiagnosticSeverity) -> &'static str {
-        match severity {
-            DiagnosticSeverity::Warning => "warning",
-            DiagnosticSeverity::Error => "error",
-        }
-    }
-}
-
-pub(super) fn render_spec_text(document: &SpecDocument, verbose: bool) -> String {
-    let document = project_document(document, verbose);
-    if document.nodes.is_empty() && document.metrics.is_none() {
-        return "No specs found.".to_string();
-    }
-
-    let rendered = render_template(&SpecPageTextTemplate {
-        nodes: &document.nodes,
-        verbose,
-    });
-    if let Some(metrics) = &document.metrics {
-        let mut output = render_spec_metrics_text(metrics);
-        if !document.nodes.is_empty() {
-            output.push('\n');
-            output.push_str(&rendered);
-        }
-        output
-    } else {
-        rendered
-    }
-}
-
-pub(super) fn render_module_text(document: &ModuleDocument, verbose: bool) -> String {
-    let document = project_module_document(document, verbose);
-    if document.nodes.is_empty() {
-        return "No modules found.".to_string();
-    }
-
-    let rendered = render_template(&ModulePageTextTemplate {
-        document: &document,
-        verbose,
-    });
-    if let Some(metrics) = &document.metrics {
-        let mut output = render_arch_metrics_text(metrics);
-        if !document.nodes.is_empty() {
-            output.push('\n');
-            output.push_str(&rendered);
-        }
-        output
-    } else {
-        rendered
-    }
-}
-
-pub(super) fn render_repo_text(document: &RepoDocument, verbose: bool) -> String {
-    let document = super::projection::project_repo_document(document, verbose);
-    let mut output = String::from("special health\n");
-    if let Some(metrics) = &document.metrics {
-        output.push_str(&render_repo_metrics_text(metrics));
-    }
-    if let Some(repo_signals) = document
-        .analysis
-        .as_ref()
-        .and_then(|analysis| analysis.repo_signals.as_ref())
-    {
-        output.push_str(&format_repo_signals(&project_repo_signals_view(
-            repo_signals,
-            verbose,
-        )));
-    }
-    if let Some(analysis) = document.analysis.as_ref() {
-        output.push_str(&format_repo_traceability(&project_repo_traceability_view(
-            analysis.traceability.as_ref(),
-            analysis.traceability_unavailable_reason.as_deref(),
-        )));
-    }
-    output
-}
-
-fn render_spec_metrics_text(metrics: &SpecMetricsSummary) -> String {
+pub(super) fn render_spec_metrics_text(metrics: &SpecMetricsSummary) -> String {
     let mut output = String::from("special specs metrics\n");
     output.push_str(&format!("  total specs: {}\n", metrics.total_specs));
     output.push_str(&format!(
@@ -339,7 +70,7 @@ fn render_spec_metrics_text(metrics: &SpecMetricsSummary) -> String {
     output
 }
 
-fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
+pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
     let mut output = String::from("special health metrics\n");
     output.push_str(&format!("  duplicate items: {}\n", metrics.duplicate_items));
     output.push_str(&format!("  unowned items: {}\n", metrics.unowned_items));
@@ -359,7 +90,7 @@ fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
     output
 }
 
-fn render_arch_metrics_text(metrics: &ArchitectureMetricsSummary) -> String {
+pub(super) fn render_arch_metrics_text(metrics: &ArchitectureMetricsSummary) -> String {
     let mut output = String::from("special arch metrics\n");
     output.push_str(&format!("  total modules: {}\n", metrics.total_modules));
     output.push_str(&format!("  total areas: {}\n", metrics.total_areas));
@@ -507,67 +238,4 @@ fn append_grouped_counts_text(output: &mut String, label: &str, counts: &[Groupe
     counts.iter().for_each(|group| {
         output.push_str(&format!("    {}: {}\n", group.value, group.count));
     });
-}
-
-pub(super) fn render_overview_text(document: &OverviewDocument) -> String {
-    let mut output = String::from("special\n");
-    output.push_str("  lint\n");
-    output.push_str(&format!("    errors: {}\n", document.lint.errors));
-    output.push_str(&format!("    warnings: {}\n", document.lint.warnings));
-    output.push_str("  specs\n");
-    output.push_str(&format!(
-        "    total specs: {}\n",
-        document.specs.total_specs
-    ));
-    output.push_str(&format!(
-        "    unverified specs: {}\n",
-        document.specs.unverified_specs
-    ));
-    output.push_str(&format!(
-        "    planned specs: {}\n",
-        document.specs.planned_specs
-    ));
-    output.push_str(&format!(
-        "    deprecated specs: {}\n",
-        document.specs.deprecated_specs
-    ));
-    output.push_str("  arch\n");
-    output.push_str(&format!("    modules: {}\n", document.arch.total_modules));
-    output.push_str(&format!("    areas: {}\n", document.arch.total_areas));
-    output.push_str(&format!(
-        "    unimplemented modules: {}\n",
-        document.arch.unimplemented_modules
-    ));
-    output.push_str("  health\n");
-    output.push_str(&format!(
-        "    duplicate items: {}\n",
-        document.health.duplicate_items
-    ));
-    output.push_str(&format!(
-        "    unowned items: {}\n",
-        document.health.unowned_items
-    ));
-
-    output.push_str("  look next\n");
-    output.push_str("    special lint\n");
-    output.push_str("    special specs\n");
-    output.push_str("    special specs --metrics\n");
-    output.push_str("    special specs --unverified\n");
-    output.push_str("    special arch\n");
-    output.push_str("    special arch --metrics\n");
-    output.push_str("    special arch --unimplemented\n");
-    output.push_str("    special health\n");
-    output.push_str("    special health --metrics\n");
-
-    output
-}
-
-pub(super) fn render_lint_text(report: &LintReport) -> String {
-    if report.diagnostics.is_empty() {
-        return "Lint clean.".to_string();
-    }
-
-    render_template(&LintTextTemplate { report })
-        .trim_end()
-        .to_string()
 }

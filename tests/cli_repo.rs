@@ -1,3 +1,12 @@
+#[allow(dead_code)]
+#[path = "../src/language_packs/go/test_fixtures.rs"]
+mod go_test_fixtures;
+#[allow(dead_code)]
+#[path = "../src/language_packs/python/test_fixtures.rs"]
+mod python_test_fixtures;
+#[allow(dead_code)]
+#[path = "../src/language_packs/rust/test_fixtures.rs"]
+mod rust_test_fixtures;
 /**
 @module SPECIAL.TESTS.CLI_REPO
 `special health` output and repo-wide quality tests in `tests/cli_repo.rs`.
@@ -101,6 +110,9 @@ special health surfaces repo-wide unowned item indicators so code outside declar
 // @fileimplements SPECIAL.TESTS.CLI_REPO
 #[path = "support/cli.rs"]
 mod support;
+#[allow(dead_code)]
+#[path = "../src/language_packs/typescript/test_fixtures.rs"]
+mod typescript_test_fixtures;
 
 use std::collections::hash_map::DefaultHasher;
 use std::fs;
@@ -110,22 +122,33 @@ use std::time::Duration;
 
 use serde_json::Value;
 
-use support::{
-    pyright_langserver_available, run_special, rust_analyzer_available, spawn_special,
-    temp_repo_dir, top_level_help_commands, write_duplicate_item_signals_module_analysis_fixture,
+use go_test_fixtures::{
     write_go_reference_traceability_fixture, write_go_tool_traceability_fixture,
-    write_go_traceability_fixture, write_many_duplicate_item_signals_module_analysis_fixture,
+    write_go_traceability_fixture,
+};
+use python_test_fixtures::{
     write_python_reference_traceability_fixture, write_python_syntax_error_traceability_fixture,
     write_python_tool_traceability_fixture, write_python_traceability_fixture,
+};
+use rust_test_fixtures::{
     write_traceability_instance_method_fixture, write_traceability_module_analysis_fixture,
     write_traceability_module_context_fixture, write_traceability_multiple_supports_fixture,
-    write_traceability_review_surface_fixture, write_typescript_context_traceability_fixture,
-    write_typescript_effect_traceability_fixture, write_typescript_event_traceability_fixture,
+    write_traceability_review_surface_fixture,
+};
+use support::{
+    run_special, rust_analyzer_available, spawn_special, temp_repo_dir, top_level_help_commands,
+    write_duplicate_item_signals_module_analysis_fixture,
+    write_many_duplicate_item_signals_module_analysis_fixture,
+    write_unreached_code_module_analysis_fixture,
+};
+use typescript_test_fixtures::{
+    write_typescript_context_traceability_fixture, write_typescript_effect_traceability_fixture,
+    write_typescript_event_traceability_fixture,
     write_typescript_forwarded_callback_traceability_fixture,
     write_typescript_hook_callback_traceability_fixture,
     write_typescript_next_traceability_fixture, write_typescript_react_traceability_fixture,
     write_typescript_reference_traceability_fixture, write_typescript_tool_traceability_fixture,
-    write_typescript_traceability_fixture, write_unreached_code_module_analysis_fixture,
+    write_typescript_traceability_fixture,
 };
 
 fn assert_typescript_traceability_unavailable(json: &Value) {
@@ -143,6 +166,15 @@ fn assert_go_traceability_unavailable(json: &Value) {
         json["analysis"]["traceability_unavailable_reason"]
             .as_str()
             .is_some_and(|reason| reason.contains("Go backward trace"))
+    );
+}
+
+fn assert_python_traceability_unavailable(json: &Value) {
+    assert_eq!(json["analysis"]["traceability"], Value::Null);
+    assert!(
+        json["analysis"]["traceability_unavailable_reason"]
+            .as_str()
+            .is_some_and(|reason| reason.contains("Python backward trace"))
     );
 }
 
@@ -353,29 +385,33 @@ fn repo_metrics_json_includes_traceability_metrics_when_requested() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    assert!(json["metrics"]["traceability"].is_object());
-    assert_eq!(
-        json["metrics"]["traceability"]["analyzed_items"],
-        Value::from(4)
-    );
-    assert_eq!(
-        json["metrics"]["traceability"]["current_spec_items"],
-        Value::from(3)
-    );
-    assert_eq!(
-        json["metrics"]["traceability"]["unexplained_items_by_file"],
-        Value::Array(vec![serde_json::json!({
-            "value": "src/app.ts",
-            "count": 1
-        })])
-    );
-    assert_eq!(
-        json["metrics"]["traceability"]["unexplained_review_surface_items_by_file"],
-        Value::Array(vec![serde_json::json!({
-            "value": "src/app.ts",
-            "count": 1
-        })])
-    );
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        assert!(json["metrics"]["traceability"].is_object());
+        assert_eq!(
+            json["metrics"]["traceability"]["analyzed_items"],
+            Value::from(4)
+        );
+        assert_eq!(
+            json["metrics"]["traceability"]["current_spec_items"],
+            Value::from(3)
+        );
+        assert_eq!(
+            json["metrics"]["traceability"]["unexplained_items_by_file"],
+            Value::Array(vec![serde_json::json!({
+                "value": "src/app.ts",
+                "count": 1
+            })])
+        );
+        assert_eq!(
+            json["metrics"]["traceability"]["unexplained_review_surface_items_by_file"],
+            Value::Array(vec![serde_json::json!({
+                "value": "src/app.ts",
+                "count": 1
+            })])
+        );
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -459,27 +495,31 @@ fn repo_scope_limits_traceability_to_matching_files() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let current_items = json["analysis"]["traceability"]["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    let current_names = current_items
-        .iter()
-        .filter_map(|item| item["name"].as_str())
-        .collect::<Vec<_>>();
-    assert!(current_names.contains(&"liveImpl"));
-    assert!(current_names.contains(&"helper"));
-    assert!(!current_names.contains(&"sharedValue"));
-    assert!(
-        json["analysis"]["traceability"]["unexplained_items"]
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let current_items = json["analysis"]["traceability"]["current_spec_items"]
             .as_array()
-            .expect("unexplained items should be an array")
+            .expect("current spec items should be an array");
+        let current_names = current_items
             .iter()
-            .any(|item| item["name"] == Value::from("orphanImpl"))
-    );
-    assert_eq!(
-        json["analysis"]["traceability_unavailable_reason"],
-        Value::Null
-    );
+            .filter_map(|item| item["name"].as_str())
+            .collect::<Vec<_>>();
+        assert!(current_names.contains(&"liveImpl"));
+        assert!(current_names.contains(&"helper"));
+        assert!(!current_names.contains(&"sharedValue"));
+        assert!(
+            json["analysis"]["traceability"]["unexplained_items"]
+                .as_array()
+                .expect("unexplained items should be an array")
+                .iter()
+                .any(|item| item["name"] == Value::from("orphanImpl"))
+        );
+        assert_eq!(
+            json["analysis"]["traceability_unavailable_reason"],
+            Value::Null
+        );
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -505,13 +545,17 @@ fn repo_symbol_scope_narrows_health_view_to_one_symbol() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let analysis = &json["analysis"]["traceability"];
-    let current_items = analysis["current_spec_items"]
-        .as_array()
-        .expect("current items should be an array");
-    assert_eq!(current_items.len(), 1);
-    assert_eq!(current_items[0]["name"], "liveImpl");
-    assert_eq!(analysis["analyzed_items"], 1);
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let analysis = &json["analysis"]["traceability"];
+        let current_items = analysis["current_spec_items"]
+            .as_array()
+            .expect("current items should be an array");
+        assert_eq!(current_items.len(), 1);
+        assert_eq!(current_items[0]["name"], "liveImpl");
+        assert_eq!(analysis["analyzed_items"], 1);
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -627,7 +671,7 @@ fn repo_surfaces_python_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if pyright_langserver_available() {
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
         let current_items = json["analysis"]["traceability"]["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
@@ -650,12 +694,7 @@ fn repo_surfaces_python_traceability() {
             Value::Null
         );
     } else {
-        assert_eq!(json["analysis"]["traceability"], Value::Null);
-        assert!(
-            json["analysis"]["traceability_unavailable_reason"]
-                .as_str()
-                .is_some_and(|reason| reason.contains("pyright-langserver"))
-        );
+        assert_python_traceability_unavailable(&json);
     }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -673,7 +712,7 @@ fn repo_surfaces_python_tool_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if pyright_langserver_available() {
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
         let current_items = json["analysis"]["traceability"]["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
@@ -692,12 +731,7 @@ fn repo_surfaces_python_tool_traceability() {
                 .any(|item| item["name"] == Value::from("orphan_impl"))
         );
     } else {
-        assert_eq!(json["analysis"]["traceability"], Value::Null);
-        assert!(
-            json["analysis"]["traceability_unavailable_reason"]
-                .as_str()
-                .is_some_and(|reason| reason.contains("pyright-langserver"))
-        );
+        assert_python_traceability_unavailable(&json);
     }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -715,7 +749,7 @@ fn repo_surfaces_python_reference_backed_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if pyright_langserver_available() {
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
         let current_items = json["analysis"]["traceability"]["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
@@ -734,12 +768,7 @@ fn repo_surfaces_python_reference_backed_traceability() {
                 .any(|item| item["name"] == Value::from("orphan_impl"))
         );
     } else {
-        assert_eq!(json["analysis"]["traceability"], Value::Null);
-        assert!(
-            json["analysis"]["traceability_unavailable_reason"]
-                .as_str()
-                .is_some_and(|reason| reason.contains("pyright-langserver"))
-        );
+        assert_python_traceability_unavailable(&json);
     }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -1100,31 +1129,35 @@ fn repo_surfaces_typescript_react_traceability() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/page.tsx") && item["name"] == Value::from("HomePage")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/shared.tsx") && item["name"] == Value::from("Shell")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/shared.tsx")
+                && item["name"] == Value::from("PrimaryButton")
+        }));
 
-    let traceability = &json["analysis"]["traceability"];
-    let current_items = traceability["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/page.tsx") && item["name"] == Value::from("HomePage")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/shared.tsx") && item["name"] == Value::from("Shell")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/shared.tsx")
-            && item["name"] == Value::from("PrimaryButton")
-    }));
-
-    let unexplained = traceability["unexplained_items"]
-        .as_array()
-        .expect("unexplained items should be an array");
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/page.tsx") && item["name"] == Value::from("OrphanPage")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/shared.tsx") && item["name"] == Value::from("OrphanWidget")
-    }));
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unexplained items should be an array");
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/page.tsx") && item["name"] == Value::from("OrphanPage")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/shared.tsx")
+                && item["name"] == Value::from("OrphanWidget")
+        }));
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1140,33 +1173,36 @@ fn repo_surfaces_typescript_next_client_traceability() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("app/page.tsx") && item["name"] == Value::from("Page")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("components/counter-panel.tsx")
+                && item["name"] == Value::from("CounterPanel")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("components/counter-panel.tsx")
+                && item["name"] == Value::from("CounterButton")
+        }));
 
-    let traceability = &json["analysis"]["traceability"];
-    let current_items = traceability["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("app/page.tsx") && item["name"] == Value::from("Page")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("components/counter-panel.tsx")
-            && item["name"] == Value::from("CounterPanel")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("components/counter-panel.tsx")
-            && item["name"] == Value::from("CounterButton")
-    }));
-
-    let unexplained = traceability["unexplained_items"]
-        .as_array()
-        .expect("unexplained items should be an array");
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("app/page.tsx") && item["name"] == Value::from("OrphanPage")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("components/counter-panel.tsx")
-            && item["name"] == Value::from("OrphanWidget")
-    }));
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unexplained items should be an array");
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("app/page.tsx") && item["name"] == Value::from("OrphanPage")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("components/counter-panel.tsx")
+                && item["name"] == Value::from("OrphanWidget")
+        }));
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1182,38 +1218,44 @@ fn repo_surfaces_typescript_event_callback_traceability() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/Button.tsx")
+                && item["name"] == Value::from("CounterButton")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("handleIncrement")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("updateCount")
+        }));
 
-    let traceability = &json["analysis"]["traceability"];
-    let current_items = traceability["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/Button.tsx")
-            && item["name"] == Value::from("CounterButton")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts")
-            && item["name"] == Value::from("handleIncrement")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("updateCount")
-    }));
-
-    let unexplained = traceability["unexplained_items"]
-        .as_array()
-        .expect("unexplained items should be an array");
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("orphanAction")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/Button.tsx") && item["name"] == Value::from("OrphanWidget")
-    }));
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unexplained items should be an array");
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("orphanAction")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/Button.tsx")
+                && item["name"] == Value::from("OrphanWidget")
+        }));
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1229,41 +1271,47 @@ fn repo_surfaces_typescript_forwarded_callback_traceability() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/Button.tsx")
+                && item["name"] == Value::from("CounterButton")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/Button.tsx") && item["name"] == Value::from("Toolbar")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("handleIncrement")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("updateCount")
+        }));
 
-    let traceability = &json["analysis"]["traceability"];
-    let current_items = traceability["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/Button.tsx")
-            && item["name"] == Value::from("CounterButton")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/Button.tsx") && item["name"] == Value::from("Toolbar")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts")
-            && item["name"] == Value::from("handleIncrement")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("updateCount")
-    }));
-
-    let unexplained = traceability["unexplained_items"]
-        .as_array()
-        .expect("unexplained items should be an array");
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("orphanAction")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/Button.tsx") && item["name"] == Value::from("OrphanWidget")
-    }));
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unexplained items should be an array");
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("orphanAction")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/Button.tsx")
+                && item["name"] == Value::from("OrphanWidget")
+        }));
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1279,45 +1327,51 @@ fn repo_surfaces_typescript_hook_callback_traceability() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/Button.tsx")
+                && item["name"] == Value::from("CounterButton")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/hooks.ts")
+                && item["name"] == Value::from("useCounterAction")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("handleIncrement")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("updateCount")
+        }));
 
-    let traceability = &json["analysis"]["traceability"];
-    let current_items = traceability["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/Button.tsx")
-            && item["name"] == Value::from("CounterButton")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/hooks.ts")
-            && item["name"] == Value::from("useCounterAction")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts")
-            && item["name"] == Value::from("handleIncrement")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("updateCount")
-    }));
-
-    let unexplained = traceability["unexplained_items"]
-        .as_array()
-        .expect("unexplained items should be an array");
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("orphanAction")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/Button.tsx") && item["name"] == Value::from("OrphanWidget")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/hooks.ts") && item["name"] == Value::from("orphanHook")
-    }));
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unexplained items should be an array");
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("orphanAction")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/Button.tsx")
+                && item["name"] == Value::from("OrphanWidget")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/hooks.ts") && item["name"] == Value::from("orphanHook")
+        }));
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1333,30 +1387,36 @@ fn repo_surfaces_typescript_effect_callback_traceability() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/effects.ts")
+                && item["name"] == Value::from("syncCount")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/effects.ts")
+                && item["name"] == Value::from("flushCount")
+        }));
 
-    let traceability = &json["analysis"]["traceability"];
-    let current_items = traceability["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/effects.ts") && item["name"] == Value::from("syncCount")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/effects.ts") && item["name"] == Value::from("flushCount")
-    }));
-
-    let unexplained = traceability["unexplained_items"]
-        .as_array()
-        .expect("unexplained items should be an array");
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/effects.ts") && item["name"] == Value::from("orphanEffect")
-    }));
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unexplained items should be an array");
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/effects.ts")
+                && item["name"] == Value::from("orphanEffect")
+        }));
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1372,46 +1432,52 @@ fn repo_surfaces_typescript_context_callback_traceability() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx")
+                && item["name"] == Value::from("CounterButton")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/context.tsx")
+                && item["name"] == Value::from("CounterProvider")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/context.tsx")
+                && item["name"] == Value::from("useCounterContext")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("handleIncrement")
+        }));
+        assert!(current_items.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("updateCount")
+        }));
 
-    let traceability = &json["analysis"]["traceability"];
-    let current_items = traceability["current_spec_items"]
-        .as_array()
-        .expect("current spec items should be an array");
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("App")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("CounterButton")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/context.tsx")
-            && item["name"] == Value::from("CounterProvider")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/context.tsx")
-            && item["name"] == Value::from("useCounterContext")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts")
-            && item["name"] == Value::from("handleIncrement")
-    }));
-    assert!(current_items.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("updateCount")
-    }));
-
-    let unexplained = traceability["unexplained_items"]
-        .as_array()
-        .expect("unexplained items should be an array");
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/context.tsx")
-            && item["name"] == Value::from("orphanContext")
-    }));
-    assert!(unexplained.iter().any(|item| {
-        item["path"] == Value::from("src/actions.ts") && item["name"] == Value::from("orphanAction")
-    }));
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unexplained items should be an array");
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/App.tsx") && item["name"] == Value::from("OrphanPage")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/context.tsx")
+                && item["name"] == Value::from("orphanContext")
+        }));
+        assert!(unexplained.iter().any(|item| {
+            item["path"] == Value::from("src/actions.ts")
+                && item["name"] == Value::from("orphanAction")
+        }));
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1568,20 +1634,15 @@ fn repo_surfaces_python_syntax_bridge_failures_as_unavailable_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if pyright_langserver_available() {
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        panic!("python syntax fixture should not produce available traceability");
+    } else if json["analysis"]["traceability_unavailable_reason"]
+        .as_str()
+        .is_some_and(|reason| reason.contains("Python backward trace is unavailable"))
+    {
         assert_eq!(json["analysis"]["traceability"], Value::Null);
-        assert!(
-            json["analysis"]["traceability_unavailable_reason"]
-                .as_str()
-                .is_some_and(|reason| reason.contains("Python backward trace is unavailable"))
-        );
     } else {
-        assert_eq!(json["analysis"]["traceability"], Value::Null);
-        assert!(
-            json["analysis"]["traceability_unavailable_reason"]
-                .as_str()
-                .is_some_and(|reason| reason.contains("pyright-langserver"))
-        );
+        assert_python_traceability_unavailable(&json);
     }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");

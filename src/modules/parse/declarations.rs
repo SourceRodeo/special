@@ -258,8 +258,33 @@ fn normalize_markdown_annotation_line(line: &str) -> Option<&str> {
         .strip_prefix("- ")
         .or_else(|| trimmed.strip_prefix("* "))
         .unwrap_or(trimmed);
-    let trimmed = trimmed.strip_prefix('`').unwrap_or(trimmed);
-    let trimmed = trimmed.strip_suffix('`').unwrap_or(trimmed);
+    let trimmed = trimmed
+        .strip_prefix('`')
+        .and_then(|inner| inner.strip_suffix('`'))
+        .unwrap_or(trimmed);
     let trimmed = trimmed.trim();
     (!trimmed.is_empty()).then_some(trimmed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalized_annotation_line;
+
+    #[test]
+    fn normalized_annotation_line_preserves_inline_code_at_line_start() {
+        assert_eq!(
+            normalized_annotation_line(Some(
+                "`paypal config` manages `paypal.env.yaml` against linked remote apps."
+            )),
+            Some("`paypal config` manages `paypal.env.yaml` against linked remote apps.")
+        );
+    }
+
+    #[test]
+    fn normalized_annotation_line_unwraps_whole_line_code_span() {
+        assert_eq!(
+            normalized_annotation_line(Some("`@module APP.CORE`")),
+            Some("@module APP.CORE")
+        );
+    }
 }

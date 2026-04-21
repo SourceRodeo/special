@@ -28,17 +28,18 @@ pub(super) struct PyrightCallableItem {
 }
 
 pub(super) fn available() -> bool {
-    tool_path("node").is_some() && tool_path("pyright-langserver").is_some()
+    mise_managed_tool_available("pyright-langserver")
 }
 
 pub(super) fn environment_fingerprint() -> String {
-    let node = tool_path("node")
-        .map(|path| path.display().to_string())
-        .unwrap_or_else(|| "unavailable".to_string());
-    let pyright = tool_path("pyright-langserver")
-        .map(|path| path.display().to_string())
-        .unwrap_or_else(|| "unavailable".to_string());
-    format!("node={node};pyright_langserver={pyright}")
+    let pyright = if mise_managed_tool_available("pyright-langserver") {
+        "available-via-mise".to_string()
+    } else {
+        tool_path("pyright-langserver")
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|| "unavailable".to_string())
+    };
+    format!("pyright_langserver={pyright}")
 }
 
 pub(super) fn build_reachable_call_edges(
@@ -205,15 +206,14 @@ struct PyrightClient {
 
 impl PyrightClient {
     fn start(root: &Path) -> Result<Self> {
-        let node = tool_path("node").context("node is unavailable through mise")?;
-        let langserver =
-            tool_path("pyright-langserver").context("pyright-langserver is unavailable through mise")?;
-        let mut child = Command::new(node)
-            .arg(langserver)
-            .arg("--stdio")
+        let mut command = Command::new("mise");
+        command
+            .args(["exec", "--", "pyright-langserver", "--stdio"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .current_dir(special_runtime_root().unwrap_or_else(|| root.to_path_buf()));
+        let mut child = command
             .spawn()
             .context("failed to launch pyright-langserver")?;
         let stderr = child.stderr.take().context("pyright stderr missing")?;
@@ -499,6 +499,26 @@ fn normalize_path(path: impl AsRef<Path>) -> PathBuf {
 
 fn tool_path(tool: &str) -> Option<PathBuf> {
     which_via_mise(tool).or_else(|| which_on_path(tool))
+}
+
+fn mise_managed_tool_available(tool: &str) -> bool {
+    let mut command = Command::new("mise");
+    command
+        .args(["exec", "--", tool, "--stdio"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    if let Some(cwd) = special_runtime_root() {
+        command.current_dir(cwd);
+    }
+    command
+        .spawn()
+        .map(|mut child| {
+            let _ = child.kill();
+            let _ = child.wait();
+            true
+        })
+        .unwrap_or(false)
 }
 
 fn which_via_mise(tool: &str) -> Option<PathBuf> {

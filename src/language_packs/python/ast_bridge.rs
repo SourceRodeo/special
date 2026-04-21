@@ -14,29 +14,14 @@ use crate::syntax::{
     SourceLanguage, SourceSpan,
 };
 
-macro_rules! include_str_path {
-    ($relative:literal) => {
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/src/language_packs/python/",
-            $relative
-        )
-    };
-}
+const PYTHON_AST_BRIDGE_SCRIPT: &str = include_str!("parse_source_graph.py");
 
 pub(super) fn parse_source_graph(path: &Path, text: &str) -> Option<ParsedSourceGraph> {
     parse_source_graph_result(path, text).ok()
 }
 
 pub(super) fn parse_source_graph_result(path: &Path, text: &str) -> Result<ParsedSourceGraph> {
-    let mut child = Command::new("mise")
-        .args([
-            "exec",
-            "--",
-            "python3",
-            include_str_path!("parse_source_graph.py"),
-            &path.display().to_string(),
-        ])
+    let mut child = bridge_command(path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -73,6 +58,23 @@ pub(super) fn parse_source_graph_result(path: &Path, text: &str) -> Result<Parse
         language: SourceLanguage::new("python"),
         items: payload.items.into_iter().map(|item| item.into_source_item(path)).collect(),
     })
+}
+
+fn bridge_command(path: &Path) -> Command {
+    let mut command = Command::new("mise");
+    command.args(bridge_command_args(path));
+    command
+}
+
+fn bridge_command_args(path: &Path) -> Vec<String> {
+    vec![
+        "exec".to_string(),
+        "--".to_string(),
+        "python3".to_string(),
+        "-c".to_string(),
+        PYTHON_AST_BRIDGE_SCRIPT.to_string(),
+        path.display().to_string(),
+    ]
 }
 
 #[derive(Deserialize)]
@@ -169,5 +171,26 @@ impl PythonCall {
                 end_byte: self.end_byte,
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::bridge_command_args;
+
+    #[test]
+    fn embedded_bridge_command_does_not_depend_on_manifest_relative_script_paths() {
+        let args = bridge_command_args(Path::new("src/app.py"));
+
+        assert_eq!(args[0], "exec");
+        assert_eq!(args[1], "--");
+        assert_eq!(args[2], "python3");
+        assert_eq!(args[3], "-c");
+        assert!(args[4].contains("import ast"));
+        assert!(!args[4].contains("parse_source_graph.py"));
+        assert!(!args[4].contains(env!("CARGO_MANIFEST_DIR")));
+        assert_eq!(args[5], "src/app.py");
     }
 }
