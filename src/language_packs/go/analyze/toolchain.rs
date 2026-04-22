@@ -4,6 +4,7 @@ Discovers local Go tooling and manages temporary Go analysis runtime state for t
 */
 // @fileimplements SPECIAL.LANGUAGE_PACKS.GO.ANALYZE.TOOLCHAIN
 use std::fs;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -98,10 +99,15 @@ impl Drop for TempDirGuard {
 }
 
 pub(super) fn create_temp_dir(prefix: &str) -> Option<TempDirGuard> {
-    let unique = TEMP_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let path = std::env::temp_dir().join(format!("{prefix}-{}-{unique}", std::process::id()));
-    fs::create_dir_all(&path).ok()?;
-    Some(TempDirGuard { path })
+    loop {
+        let unique = TEMP_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!("{prefix}-{}-{unique}", std::process::id()));
+        match fs::create_dir(&path) {
+            Ok(()) => return Some(TempDirGuard { path }),
+            Err(error) if error.kind() == ErrorKind::AlreadyExists => continue,
+            Err(_) => return None,
+        }
+    }
 }
 
 #[derive(Deserialize)]

@@ -144,9 +144,14 @@ fn section_items(output: &str, section_heading: &str) -> Vec<String> {
             if line.trim().is_empty() {
                 break;
             }
-            if line.starts_with("  ") && !line.starts_with("    ") {
-                items.push(line.trim_start().to_string());
+            if !line
+                .chars()
+                .next()
+                .is_some_and(|character| character.is_whitespace())
+            {
+                break;
             }
+            items.push(line.trim().to_string());
         }
     }
 

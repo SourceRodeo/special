@@ -5,6 +5,7 @@ Serializes, deserializes, and atomically writes parsed and analysis cache entrie
 // @fileimplements SPECIAL.CACHE.STORAGE
 use std::fs;
 use std::hash::{Hash, Hasher};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -175,11 +176,29 @@ fn write_cache_bytes(path: &Path, bytes: &[u8]) -> Result<()> {
     }
     let temp_path = cache_temp_path(path);
     fs::write(&temp_path, bytes)?;
-    if let Err(error) = fs::rename(&temp_path, path) {
+    if let Err(error) = replace_cache_file(&temp_path, path) {
         let _ = fs::remove_file(&temp_path);
         return Err(error.into());
     }
     Ok(())
+}
+
+fn replace_cache_file(temp_path: &Path, path: &Path) -> std::io::Result<()> {
+    match fs::rename(temp_path, path) {
+        Ok(()) => Ok(()),
+        Err(error)
+            if cfg!(windows)
+                && path.exists()
+                && matches!(
+                    error.kind(),
+                    ErrorKind::AlreadyExists | ErrorKind::PermissionDenied
+                ) =>
+        {
+            fs::remove_file(path)?;
+            fs::rename(temp_path, path)
+        }
+        Err(error) => Err(error),
+    }
 }
 
 fn cache_temp_path(path: &Path) -> PathBuf {

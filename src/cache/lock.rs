@@ -43,7 +43,7 @@ pub(super) fn acquire_cache_fill_lock_with_hooks(
         {
             Ok(_) => {
                 let owner_token = next_cache_lock_owner();
-                refresh_cache_lock(&lock_path, &owner_token);
+                refresh_cache_lock(&lock_path, &owner_token)?;
                 return Ok(CacheFillGuard {
                     path: lock_path.clone(),
                     owner_token: owner_token.clone(),
@@ -132,21 +132,28 @@ pub(super) fn start_cache_lock_heartbeat(
             if cache_lock_owner(&lock_path).as_deref() != Some(owner_token.as_str()) {
                 break;
             }
-            refresh_cache_lock(&lock_path, &owner_token);
+            if let Err(error) = refresh_cache_lock(&lock_path, &owner_token) {
+                stats::emit_cache_status(&format!(
+                    "stopped refreshing cache lock {} after write failure: {error}",
+                    lock_path.display()
+                ));
+                break;
+            }
         }
     });
     CacheLockHeartbeat { stop, handle }
 }
 
-fn refresh_cache_lock(lock_path: &Path, owner_token: &str) {
+fn refresh_cache_lock(lock_path: &Path, owner_token: &str) -> Result<()> {
     let stamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_nanos().to_string())
         .unwrap_or_else(|_| "0".to_string());
-    let _ = fs::write(
+    fs::write(
         lock_path,
         format!("owner={owner_token}\nupdated_nanos={stamp}\n"),
-    );
+    )?;
+    Ok(())
 }
 
 pub(super) fn cache_lock_owner(lock_path: &Path) -> Option<String> {

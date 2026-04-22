@@ -581,6 +581,8 @@ fn build_tool_call_edges(
     if let Some(stdin) = child.stdin.as_mut()
         && stdin.write_all(&json_input).is_err()
     {
+        let _ = child.kill();
+        let _ = child.wait();
         return Err(anyhow!("failed to write input to TypeScript trace helper"));
     }
     let _ = child.stdin.take();
@@ -668,8 +670,12 @@ fn build_tool_module_graph(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
-    if let Some(stdin) = child.stdin.as_mut() {
-        stdin.write_all(&json_input)?;
+    if let Some(stdin) = child.stdin.as_mut()
+        && let Err(error) = stdin.write_all(&json_input)
+    {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(error.into());
     }
     let _ = child.stdin.take();
 

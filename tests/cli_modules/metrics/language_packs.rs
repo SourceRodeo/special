@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 /**
 @module SPECIAL.TESTS.CLI_MODULES.METRICS.LANGUAGE_PACKS
 Language-pack-specific metrics coverage tests for `special arch --metrics`.
@@ -11,6 +12,15 @@ use crate::go_test_fixtures::write_go_module_analysis_fixture;
 use crate::python_test_fixtures::write_python_module_analysis_fixture;
 use crate::support::{find_node_by_id, run_special, temp_repo_dir};
 use crate::typescript_test_fixtures::write_typescript_module_analysis_fixture;
+
+fn unreached_item_names(demo: &Value) -> BTreeSet<String> {
+    demo["analysis"]["item_signals"]["unreached_items"]
+        .as_array()
+        .expect("unreached items should be an array")
+        .iter()
+        .filter_map(|item| item["name"].as_str().map(ToString::to_string))
+        .collect()
+}
 
 #[test]
 // @verifies SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT
@@ -72,12 +82,13 @@ fn modules_metrics_json_includes_structured_typescript_analysis() {
     assert!(targets.iter().any(|target| {
         target["path"] == Value::String("node:fs".to_string()) && target["count"] == 1
     }));
-    assert!(
-        demo["analysis"]["item_signals"]["unreached_items"]
-            .as_array()
-            .expect("unreached items should be an array")
-            .iter()
-            .any(|item| item["name"].as_str() == Some("unreachedClusterEntry"))
+    assert_eq!(
+        unreached_item_names(demo),
+        BTreeSet::from([
+            "isolatedExternal".to_string(),
+            "unreachedClusterEntry".to_string(),
+            "unreachedClusterLeaf".to_string(),
+        ])
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -143,12 +154,13 @@ fn modules_metrics_json_includes_structured_go_analysis() {
     assert!(targets.iter().any(|target| {
         target["path"] == Value::String("shared".to_string()) && target["count"] == 1
     }));
-    assert!(
-        demo["analysis"]["item_signals"]["unreached_items"]
-            .as_array()
-            .expect("unreached items should be an array")
-            .iter()
-            .any(|item| item["name"].as_str() == Some("unreachedClusterEntry"))
+    assert_eq!(
+        unreached_item_names(demo),
+        BTreeSet::from([
+            "isolatedExternal".to_string(),
+            "unreachedClusterEntry".to_string(),
+            "unreachedClusterLeaf".to_string(),
+        ])
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -199,12 +211,13 @@ fn modules_metrics_json_includes_structured_python_analysis() {
         demo["analysis"]["item_signals"]["unreached_item_count"],
         Value::from(3)
     );
-    assert!(
-        demo["analysis"]["item_signals"]["unreached_items"]
-            .as_array()
-            .expect("unreached items should be an array")
-            .iter()
-            .any(|item| item["name"].as_str() == Some("_unreached_cluster_entry"))
+    assert_eq!(
+        unreached_item_names(demo),
+        BTreeSet::from([
+            "_isolated_external".to_string(),
+            "_unreached_cluster_entry".to_string(),
+            "_unreached_cluster_leaf".to_string(),
+        ])
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");

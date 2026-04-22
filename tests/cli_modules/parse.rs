@@ -18,6 +18,14 @@ use crate::support::{
     write_unknown_implements_fixture,
 };
 
+fn expect_single_implementation<'a>(node: &'a Value, message: &str) -> &'a Value {
+    let implementations = node["implements"]
+        .as_array()
+        .expect("implements should be an array");
+    assert_eq!(implementations.len(), 1, "{message}");
+    &implementations[0]
+}
+
 #[test]
 // @verifies SPECIAL.MODULE_PARSE.MARKDOWN_DECLARATIONS
 fn modules_read_markdown_architecture_declarations_when_present() {
@@ -125,10 +133,10 @@ fn modules_record_top_of_file_implements_without_owned_item_body() {
         .as_array()
         .and_then(|nodes| nodes.iter().find_map(|node| find_node_by_id(node, "DEMO")))
         .expect("DEMO module should be present");
-    let implementation = demo["implements"]
-        .as_array()
-        .and_then(|items: &Vec<Value>| items.first())
-        .expect("file-scoped implementation should be present");
+    let implementation = expect_single_implementation(
+        demo,
+        "file-scoped module fixture should expose exactly one implementation",
+    );
     assert!(implementation["body"].is_null());
     assert!(implementation["body_location"].is_null());
 
@@ -154,10 +162,10 @@ fn modules_attach_owned_item_bodies_for_item_scoped_implements() {
                 .find_map(|node| find_node_by_id(node, "DEMO.LIVE"))
         })
         .expect("DEMO.LIVE module should be present");
-    let implementation = demo_live["implements"]
-        .as_array()
-        .and_then(|items: &Vec<Value>| items.first())
-        .expect("item-scoped implementation should be present");
+    let implementation = expect_single_implementation(
+        demo_live,
+        "item-scoped module fixture should expose exactly one implementation",
+    );
     assert_eq!(
         implementation["body"],
         Value::String("fn implements_demo_live() {}".to_string())

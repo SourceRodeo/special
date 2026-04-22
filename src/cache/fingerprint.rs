@@ -86,6 +86,19 @@ pub(super) fn language_pack_scope_facts_fingerprint(
         }
         hash_file_contents(path, &mut hasher);
     }
+    for path in language_pack_manifest_inputs(root, language_id) {
+        path.hash(&mut hasher);
+        if let Ok(metadata) = fs::metadata(&path) {
+            metadata.len().hash(&mut hasher);
+            if let Ok(modified) = metadata.modified()
+                && let Ok(duration) = modified.duration_since(UNIX_EPOCH)
+            {
+                duration.as_secs().hash(&mut hasher);
+                duration.subsec_nanos().hash(&mut hasher);
+            }
+        }
+        hash_file_contents(&path, &mut hasher);
+    }
     Ok(hasher.finish())
 }
 
@@ -155,4 +168,41 @@ fn hash_file_contents(path: &Path, hasher: &mut DefaultHasher) {
         return;
     };
     contents.hash(hasher);
+}
+
+fn language_pack_manifest_inputs(root: &Path, language_id: &str) -> Vec<std::path::PathBuf> {
+    let candidates: &[&str] = match language_id {
+        "rust" => &[
+            "Cargo.toml",
+            "Cargo.lock",
+            "rust-toolchain",
+            "rust-toolchain.toml",
+        ],
+        "go" => &["go.mod", "go.sum", "vendor/modules.txt"],
+        "typescript" => &[
+            "package.json",
+            "package-lock.json",
+            "pnpm-lock.yaml",
+            "yarn.lock",
+            "tsconfig.json",
+            "jsconfig.json",
+        ],
+        "python" => &[
+            "pyproject.toml",
+            "poetry.lock",
+            "requirements.txt",
+            "requirements-dev.txt",
+            "requirements.lock",
+            "uv.lock",
+            "Pipfile",
+            "Pipfile.lock",
+        ],
+        _ => &[],
+    };
+
+    candidates
+        .iter()
+        .map(|relative| root.join(relative))
+        .filter(|path| path.is_file())
+        .collect()
 }

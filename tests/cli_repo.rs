@@ -136,8 +136,8 @@ use rust_test_fixtures::{
     write_traceability_review_surface_fixture,
 };
 use support::{
-    run_special, rust_analyzer_available, spawn_special, temp_repo_dir, top_level_help_commands,
-    write_duplicate_item_signals_module_analysis_fixture,
+    pyright_langserver_available, run_special, rust_analyzer_available, spawn_special,
+    temp_repo_dir, top_level_help_commands, write_duplicate_item_signals_module_analysis_fixture,
     write_many_duplicate_item_signals_module_analysis_fixture,
     write_unreached_code_module_analysis_fixture,
 };
@@ -269,12 +269,9 @@ fn repo_json_includes_structured_repo_signals() {
         json["analysis"]["repo_signals"]["duplicate_items"],
         Value::from(2)
     );
-    assert_eq!(
-        json["analysis"]["repo_signals"]["duplicate_item_details"]
-            .as_array()
-            .expect("duplicate items should be an array")
-            .len(),
-        2
+    assert!(
+        json["analysis"]["repo_signals"]["duplicate_item_details"].is_null(),
+        "non-verbose repo signals should omit duplicate detail vectors"
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -546,7 +543,11 @@ fn repo_scope_limits_repo_signals_to_matching_files() {
         Value::from(1)
     );
     assert_eq!(duplicate_items.len(), 1);
-    assert_eq!(duplicate_items[0]["path"], Value::from("alpha.rs"));
+    let duplicate = duplicate_items
+        .iter()
+        .find(|item| item["path"] == "alpha.rs")
+        .expect("scoped duplicate details should include alpha.rs");
+    assert_eq!(duplicate["path"], Value::from("alpha.rs"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -618,7 +619,13 @@ fn repo_symbol_scope_narrows_health_view_to_one_symbol() {
             .as_array()
             .expect("current items should be an array");
         assert_eq!(current_items.len(), 1);
-        assert_eq!(current_items[0]["name"], "liveImpl");
+        assert_eq!(
+            current_items
+                .iter()
+                .find(|item| item["name"] == "liveImpl")
+                .expect("current items should include liveImpl")["name"],
+            Value::from("liveImpl")
+        );
         assert_eq!(analysis["analyzed_items"], 1);
     } else {
         assert_typescript_traceability_unavailable(&json);
@@ -738,7 +745,7 @@ fn repo_surfaces_python_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+    if pyright_langserver_available() {
         let current_items = json["analysis"]["traceability"]["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
@@ -779,7 +786,7 @@ fn repo_surfaces_python_tool_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+    if pyright_langserver_available() {
         let current_items = json["analysis"]["traceability"]["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
@@ -816,7 +823,7 @@ fn repo_surfaces_python_reference_backed_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+    if pyright_langserver_available() {
         let current_items = json["analysis"]["traceability"]["current_spec_items"]
             .as_array()
             .expect("current spec items should be an array");
@@ -945,18 +952,18 @@ fn repo_traceability_resolves_instance_method_dispatch_when_rust_analyzer_is_ava
             .as_array()
             .expect("unexplained items should be an array");
         assert_eq!(unexplained.len(), 1);
-        assert_eq!(unexplained[0]["name"], Value::from("orphan_impl"));
-        assert_eq!(unexplained[0]["public"], Value::from(false));
-        assert_eq!(unexplained[0]["test_file"], Value::from(false));
+        let orphan = unexplained
+            .iter()
+            .find(|item| item["name"] == "orphan_impl")
+            .expect("unexplained items should include orphan_impl");
+        assert_eq!(orphan["public"], Value::from(false));
+        assert_eq!(orphan["test_file"], Value::from(false));
+        assert_eq!(orphan["module_backed_by_current_specs"], Value::from(true));
         assert_eq!(
-            unexplained[0]["module_backed_by_current_specs"],
-            Value::from(true)
-        );
-        assert_eq!(
-            unexplained[0]["module_connected_to_current_specs"],
+            orphan["module_connected_to_current_specs"],
             Value::from(false)
         );
-        assert_eq!(unexplained[0]["module_ids"], serde_json::json!(["DEMO"]));
+        assert_eq!(orphan["module_ids"], serde_json::json!(["DEMO"]));
         assert_eq!(
             json["analysis"]["traceability_unavailable_reason"],
             Value::Null
@@ -1729,7 +1736,7 @@ fn repo_surfaces_python_syntax_bridge_failures_as_unavailable_traceability() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
 
-    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+    if pyright_langserver_available() {
         panic!("python syntax fixture should not produce available traceability");
     } else if json["analysis"]["traceability_unavailable_reason"]
         .as_str()

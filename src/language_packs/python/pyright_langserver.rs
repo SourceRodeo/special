@@ -511,6 +511,13 @@ impl PyrightClient {
     }
 }
 
+impl Drop for PyrightClient {
+    fn drop(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
 fn start_client_for_items(
     root: &Path,
     items: &[PyrightCallableItem],
@@ -600,7 +607,7 @@ fn tool_path(tool: &str) -> Option<PathBuf> {
 fn mise_managed_tool_available(tool: &str) -> bool {
     let mut command = Command::new("mise");
     command
-        .args(["exec", "--", tool, "--stdio"])
+        .args(["exec", "--", tool, "--help"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -608,12 +615,8 @@ fn mise_managed_tool_available(tool: &str) -> bool {
         command.current_dir(cwd);
     }
     command
-        .spawn()
-        .map(|mut child| {
-            let _ = child.kill();
-            let _ = child.wait();
-            true
-        })
+        .status()
+        .map(|status| status.success())
         .unwrap_or(false)
 }
 
@@ -664,11 +667,11 @@ fn query_call_character(path: &Path, call: &SourceCall) -> Result<usize> {
         .unwrap_or_default();
     let start = call.span.start_column.min(line.len());
     let end = call.span.end_column.min(line.len()).max(start);
-    let segment = &line[start..end];
+    let (segment_start, segment) = safe_byte_range(line, start, end);
     Ok(segment
         .find(&call.name)
-        .map(|offset| start + offset)
-        .unwrap_or(start))
+        .map(|offset| segment_start + offset)
+        .unwrap_or(segment_start))
 }
 
 fn query_item_character(path: &Path, item: &PyrightCallableItem) -> Result<usize> {
@@ -700,6 +703,16 @@ fn definition_locations(response: &Value) -> Vec<DefinitionLocation> {
     serde_json::from_value::<DefinitionLocationWire>(response.clone())
         .map(|location| vec![DefinitionLocation::from(location)])
         .unwrap_or_default()
+}
+
+fn safe_byte_range(line: &str, start: usize, end: usize) -> (usize, &str) {
+    if let Some(segment) = line.get(start..end) {
+        return (start, segment);
+    }
+    if let Some(segment) = line.get(start..) {
+        return (start, segment);
+    }
+    (0, line)
 }
 
 #[cfg(test)]

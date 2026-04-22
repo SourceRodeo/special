@@ -763,7 +763,18 @@ fn collect_toolchain_binary_entrypoints(
     project: &RustToolchainProject,
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
 ) -> BTreeMap<String, BTreeSet<String>> {
-    collect_binary_entrypoints_for_sources(source_graphs, project.binary_target_sources())
+    collect_binary_entrypoints_for_sources(
+        source_graphs,
+        project
+            .binary_target_sources()
+            .into_iter()
+            .flat_map(|(bin_name, paths)| {
+                paths
+                    .into_iter()
+                    .map(move |path| (bin_name.clone(), path))
+                    .collect::<Vec<_>>()
+            }),
+    )
 }
 
 fn collect_binary_entrypoints_for_sources<I>(
@@ -773,7 +784,7 @@ fn collect_binary_entrypoints_for_sources<I>(
 where
     I: IntoIterator<Item = (String, PathBuf)>,
 {
-    let mut entrypoints = BTreeMap::new();
+    let mut entrypoints: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
 
     for (bin_name, bin_path) in binary_sources {
         let Some(graph) = find_source_graph_for_path(source_graphs, &bin_path) else {
@@ -786,7 +797,7 @@ where
             .map(|item| item.stable_id.clone())
             .collect::<BTreeSet<_>>();
         if !main_ids.is_empty() {
-            entrypoints.insert(bin_name, main_ids);
+            entrypoints.entry(bin_name).or_default().extend(main_ids);
         }
     }
 

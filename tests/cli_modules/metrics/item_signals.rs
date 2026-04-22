@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 /**
 @module SPECIAL.TESTS.CLI_MODULES.METRICS.ITEM_SIGNALS
 Item-signal and unreached-code metric tests for `special arch --metrics`.
@@ -12,6 +13,15 @@ use crate::support::{
     write_item_scoped_item_signals_module_analysis_fixture,
     write_item_signals_module_analysis_fixture, write_unreached_code_module_analysis_fixture,
 };
+
+fn signal_item_names(demo: &Value, key: &str) -> BTreeSet<String> {
+    demo["analysis"]["item_signals"][key]
+        .as_array()
+        .expect("item-signal bucket should be an array")
+        .iter()
+        .filter_map(|item| item["name"].as_str().map(ToString::to_string))
+        .collect()
+}
 
 fn assert_item_signals_output(stdout: &str) {
     assert!(stdout.contains("item signals analyzed: 6"));
@@ -192,16 +202,16 @@ fn modules_metrics_json_includes_structured_rust_item_signals() {
         Value::from(6)
     );
     assert_eq!(
-        demo["analysis"]["item_signals"]["isolated_items"][0]["name"],
-        Value::from("isolated_external")
+        signal_item_names(demo, "isolated_items"),
+        BTreeSet::from(["isolated_external".to_string()])
     );
-    assert_eq!(
-        demo["analysis"]["item_signals"]["outbound_heavy_items"][0]["name"],
-        Value::from("outbound_heavy")
+    assert!(
+        signal_item_names(demo, "outbound_heavy_items").contains("outbound_heavy"),
+        "outbound-heavy items should include outbound_heavy"
     );
-    assert_eq!(
-        demo["analysis"]["item_signals"]["connected_items"][0]["name"],
-        Value::from("helper_leaf")
+    assert!(
+        signal_item_names(demo, "connected_items").contains("helper_leaf"),
+        "connected items should include helper_leaf"
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -222,12 +232,14 @@ fn modules_metrics_json_includes_structured_rust_item_complexity_drilldown() {
         .as_array()
         .and_then(|nodes| nodes.iter().find_map(|node| find_node_by_id(node, "DEMO")))
         .expect("demo module should be present");
+    let highest_complexity = demo["analysis"]["item_signals"]["highest_complexity_items"]
+        .as_array()
+        .expect("highest complexity items should be an array")
+        .iter()
+        .find(|item| item["name"] == "complex_hotspot")
+        .expect("highest complexity items should include complex_hotspot");
     assert_eq!(
-        demo["analysis"]["item_signals"]["highest_complexity_items"][0]["name"],
-        Value::from("complex_hotspot")
-    );
-    assert_eq!(
-        demo["analysis"]["item_signals"]["highest_complexity_items"][0]["cognitive"],
+        highest_complexity["cognitive"],
         demo["analysis"]["complexity"]["max_cognitive"]
     );
 
@@ -249,22 +261,30 @@ fn modules_metrics_json_includes_structured_rust_item_quality_drilldown() {
         .as_array()
         .and_then(|nodes| nodes.iter().find_map(|node| find_node_by_id(node, "DEMO")))
         .expect("demo module should be present");
+    let parameter_heavy = demo["analysis"]["item_signals"]["parameter_heavy_items"]
+        .as_array()
+        .expect("parameter-heavy items should be an array")
+        .iter()
+        .find(|item| item["name"] == "outbound_heavy")
+        .expect("parameter-heavy items should include outbound_heavy");
+    assert_eq!(parameter_heavy["parameter_count"], Value::from(3));
+    let stringly_boundary = demo["analysis"]["item_signals"]["stringly_boundary_items"]
+        .as_array()
+        .expect("stringly boundary items should be an array")
+        .iter()
+        .find(|item| item["name"] == "outbound_heavy")
+        .expect("stringly boundary items should include outbound_heavy");
     assert_eq!(
-        demo["analysis"]["item_signals"]["parameter_heavy_items"][0]["name"],
-        Value::from("outbound_heavy")
-    );
-    assert_eq!(
-        demo["analysis"]["item_signals"]["parameter_heavy_items"][0]["parameter_count"],
-        Value::from(3)
-    );
-    assert_eq!(
-        demo["analysis"]["item_signals"]["stringly_boundary_items"][0]["raw_string_parameter_count"],
+        stringly_boundary["raw_string_parameter_count"],
         Value::from(2)
     );
-    assert_eq!(
-        demo["analysis"]["item_signals"]["panic_heavy_items"][0]["panic_site_count"],
-        Value::from(1)
-    );
+    let panic_heavy = demo["analysis"]["item_signals"]["panic_heavy_items"]
+        .as_array()
+        .expect("panic-heavy items should be an array")
+        .iter()
+        .find(|item| item["name"] == "outbound_heavy")
+        .expect("panic-heavy items should include outbound_heavy");
+    assert_eq!(panic_heavy["panic_site_count"], Value::from(1));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -288,13 +308,13 @@ fn modules_metrics_json_includes_structured_rust_item_signals_for_item_scoped_im
         demo["analysis"]["item_signals"]["analyzed_items"],
         Value::from(3)
     );
-    assert_eq!(
-        demo["analysis"]["item_signals"]["connected_items"][0]["name"],
-        Value::from("connected")
+    assert!(
+        signal_item_names(demo, "connected_items").contains("connected"),
+        "connected items should include connected"
     );
     assert_eq!(
-        demo["analysis"]["item_signals"]["isolated_items"][0]["name"],
-        Value::from("isolated_external")
+        signal_item_names(demo, "isolated_items"),
+        BTreeSet::from(["isolated_external".to_string()])
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");

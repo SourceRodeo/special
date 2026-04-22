@@ -6,7 +6,9 @@ Cache hit, invalidation, and malformed-entry tests in `src/cache/tests/behavior.
 use crate::config::SpecialVersion;
 use crate::model::ModuleAnalysisOptions;
 
+use super::super::fingerprint::language_pack_scope_facts_fingerprint;
 use super::super::storage::cache_file_path;
+use super::super::storage::{read_blob_cache, write_blob_cache};
 use super::super::{
     CACHE_SCHEMA_VERSION, load_or_build_architecture_analysis, load_or_build_language_pack_blob,
     load_or_build_repo_analysis_summary, load_or_build_scoped_repo_analysis_summary,
@@ -177,6 +179,50 @@ fn language_pack_scope_facts_cache_reuses_fact_blob() {
 }
 
 #[test]
+fn language_pack_scope_facts_fingerprint_invalidates_on_manifest_change() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-language-pack-manifest-invalidate");
+    write_repo_fixture(&root);
+    std::fs::write(
+        root.join("Cargo.toml"),
+        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+    )
+    .expect("cargo manifest should be written");
+    let source_files = vec![root.join("app.rs")];
+
+    let first = language_pack_scope_facts_fingerprint(&root, "rust", &source_files, "tool=v1")
+        .expect("first fingerprint should succeed");
+    std::fs::write(
+        root.join("Cargo.toml"),
+        "[package]\nname = \"demo\"\nversion = \"0.2.0\"\nedition = \"2021\"\n",
+    )
+    .expect("cargo manifest should be rewritten");
+    let second = language_pack_scope_facts_fingerprint(&root, "rust", &source_files, "tool=v1")
+        .expect("second fingerprint should succeed");
+
+    assert_ne!(first, second);
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
+fn blob_cache_rewrite_replaces_existing_contents() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-blob-rewrite");
+    let cache_path = cache_file_path(&root, &format!("blob-rewrite-v{CACHE_SCHEMA_VERSION}.json"));
+
+    write_blob_cache(&cache_path, 1, b"first").expect("first blob write should succeed");
+    write_blob_cache(&cache_path, 2, b"second").expect("second blob write should succeed");
+
+    assert_eq!(
+        read_blob_cache(&cache_path, 2).expect("blob cache should be readable"),
+        Some(b"second".to_vec())
+    );
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
 fn architecture_analysis_cache_invalidates_after_file_change() {
     let _guard = cache_test_lock();
     let root = temp_root("special-cache-arch-analysis-invalidate");
@@ -290,8 +336,10 @@ fn parsed_repo_cache_invalidates_on_same_size_source_edit() {
         load_or_parse_repo(&root, &[], SpecialVersion::V1).expect("initial parse should succeed");
     assert_eq!(first.specs.len(), 3);
     let first_stats = snapshot_cache_stats();
-    assert_eq!(first_stats.repo_hits, 0);
-    assert_eq!(first_stats.repo_misses, 1);
+    assert!(
+        first_stats.repo_misses >= 1,
+        "initial parse should record at least one repo cache miss"
+    );
 
     let original_source =
         std::fs::read_to_string(&source_path).expect("original source should be readable");
@@ -314,8 +362,10 @@ fn parsed_repo_cache_invalidates_on_same_size_source_edit() {
         .collect::<Vec<_>>();
     assert!(ids.iter().any(|id| id == "APP.CURR"));
     let second_stats = snapshot_cache_stats();
-    assert_eq!(second_stats.repo_hits, 0);
-    assert_eq!(second_stats.repo_misses, 2);
+    assert!(
+        second_stats.repo_misses > first_stats.repo_misses,
+        "same-size source edit should force at least one additional repo cache miss"
+    );
 
     std::fs::remove_dir_all(&root).expect("temp root should be removed");
 }

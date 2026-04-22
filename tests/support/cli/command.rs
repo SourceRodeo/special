@@ -59,14 +59,7 @@ pub fn run_special_with_input(root: &Path, args: &[&str], input: &str) -> std::p
         .spawn()
         .expect("special command should run");
 
-    child
-        .stdin
-        .as_mut()
-        .expect("stdin should be piped")
-        .write_all(input.as_bytes())
-        .expect("input should be written");
-    let _ = child.stdin.take();
-
+    write_child_input(&mut child, input);
     child.wait_with_output().expect("output should be captured")
 }
 
@@ -88,13 +81,7 @@ pub fn run_special_with_input_and_env(
     }
 
     let mut child = command.spawn().expect("special command should run");
-    child
-        .stdin
-        .as_mut()
-        .expect("stdin should be piped")
-        .write_all(input.as_bytes())
-        .expect("input should be written");
-    let _ = child.stdin.take();
+    write_child_input(&mut child, input);
     child.wait_with_output().expect("output should be captured")
 }
 
@@ -119,17 +106,43 @@ pub fn rust_analyzer_available() -> bool {
         .unwrap_or(false)
 }
 
+pub fn go_toolchain_available() -> bool {
+    Command::new("mise")
+        .args(["exec", "--", "go", "version"])
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
 pub fn pyright_langserver_available() -> bool {
     Command::new("mise")
-        .args(["exec", "--", "pyright-langserver", "--stdio"])
+        .args(["exec", "--", "pyright-langserver", "--help"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .spawn()
-        .map(|mut child| {
-            let _ = child.kill();
-            let _ = child.wait();
-            true
-        })
+        .status()
+        .map(|status| status.success())
         .unwrap_or(false)
+}
+
+pub fn typescript_traceability_available() -> bool {
+    Command::new("mise")
+        .args(["exec", "--", "node", "--version"])
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+fn write_child_input(child: &mut Child, input: &str) {
+    let write_result = child
+        .stdin
+        .as_mut()
+        .expect("stdin should be piped")
+        .write_all(input.as_bytes());
+    let _ = child.stdin.take();
+    if let Err(error) = write_result {
+        let _ = child.kill();
+        let _ = child.wait();
+        panic!("input should be written: {error}");
+    }
 }

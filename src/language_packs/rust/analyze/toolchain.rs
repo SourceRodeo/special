@@ -64,12 +64,17 @@ impl RustToolchainProject {
         aliases
     }
 
-    pub(super) fn binary_target_sources(&self) -> BTreeMap<String, PathBuf> {
+    pub(super) fn binary_target_sources(&self) -> BTreeMap<String, BTreeSet<PathBuf>> {
         self.target_sources
             .iter()
             .filter(|(_, target)| target.kind.iter().any(|kind| kind == "bin"))
-            .map(|(path, target)| (target.target_name.clone(), path.clone()))
-            .collect()
+            .fold(BTreeMap::new(), |mut targets, (path, target)| {
+                targets
+                    .entry(target.target_name.clone())
+                    .or_default()
+                    .insert(path.clone());
+                targets
+            })
     }
 }
 
@@ -340,7 +345,10 @@ mod tests {
         );
         assert_eq!(
             project.binary_target_sources(),
-            BTreeMap::from([("demo-cli".to_string(), PathBuf::from("src/main.rs"),)])
+            BTreeMap::from([(
+                "demo-cli".to_string(),
+                BTreeSet::from([PathBuf::from("src/main.rs")]),
+            )])
         );
     }
 
