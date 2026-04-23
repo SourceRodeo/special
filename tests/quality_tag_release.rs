@@ -3,7 +3,7 @@
 special local release publication flow.
 
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.CHECKLIST
-before publishing, the release script interactively confirms easy-to-forget release tasks such as updating public docs, updating `CHANGELOG.md`, bumping the release version, and running core validation.
+before publishing, the release script interactively confirms easy-to-forget release tasks such as updating public docs, updating shipped skill templates and examples, updating `CHANGELOG.md`, bumping the release version, and running core validation.
 
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.SKIP_CHECKLIST_BYPASSES_CHECKLIST
 the release script accepts `--skip-checklist` to bypass the interactive prerelease checklist.
@@ -57,7 +57,7 @@ fn release_tag_dry_run_lists_checklist_and_publication_commands() {
             .as_array()
             .expect("checklist should be an array")
             .len(),
-        4
+        5
     );
     let checklist = payload["checklist"]
         .as_array()
@@ -72,7 +72,7 @@ fn release_tag_dry_run_lists_checklist_and_publication_commands() {
         .collect();
     assert_eq!(
         checklist_ids,
-        vec!["readme", "changelog", "version", "validation"]
+        vec!["readme", "skills", "changelog", "version", "validation"]
     );
     assert_eq!(
         payload["bookmark_command"]

@@ -28,6 +28,10 @@ CHECKLIST = [
         "prompt": "Updated README.md and other public docs for this release?",
     },
     {
+        "id": "skills",
+        "prompt": "Updated shipped skill templates and examples for this release?",
+    },
+    {
         "id": "changelog",
         "prompt": "Updated CHANGELOG.md for this release?",
     },
