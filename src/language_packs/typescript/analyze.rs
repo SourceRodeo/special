@@ -22,7 +22,7 @@ use crate::model::{
 use crate::syntax::{ParsedSourceGraph, SourceCall, parse_source_graph};
 use crate::config::{ProjectToolchain, supported_project_toolchain_contracts};
 
-use crate::modules::analyze::source_item_signals::summarize_source_item_signals;
+use crate::modules::analyze::source_item_signals::summarize_source_item_signals_with_metrics;
 use crate::modules::analyze::traceability_core::{
     TraceGraph, TraceabilityAnalysis, TraceabilityInputs, TraceabilityLanguagePack,
     TraceabilityItemSupport, TraceabilityOwnedItem, build_root_supports,
@@ -37,6 +37,8 @@ use crate::modules::analyze::{
 
 #[path = "analyze/boundary.rs"]
 mod boundary;
+#[path = "analyze/quality.rs"]
+mod quality;
 #[cfg(test)]
 #[path = "analyze/tests.rs"]
 mod scoped_tests;
@@ -51,6 +53,7 @@ pub(crate) fn analyze_module(
     include_traceability: bool,
 ) -> Result<ProviderModuleAnalysis> {
     let mut surface = TypeScriptSurfaceSummary::default();
+    let mut quality = quality::TypeScriptQualitySummary::default();
     let mut owned_items = Vec::new();
     let mut dependencies = TypeScriptDependencySummary::default();
     let traceability_summary = include_traceability
@@ -71,6 +74,7 @@ pub(crate) fn analyze_module(
         }
         if let Some(graph) = parse_source_graph(path, text) {
             surface.observe(&graph.items);
+            quality.observe(path, text, &graph);
             owned_items.extend(graph.items);
         }
         dependencies.observe(root, path, text);
@@ -83,14 +87,18 @@ pub(crate) fn analyze_module(
             internal_items: surface.internal_items,
             ..ModuleMetricsSummary::default()
         },
-        item_signals: Some(summarize_source_item_signals(&owned_items)),
+        complexity: Some(quality.finish_complexity()),
+        item_signals: Some(summarize_source_item_signals_with_metrics(
+            &owned_items,
+            quality.item_metrics(),
+        )),
+        quality: Some(quality.finish()),
         traceability: traceability_summary,
         traceability_unavailable_reason: include_traceability
             .then(|| context.traceability_unavailable_reason.clone())
             .flatten(),
         coupling: Some(dependencies.coupling_input()),
         dependencies: Some(dependencies.summary()),
-        ..ProviderModuleAnalysis::default()
     })
 }
 

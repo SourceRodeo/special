@@ -17,7 +17,7 @@ pub fn write_typescript_module_analysis_fixture(root: &Path) {
     write_file(
         root,
         "src/app.ts",
-        "// @fileimplements DEMO\nimport { sharedValue } from \"./shared\";\nimport { readFileSync } from \"node:fs\";\n\nexport function entry() {\n    return localHelper() + sharedValue();\n}\n\nexport const render = () => sharedValue();\n\nfunction localHelper() {\n    return 1;\n}\n\nfunction isolatedExternal() {\n    return readFileSync(\"demo.txt\").length;\n}\n\nfunction unreachedClusterEntry() {\n    return unreachedClusterLeaf();\n}\n\nfunction unreachedClusterLeaf() {\n    return 1;\n}\n",
+        "// @fileimplements DEMO\nimport { sharedValue } from \"./shared\";\nimport { readFileSync } from \"node:fs\";\n\nexport function entry(id: string, force: boolean) {\n    if (force) {\n        throw new Error(id);\n    }\n    return localHelper() + sharedValue();\n}\n\nexport const render = (name: string) => sharedValue() + name.length;\n\nfunction localHelper() {\n    return 1;\n}\n\nfunction isolatedExternal() {\n    return readFileSync(\"demo.txt\").length;\n}\n\nfunction unreachedClusterEntry() {\n    return unreachedClusterLeaf();\n}\n\nfunction unreachedClusterLeaf() {\n    return 1;\n}\n",
     );
     write_file(
         root,

@@ -349,10 +349,9 @@ In practice:
 
 ## Command Surface
 
-Today the built-in implementation analysis is strongest for owned Rust code,
-and it also surfaces first-pass implementation evidence for owned TypeScript
-and Go code.
-For Rust modules, `--metrics` can surface:
+Today the built-in implementation analysis surfaces implementation evidence for
+owned Rust, TypeScript, and Go code. For each of those modules, `--metrics` can
+surface:
 
 - public and internal item counts
 - function complexity summaries
@@ -361,22 +360,10 @@ For Rust modules, `--metrics` can surface:
   and recoverability signals
 - unreached-code indicators such as private items with no observed path from
   public or test roots inside owned implementation
-- `use`-path dependency evidence
+- language-native dependency evidence
 - module coupling evidence derived from owned dependency targets
-
-For TypeScript modules, `--metrics` can surface:
-
-- public and internal item counts
-- import-path dependency evidence
-- module coupling evidence derived from owned relative imports
-- per-item connected, outbound-heavy, isolated, and unreached evidence
-
-For Go modules, `--metrics` can surface:
-
-- public and internal item counts
-- import-path dependency evidence
-- module coupling evidence derived from owned local imports
-- per-item connected, outbound-heavy, isolated, and unreached evidence
+- per-item connected, outbound-heavy, isolated, unreached, high-complexity,
+  parameter-heavy, stringly boundary, and panic-heavy evidence
 
 `special health` also surfaces implementation traceability indicators when a
 built-in analyzer can connect repo code through tests to declared specs,

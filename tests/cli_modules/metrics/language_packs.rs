@@ -1,9 +1,49 @@
 use std::collections::BTreeSet;
-/**
+/*
 @module SPECIAL.TESTS.CLI_MODULES.METRICS.LANGUAGE_PACKS
 Language-pack-specific metrics coverage tests for `special arch --metrics`.
 */
 // @fileimplements SPECIAL.TESTS.CLI_MODULES.METRICS.LANGUAGE_PACKS
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.QUALITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.ITEM_SIGNALS
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.ITEM_SIGNALS.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.ITEM_SIGNALS.QUALITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.GO.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.GO.QUALITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.GO.ITEM_SIGNALS
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.GO.ITEM_SIGNALS.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.GO.ITEM_SIGNALS.QUALITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.QUALITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.ITEM_SIGNALS
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.ITEM_SIGNALS.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.ITEM_SIGNALS.QUALITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.QUALITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.ITEM_SIGNALS
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.ITEM_SIGNALS.COMPLEXITY
+
+// @fileverifies SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.ITEM_SIGNALS.QUALITY
 use std::fs;
 
 use serde_json::Value;
@@ -16,6 +56,15 @@ fn unreached_item_names(demo: &Value) -> BTreeSet<String> {
     demo["analysis"]["item_signals"]["unreached_items"]
         .as_array()
         .expect("unreached items should be an array")
+        .iter()
+        .filter_map(|item| item["name"].as_str().map(ToString::to_string))
+        .collect()
+}
+
+fn item_signal_names(demo: &Value, field: &str) -> BTreeSet<String> {
+    demo["analysis"]["item_signals"][field]
+        .as_array()
+        .expect("item signal group should be an array")
         .iter()
         .filter_map(|item| item["name"].as_str().map(ToString::to_string))
         .collect()
@@ -34,6 +83,16 @@ fn modules_metrics_surface_typescript_analysis() {
     assert!(stdout.contains("DEMO"));
     assert!(stdout.contains("public items: 2"));
     assert!(stdout.contains("internal items: 4"));
+    assert!(stdout.contains("complexity functions: 6"));
+    assert!(stdout.contains("cyclomatic total: 7"));
+    assert!(stdout.contains("cyclomatic max: 2"));
+    assert!(stdout.contains("cognitive total: 1"));
+    assert!(stdout.contains("cognitive max: 1"));
+    assert!(stdout.contains("quality public functions: 2"));
+    assert!(stdout.contains("quality parameters: 3"));
+    assert!(stdout.contains("quality bool params: 1"));
+    assert!(stdout.contains("quality raw string params: 2"));
+    assert!(stdout.contains("quality panic sites: 1"));
     assert!(stdout.contains("dependency refs: 2"));
     assert!(stdout.contains("dependency targets: 2"));
     assert!(stdout.contains("dependency target: ./shared (1)"));
@@ -42,6 +101,10 @@ fn modules_metrics_surface_typescript_analysis() {
     assert!(stdout.contains("isolated item: isolatedExternal"));
     assert!(stdout.contains("unreached item: unreachedClusterEntry"));
     assert!(stdout.contains("unreached item: unreachedClusterLeaf"));
+    assert!(stdout.contains("highest complexity item: entry"));
+    assert!(stdout.contains("parameter-heavy item: entry"));
+    assert!(stdout.contains("stringly boundary item: entry"));
+    assert!(stdout.contains("panic-heavy item: entry"));
     assert!(stdout.contains("fan out: 1"));
     assert!(stdout.contains("external dependency targets: 1"));
 
@@ -69,6 +132,46 @@ fn modules_metrics_json_includes_structured_typescript_analysis() {
         Value::from(4)
     );
     assert_eq!(
+        demo["analysis"]["complexity"]["function_count"],
+        Value::from(6)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["total_cyclomatic"],
+        Value::from(7)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["max_cyclomatic"],
+        Value::from(2)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["total_cognitive"],
+        Value::from(1)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["max_cognitive"],
+        Value::from(1)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["public_function_count"],
+        Value::from(2)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["parameter_count"],
+        Value::from(3)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["bool_parameter_count"],
+        Value::from(1)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["raw_string_parameter_count"],
+        Value::from(2)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["panic_site_count"],
+        Value::from(1)
+    );
+    assert_eq!(
         demo["analysis"]["item_signals"]["unreached_item_count"],
         Value::from(3)
     );
@@ -89,6 +192,10 @@ fn modules_metrics_json_includes_structured_typescript_analysis() {
             "unreachedClusterLeaf".to_string(),
         ])
     );
+    assert!(item_signal_names(demo, "highest_complexity_items").contains("entry"));
+    assert!(item_signal_names(demo, "parameter_heavy_items").contains("entry"));
+    assert!(item_signal_names(demo, "stringly_boundary_items").contains("entry"));
+    assert!(item_signal_names(demo, "panic_heavy_items").contains("entry"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -106,6 +213,16 @@ fn modules_metrics_surface_go_analysis() {
     assert!(stdout.contains("DEMO"));
     assert!(stdout.contains("public items: 1"));
     assert!(stdout.contains("internal items: 4"));
+    assert!(stdout.contains("complexity functions: 5"));
+    assert!(stdout.contains("cyclomatic total: 6"));
+    assert!(stdout.contains("cyclomatic max: 2"));
+    assert!(stdout.contains("cognitive total: 1"));
+    assert!(stdout.contains("cognitive max: 1"));
+    assert!(stdout.contains("quality public functions: 1"));
+    assert!(stdout.contains("quality parameters: 3"));
+    assert!(stdout.contains("quality bool params: 1"));
+    assert!(stdout.contains("quality raw string params: 2"));
+    assert!(stdout.contains("quality panic sites: 1"));
     assert!(stdout.contains("dependency refs: 2"));
     assert!(stdout.contains("dependency targets: 2"));
     assert!(stdout.contains("dependency target: fmt (1)"));
@@ -114,6 +231,10 @@ fn modules_metrics_surface_go_analysis() {
     assert!(stdout.contains("isolated item: isolatedExternal"));
     assert!(stdout.contains("unreached item: unreachedClusterEntry"));
     assert!(stdout.contains("unreached item: unreachedClusterLeaf"));
+    assert!(stdout.contains("highest complexity item: Entry"));
+    assert!(stdout.contains("parameter-heavy item: Entry"));
+    assert!(stdout.contains("stringly boundary item: Entry"));
+    assert!(stdout.contains("panic-heavy item: Entry"));
     assert!(stdout.contains("fan out: 1"));
     assert!(stdout.contains("external dependency targets: 1"));
 
@@ -141,6 +262,46 @@ fn modules_metrics_json_includes_structured_go_analysis() {
         Value::from(4)
     );
     assert_eq!(
+        demo["analysis"]["complexity"]["function_count"],
+        Value::from(5)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["total_cyclomatic"],
+        Value::from(6)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["max_cyclomatic"],
+        Value::from(2)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["total_cognitive"],
+        Value::from(1)
+    );
+    assert_eq!(
+        demo["analysis"]["complexity"]["max_cognitive"],
+        Value::from(1)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["public_function_count"],
+        Value::from(1)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["parameter_count"],
+        Value::from(3)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["bool_parameter_count"],
+        Value::from(1)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["raw_string_parameter_count"],
+        Value::from(2)
+    );
+    assert_eq!(
+        demo["analysis"]["quality"]["panic_site_count"],
+        Value::from(1)
+    );
+    assert_eq!(
         demo["analysis"]["item_signals"]["unreached_item_count"],
         Value::from(3)
     );
@@ -161,6 +322,10 @@ fn modules_metrics_json_includes_structured_go_analysis() {
             "unreachedClusterLeaf".to_string(),
         ])
     );
+    assert!(item_signal_names(demo, "highest_complexity_items").contains("Entry"));
+    assert!(item_signal_names(demo, "parameter_heavy_items").contains("Entry"));
+    assert!(item_signal_names(demo, "stringly_boundary_items").contains("Entry"));
+    assert!(item_signal_names(demo, "panic_heavy_items").contains("Entry"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

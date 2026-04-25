@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.1 - 2026-04-25
+
+- TypeScript and Go now get the same `special arch --metrics` depth as Rust:
+  complexity, quality, dependencies, coupling, and per-item hotspot detail all
+  show up in text and JSON output.
+- Per-item metrics are more trustworthy across all three shipped language packs:
+  nested helpers no longer inflate the parent item, and dense or generated
+  TypeScript/Go code is less likely to collapse distinct items into one signal.
+- The module metrics contract is now explicit for Rust, TypeScript, and Go, so
+  future analyzer work has a clearer parity target.
+- Added a 0.7.2 backlog for moving shared traceability reasoning into a
+  production Lean kernel and upgrading language packs into canonical fact
+  adapters.
+
 ## 0.7.0 - 2026-04-23
 
 - Landed a shared projected-contract proof architecture across the shipped Rust,

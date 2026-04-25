@@ -16,7 +16,7 @@ use crate::model::{
 use self::dependencies::GoDependencySummary;
 use self::surface::{GoSurfaceSummary, is_go_path};
 use self::traceability::GoTraceabilityPack;
-use crate::modules::analyze::source_item_signals::summarize_source_item_signals;
+use crate::modules::analyze::source_item_signals::summarize_source_item_signals_with_metrics;
 use crate::modules::analyze::traceability_core::{
     TraceabilityAnalysis, TraceabilityLanguagePack,
 };
@@ -28,6 +28,8 @@ mod dependencies;
 mod boundary;
 #[path = "analyze/scope.rs"]
 mod scope;
+#[path = "analyze/quality.rs"]
+mod quality;
 #[cfg(test)]
 #[path = "analyze/tests.rs"]
 mod scoped_tests;
@@ -46,6 +48,7 @@ pub(crate) fn analyze_module(
     include_traceability: bool,
 ) -> Result<ProviderModuleAnalysis> {
     let mut surface = GoSurfaceSummary::default();
+    let mut quality = quality::GoQualitySummary::default();
     let mut owned_items = Vec::new();
     let mut dependencies = GoDependencySummary::default();
     let traceability_summary = include_traceability
@@ -69,6 +72,7 @@ pub(crate) fn analyze_module(
         }
         if let Some(graph) = crate::syntax::parse_source_graph(path, text) {
             surface.observe(&graph.items);
+            quality.observe(path, text, &graph);
             owned_items.extend(graph.items);
         }
         dependencies.observe(root, text);
@@ -81,14 +85,18 @@ pub(crate) fn analyze_module(
             internal_items: surface.internal_items,
             ..ModuleMetricsSummary::default()
         },
-        item_signals: Some(summarize_source_item_signals(&owned_items)),
+        complexity: Some(quality.finish_complexity()),
+        item_signals: Some(summarize_source_item_signals_with_metrics(
+            &owned_items,
+            quality.item_metrics(),
+        )),
+        quality: Some(quality.finish()),
         traceability: traceability_summary,
         traceability_unavailable_reason: include_traceability
             .then(|| context.traceability_unavailable_reason.clone())
             .flatten(),
         coupling: Some(dependencies.coupling_input()),
         dependencies: Some(dependencies.summary()),
-        ..ProviderModuleAnalysis::default()
     })
 }
 

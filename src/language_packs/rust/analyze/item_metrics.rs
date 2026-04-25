@@ -155,6 +155,10 @@ impl CyclomaticVisitor {
 }
 
 impl Visit<'_> for CyclomaticVisitor {
+    fn visit_expr_closure(&mut self, _node: &syn::ExprClosure) {}
+
+    fn visit_item_fn(&mut self, _node: &syn::ItemFn) {}
+
     fn visit_expr_if(&mut self, node: &syn::ExprIf) {
         self.complexity += 1;
         syn::visit::visit_expr_if(self, node);
@@ -223,6 +227,10 @@ impl CognitiveVisitor {
 }
 
 impl Visit<'_> for CognitiveVisitor {
+    fn visit_expr_closure(&mut self, _node: &syn::ExprClosure) {}
+
+    fn visit_item_fn(&mut self, _node: &syn::ItemFn) {}
+
     fn visit_expr_if(&mut self, node: &syn::ExprIf) {
         self.bump_structural();
         self.visit_expr(&node.cond);
@@ -280,6 +288,10 @@ struct PanicVisitor {
 }
 
 impl Visit<'_> for PanicVisitor {
+    fn visit_expr_closure(&mut self, _node: &syn::ExprClosure) {}
+
+    fn visit_item_fn(&mut self, _node: &syn::ItemFn) {}
+
     fn visit_macro(&mut self, node: &syn::Macro) {
         if node.path.is_ident("panic")
             || node.path.is_ident("todo")
@@ -296,5 +308,59 @@ impl Visit<'_> for PanicVisitor {
             self.count += 1;
         }
         syn::visit::visit_expr_method_call(self, node);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn metrics_for_function(source: &str) -> RustItemMetrics {
+        let function = syn::parse_str::<syn::ItemFn>(source).expect("function should parse");
+        function_metrics(&function.vis, &function.sig.inputs, &function.block)
+    }
+
+    #[test]
+    fn closures_do_not_inflate_parent_function_metrics() {
+        let metrics = metrics_for_function(
+            r#"
+pub fn outer(flag: bool) {
+    let inner = || {
+        if flag {
+            panic!("nested");
+        }
+    };
+    if flag {
+        inner();
+    }
+}
+"#,
+        );
+
+        assert_eq!(metrics.cyclomatic, 2);
+        assert_eq!(metrics.cognitive, 1);
+        assert_eq!(metrics.panic_site_count, 0);
+    }
+
+    #[test]
+    fn local_functions_do_not_inflate_parent_function_metrics() {
+        let metrics = metrics_for_function(
+            r#"
+pub fn outer(flag: bool) {
+    fn inner(flag: bool) {
+        if flag {
+            panic!("nested");
+        }
+    }
+    if flag {
+        inner(flag);
+    }
+}
+"#,
+        );
+
+        assert_eq!(metrics.cyclomatic, 2);
+        assert_eq!(metrics.cognitive, 1);
+        assert_eq!(metrics.panic_site_count, 0);
     }
 }

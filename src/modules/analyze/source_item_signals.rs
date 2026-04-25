@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.MODULES.ANALYZE.SOURCE_ITEM_SIGNALS
-Builds generic per-item connectivity and unreached summaries from normalized source-item graphs so lightweight language providers can share one item-signal implementation.
+Builds generic per-item connectivity, unreached, complexity, and craftsmanship summaries from normalized source-item graphs so lightweight language providers can share one item-signal implementation.
 */
 // @fileimplements SPECIAL.MODULES.ANALYZE.SOURCE_ITEM_SIGNALS
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -8,10 +8,23 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use crate::model::{ModuleItemKind, ModuleItemSignal, ModuleItemSignalsSummary};
 use crate::syntax::{SourceItem, SourceItemKind};
 
-pub(crate) fn summarize_source_item_signals(items: &[SourceItem]) -> ModuleItemSignalsSummary {
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct SourceItemMetrics {
+    pub(crate) parameter_count: usize,
+    pub(crate) bool_parameter_count: usize,
+    pub(crate) raw_string_parameter_count: usize,
+    pub(crate) cyclomatic: usize,
+    pub(crate) cognitive: usize,
+    pub(crate) panic_site_count: usize,
+}
+
+pub(crate) fn summarize_source_item_signals_with_metrics(
+    items: &[SourceItem],
+    metrics_by_stable_id: &BTreeMap<String, SourceItemMetrics>,
+) -> ModuleItemSignalsSummary {
     let mut records = items
         .iter()
-        .map(ItemSignalRecord::from_source_item)
+        .map(|item| ItemSignalRecord::from_source_item(item, metrics_by_stable_id))
         .collect::<Vec<_>>();
     let local_names = records
         .iter()
@@ -85,6 +98,59 @@ pub(crate) fn summarize_source_item_signals(items: &[SourceItem]) -> ModuleItemS
             .then_with(|| left.kind.cmp(&right.kind))
     });
 
+    let mut highest_complexity_items = records.to_vec();
+    highest_complexity_items.sort_by(|left, right| {
+        right
+            .cognitive
+            .cmp(&left.cognitive)
+            .then_with(|| right.cyclomatic.cmp(&left.cyclomatic))
+            .then_with(|| left.name.cmp(&right.name))
+    });
+    highest_complexity_items.retain(|item| item.cognitive > 0 || item.cyclomatic > 1);
+
+    let mut parameter_heavy_items = records
+        .iter()
+        .filter(|item| item.parameter_count > 1)
+        .cloned()
+        .collect::<Vec<_>>();
+    parameter_heavy_items.sort_by(|left, right| {
+        right
+            .parameter_count
+            .cmp(&left.parameter_count)
+            .then_with(|| {
+                right
+                    .raw_string_parameter_count
+                    .cmp(&left.raw_string_parameter_count)
+            })
+            .then_with(|| left.name.cmp(&right.name))
+    });
+
+    let mut stringly_boundary_items = records
+        .iter()
+        .filter(|item| item.public && item.raw_string_parameter_count > 0)
+        .cloned()
+        .collect::<Vec<_>>();
+    stringly_boundary_items.sort_by(|left, right| {
+        right
+            .raw_string_parameter_count
+            .cmp(&left.raw_string_parameter_count)
+            .then_with(|| right.parameter_count.cmp(&left.parameter_count))
+            .then_with(|| left.name.cmp(&right.name))
+    });
+
+    let mut panic_heavy_items = records
+        .iter()
+        .filter(|item| item.panic_site_count > 0)
+        .cloned()
+        .collect::<Vec<_>>();
+    panic_heavy_items.sort_by(|left, right| {
+        right
+            .panic_site_count
+            .cmp(&left.panic_site_count)
+            .then_with(|| right.cognitive.cmp(&left.cognitive))
+            .then_with(|| left.name.cmp(&right.name))
+    });
+
     ModuleItemSignalsSummary {
         analyzed_items: records.len(),
         unreached_item_count: unreached_items.len(),
@@ -104,7 +170,22 @@ pub(crate) fn summarize_source_item_signals(items: &[SourceItem]) -> ModuleItemS
             .into_iter()
             .map(ItemSignalRecord::into_summary)
             .collect(),
-        ..ModuleItemSignalsSummary::default()
+        highest_complexity_items: highest_complexity_items
+            .into_iter()
+            .map(ItemSignalRecord::into_summary)
+            .collect(),
+        parameter_heavy_items: parameter_heavy_items
+            .into_iter()
+            .map(ItemSignalRecord::into_summary)
+            .collect(),
+        stringly_boundary_items: stringly_boundary_items
+            .into_iter()
+            .map(ItemSignalRecord::into_summary)
+            .collect(),
+        panic_heavy_items: panic_heavy_items
+            .into_iter()
+            .map(ItemSignalRecord::into_summary)
+            .collect(),
     }
 }
 
@@ -115,6 +196,12 @@ struct ItemSignalRecord {
     public: bool,
     root_visible: bool,
     is_test: bool,
+    parameter_count: usize,
+    bool_parameter_count: usize,
+    raw_string_parameter_count: usize,
+    cyclomatic: usize,
+    cognitive: usize,
+    panic_site_count: usize,
     internal_refs: usize,
     inbound_internal_refs: usize,
     external_refs: usize,
@@ -123,7 +210,14 @@ struct ItemSignalRecord {
 }
 
 impl ItemSignalRecord {
-    fn from_source_item(item: &SourceItem) -> Self {
+    fn from_source_item(
+        item: &SourceItem,
+        metrics_by_stable_id: &BTreeMap<String, SourceItemMetrics>,
+    ) -> Self {
+        let metrics = metrics_by_stable_id
+            .get(&item.stable_id)
+            .copied()
+            .unwrap_or_default();
         Self {
             name: item.name.clone(),
             kind: match item.kind {
@@ -133,6 +227,12 @@ impl ItemSignalRecord {
             public: item.public,
             root_visible: item.root_visible || is_process_entrypoint(item),
             is_test: item.is_test,
+            parameter_count: metrics.parameter_count,
+            bool_parameter_count: metrics.bool_parameter_count,
+            raw_string_parameter_count: metrics.raw_string_parameter_count,
+            cyclomatic: metrics.cyclomatic,
+            cognitive: metrics.cognitive,
+            panic_site_count: metrics.panic_site_count,
             internal_refs: 0,
             inbound_internal_refs: 0,
             external_refs: 0,
@@ -157,15 +257,15 @@ impl ItemSignalRecord {
             name: self.name,
             kind: self.kind,
             public: self.public,
-            parameter_count: 0,
-            bool_parameter_count: 0,
-            raw_string_parameter_count: 0,
+            parameter_count: self.parameter_count,
+            bool_parameter_count: self.bool_parameter_count,
+            raw_string_parameter_count: self.raw_string_parameter_count,
             internal_refs: self.internal_refs,
             inbound_internal_refs: self.inbound_internal_refs,
             external_refs: self.external_refs,
-            cyclomatic: 0,
-            cognitive: 0,
-            panic_site_count: 0,
+            cyclomatic: self.cyclomatic,
+            cognitive: self.cognitive,
+            panic_site_count: self.panic_site_count,
         }
     }
 }

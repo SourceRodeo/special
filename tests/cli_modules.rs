@@ -123,13 +123,43 @@ special arch --metrics --verbose surfaces parameter-heavy, stringly boundary, an
 special arch can surface TypeScript-specific implementation evidence for owned TypeScript code through the built-in TypeScript analyzer.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT
-special arch --metrics --verbose surfaces built-in TypeScript implementation evidence for owned TypeScript code, including public and internal item counts, import-path dependency evidence, coupling derived from owned relative imports, and per-item connected, outbound-heavy, isolated, and unreached signals when the built-in analyzer can identify them honestly.
+special arch --metrics --verbose surfaces built-in TypeScript implementation evidence for owned TypeScript code, including public and internal item counts, complexity summaries, quality evidence, import-path dependency evidence, coupling derived from owned relative imports, and per-item connected, outbound-heavy, isolated, and unreached signals when the built-in analyzer can identify them honestly.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.COMPLEXITY
+special arch --metrics surfaces TypeScript function complexity summaries for owned implementation, including analyzed function count plus total and maximum cyclomatic and cognitive complexity.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.QUALITY
+special arch --metrics surfaces TypeScript quality evidence, including public API parameter shape, stringly typed boundaries, and throw-site recoverability signals.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.ITEM_SIGNALS
+special arch --metrics --verbose surfaces per-item TypeScript evidence for owned implementation, including internally connected, outbound-heavy, isolated, and unreached items when the built-in analyzer can identify them honestly.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.ITEM_SIGNALS.COMPLEXITY
+special arch --metrics --verbose surfaces highest-complexity TypeScript items within owned implementation so unusual local hotspots are visible inside a claimed module boundary.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.TYPESCRIPT.ITEM_SIGNALS.QUALITY
+special arch --metrics --verbose surfaces parameter-heavy, stringly boundary, and panic-heavy TypeScript items within owned implementation so unusual local craftsmanship signals are visible inside a claimed module boundary.
 
 @group SPECIAL.MODULE_COMMAND.METRICS.GO_GROUP
 special arch can surface Go-specific implementation evidence for owned Go code through the built-in Go analyzer.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.GO
-special arch --metrics --verbose surfaces built-in Go implementation evidence for owned Go code, including public and internal item counts, import-path dependency evidence, coupling derived from owned local imports, and per-item connected, outbound-heavy, isolated, and unreached signals when the built-in analyzer can identify them honestly.
+special arch --metrics --verbose surfaces built-in Go implementation evidence for owned Go code, including public and internal item counts, complexity summaries, quality evidence, import-path dependency evidence, coupling derived from owned local imports, and per-item connected, outbound-heavy, isolated, and unreached signals when the built-in analyzer can identify them honestly.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.GO.COMPLEXITY
+special arch --metrics surfaces Go function complexity summaries for owned implementation, including analyzed function count plus total and maximum cyclomatic and cognitive complexity.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.GO.QUALITY
+special arch --metrics surfaces Go quality evidence, including public API parameter shape, stringly typed boundaries, and panic-site recoverability signals.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.GO.ITEM_SIGNALS
+special arch --metrics --verbose surfaces per-item Go evidence for owned implementation, including internally connected, outbound-heavy, isolated, and unreached items when the built-in analyzer can identify them honestly.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.GO.ITEM_SIGNALS.COMPLEXITY
+special arch --metrics --verbose surfaces highest-complexity Go items within owned implementation so unusual local hotspots are visible inside a claimed module boundary.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.GO.ITEM_SIGNALS.QUALITY
+special arch --metrics --verbose surfaces parameter-heavy, stringly boundary, and panic-heavy Go items within owned implementation so unusual local craftsmanship signals are visible inside a claimed module boundary.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.JSON
 special arch --json --metrics includes structured architecture analysis summaries.
@@ -171,13 +201,43 @@ special arch --json --metrics --verbose includes structured parameter-heavy, str
 special arch --json --metrics can include TypeScript-specific structured analysis evidence.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT
-special arch --json --metrics --verbose includes structured TypeScript implementation evidence for owned TypeScript code, including public and internal item counts, dependency targets, and per-item signals.
+special arch --json --metrics --verbose includes structured TypeScript implementation evidence for owned TypeScript code, including public and internal item counts, complexity summaries, quality summaries, dependency targets, and per-item signals.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.COMPLEXITY
+special arch --json --metrics includes structured TypeScript function complexity summaries for owned implementation.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.QUALITY
+special arch --json --metrics includes structured TypeScript quality evidence summaries for owned implementation.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.ITEM_SIGNALS
+special arch --json --metrics --verbose includes structured per-item TypeScript evidence for owned implementation, including unreached TypeScript items when the built-in analyzer can identify them honestly.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.ITEM_SIGNALS.COMPLEXITY
+special arch --json --metrics --verbose includes structured highest-complexity TypeScript item evidence for owned implementation.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.TYPESCRIPT.ITEM_SIGNALS.QUALITY
+special arch --json --metrics --verbose includes structured parameter-heavy, stringly boundary, and panic-heavy TypeScript item evidence for owned implementation.
 
 @group SPECIAL.MODULE_COMMAND.METRICS.JSON.GO_GROUP
 special arch --json --metrics can include Go-specific structured analysis evidence.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.JSON.GO
-special arch --json --metrics --verbose includes structured Go implementation evidence for owned Go code, including public and internal item counts, dependency targets, and per-item signals.
+special arch --json --metrics --verbose includes structured Go implementation evidence for owned Go code, including public and internal item counts, complexity summaries, quality summaries, dependency targets, and per-item signals.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.COMPLEXITY
+special arch --json --metrics includes structured Go function complexity summaries for owned implementation.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.QUALITY
+special arch --json --metrics includes structured Go quality evidence summaries for owned implementation.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.ITEM_SIGNALS
+special arch --json --metrics --verbose includes structured per-item Go evidence for owned implementation, including unreached Go items when the built-in analyzer can identify them honestly.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.ITEM_SIGNALS.COMPLEXITY
+special arch --json --metrics --verbose includes structured highest-complexity Go item evidence for owned implementation.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.ITEM_SIGNALS.QUALITY
+special arch --json --metrics --verbose includes structured parameter-heavy, stringly boundary, and panic-heavy Go item evidence for owned implementation.
 
 @group SPECIAL.MODULE_PARSE
 special parses architecture module declarations and implementation attachments.
