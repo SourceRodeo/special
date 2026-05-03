@@ -11,6 +11,9 @@ before publishing, the release script automatically rejects missing or placehold
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.VALIDATION_EVIDENCE
 the release script has a validate phase that runs deterministic release validation commands and records ignored evidence tied to the release version and revision.
 
+@spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.SKILL_TEMPLATE_VALIDATION
+the release validation command set includes a deterministic check that shipped skill templates reference current Special command surfaces.
+
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.REJECTS_LEGACY_CHECKLIST_BYPASS
 the release script rejects legacy `--skip-checklist` and `--yes` bypass flags.
 
@@ -84,7 +87,11 @@ fn jj_commit_id(temp_root: &Path, revset: &str) -> String {
 fn copy_release_script_fixture(temp_root: &Path) {
     let scripts = temp_root.join("scripts");
     fs::create_dir_all(&scripts).expect("scripts directory should be created");
-    for file in ["tag-release.py", "release_tooling.py"] {
+    for file in [
+        "tag-release.py",
+        "release_tooling.py",
+        "verify-skill-templates.py",
+    ] {
         fs::copy(
             support::repo_root().join("scripts").join(file),
             scripts.join(file),
@@ -208,6 +215,27 @@ fn release_tag_dry_run_lists_pipeline_and_publication_commands() {
                     .to_string(),
             ),
         ]
+    );
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.SKILL_TEMPLATE_VALIDATION
+fn release_tag_validation_includes_skill_template_verifier() {
+    let version = current_package_version();
+    let payload = release_tag_dry_run(&version, &[]);
+
+    assert!(
+        payload["validation_commands"]
+            .as_array()
+            .expect("validation_commands should be an array")
+            .iter()
+            .any(|command| command.as_array().is_some_and(|items| {
+                items.iter().any(|item| {
+                    item.as_str()
+                        .is_some_and(|value| value.ends_with("verify-skill-templates.py"))
+                })
+            })),
+        "release validation should include the skill-template verifier"
     );
 }
 
@@ -519,6 +547,22 @@ fn release_tag_validate_records_version_and_revision_evidence() {
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.SKILL_TEMPLATE_VALIDATION
+fn shipped_skill_templates_match_current_command_surface() {
+    let output = support::python3_command()
+        .arg("scripts/verify-skill-templates.py")
+        .output()
+        .expect("skill-template verifier should run");
+
+    assert!(
+        output.status.success(),
+        "stdout:\n{}\n\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 #[test]

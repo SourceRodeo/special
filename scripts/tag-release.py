@@ -30,6 +30,7 @@ CORE_VALIDATION_COMMANDS = [
     ["mise", "exec", "--", "cargo", "test"],
     ["mise", "exec", "--", "cargo", "run", "--", "lint"],
     ["mise", "exec", "--", "cargo", "run", "--", "specs", "--metrics"],
+    [sys.executable, str(SCRIPT_DIR / "verify-skill-templates.py")],
     [sys.executable, str(SCRIPT_DIR / "verify-lean-traceability-kernel.py")],
 ]
 PRIVATE_TRACKED_PATH_PATTERNS = [
