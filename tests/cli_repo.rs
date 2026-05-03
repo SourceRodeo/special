@@ -96,7 +96,7 @@ special health includes every verifying test and verified spec claim that suppor
 special health reports a degraded analyzer status when Rust traceability falls back to parser-resolved call edges because `rust-analyzer` is unavailable.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.UNEXPLAINED
-special health keeps currently unexplained implementation separate from traced and statically mediated implementation.
+special health keeps currently unsupported implementation separate from traced and statically mediated implementation.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.DETERMINISTIC_ORDERING
 special health emits traceability item lists in deterministic source/name order rather than analyzer discovery order.
@@ -598,7 +598,7 @@ fn repo_scope_limits_traceability_to_matching_files() {
         assert!(
             json["analysis"]["traceability"]["unexplained_items"]
                 .as_array()
-                .expect("unexplained items should be an array")
+                .expect("unsupported items should be an array")
                 .iter()
                 .any(|item| item["name"] == "orphanImpl")
         );
@@ -769,7 +769,7 @@ fn repo_surfaces_traceability() {
     assert!(stdout.contains("traceability"));
     assert!(stderr.contains("Rust analyzer enrichment degraded"));
     assert!(stdout.contains("current spec item:"));
-    assert!(stdout.contains("unexplained item:"));
+    assert!(stdout.contains("unsupported item:"));
     assert!(!stdout.contains("unavailable:"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -810,7 +810,7 @@ fn repo_non_verbose_traceability_stays_summary_only() {
     assert!(text_stdout.contains("traceability"));
     assert!(!text_stdout.contains("unavailable:"));
     assert!(!text_stdout.contains("current spec item:"));
-    assert!(!text_stdout.contains("unexplained item:"));
+    assert!(!text_stdout.contains("unsupported item:"));
 
     let json_output = run_special(&root, &["health", "--json"]);
     assert!(json_output.status.success());
@@ -936,12 +936,12 @@ fn repo_traceability_resolves_instance_method_dispatch_when_rust_analyzer_is_ava
         );
         let unexplained = json["analysis"]["traceability"]["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert_eq!(unexplained.len(), 1);
         let orphan = unexplained
             .iter()
             .find(|item| item["name"] == "orphan_impl")
-            .expect("unexplained items should include orphan_impl");
+            .expect("unsupported items should include orphan_impl");
         assert_eq!(orphan["public"], Value::from(false));
         assert_eq!(orphan["test_file"], Value::from(false));
         assert_eq!(orphan["module_backed_by_current_specs"], Value::from(true));
@@ -980,51 +980,51 @@ fn repo_traceability_surfaces_unexplained_evidence_in_text_and_html() {
     let html_stdout = String::from_utf8(html_output.stdout).expect("stdout should be utf-8");
 
     if rust_analyzer_available() {
-        assert!(text_stdout.contains("unexplained public items: 0"));
-        assert!(text_stdout.contains("unexplained review-surface items: 0"));
-        assert!(text_stdout.contains("unexplained internal items: 2"));
-        assert!(text_stdout.contains("unexplained module-owned items: 2"));
-        assert!(text_stdout.contains("unexplained module-backed items: 2"));
-        assert!(text_stdout.contains("unexplained module-connected items: 1"));
-        assert!(text_stdout.contains("unexplained module-isolated items: 1"));
-        assert!(text_stdout.contains("unexplained unowned items: 0"));
+        assert!(text_stdout.contains("unsupported public items: 0"));
+        assert!(text_stdout.contains("unsupported review-surface items: 0"));
+        assert!(text_stdout.contains("unsupported internal items: 2"));
+        assert!(text_stdout.contains("unsupported module-owned items: 2"));
+        assert!(text_stdout.contains("unsupported module-backed items: 2"));
+        assert!(text_stdout.contains("unsupported module-connected items: 1"));
+        assert!(text_stdout.contains("unsupported module-isolated items: 1"));
+        assert!(text_stdout.contains("unsupported unowned items: 0"));
         assert!(text_stdout.contains(
-            "unexplained review-surface items meaning: these unexplained items are the main review pile: public API or root-visible entrypoints that behave like product surface."
+            "unsupported review-surface items meaning: these unsupported items are the main review pile: public API or root-visible entrypoints that behave like product surface."
         ));
         assert!(text_stdout.contains(
-            "unexplained public items meaning: these unexplained items are public entrypoints or exported API surface."
+            "unsupported public items meaning: these unsupported items are public entrypoints or exported API surface."
         ));
         assert!(text_stdout.contains(
-            "unexplained internal items exact: count of unexplained implementation items not marked public by the active language pack."
+            "unsupported internal items exact: count of unsupported implementation items not marked public by the active language pack."
         ));
         assert!(text_stdout.contains(
-            "unexplained module-owned items meaning: these unexplained items still belong to at least one declared module."
+            "unsupported module-owned items meaning: these unsupported items still belong to at least one declared module."
         ));
         assert!(text_stdout.contains(
-            "unexplained module-backed items meaning: these unexplained items sit in modules that already have current-spec-traced code somewhere else."
+            "unsupported module-backed items meaning: these unsupported items sit in modules that already have current-spec-traced code somewhere else."
         ));
         assert!(text_stdout.contains(
-            "unexplained module-connected items exact: count of unexplained implementation items in current-spec-backed modules that share a same-module call or reference component with current-spec-traced implementation."
+            "unsupported module-connected items exact: count of unsupported implementation items in current-spec-backed modules that share a same-module call or reference component with current-spec-traced implementation."
         ));
         assert!(text_stdout.contains(
-            "unexplained module-isolated items meaning: these unexplained items are in current-spec-backed modules but still sit outside the connected traced cluster in those modules."
+            "unsupported module-isolated items meaning: these unsupported items are in current-spec-backed modules but still sit outside the connected traced cluster in those modules."
         ));
         assert!(text_stdout.contains(
-            "unexplained item: src/lib.rs:connected_helper [internal; module-backed; connected inside module; modules DEMO]"
+            "unsupported item: src/lib.rs:connected_helper [internal; module-backed; connected inside module; modules DEMO]"
         ));
         assert!(text_stdout.contains(
-            "unexplained item: src/lib.rs:isolated_helper [internal; module-backed; isolated inside module; modules DEMO]"
+            "unsupported item: src/lib.rs:isolated_helper [internal; module-backed; isolated inside module; modules DEMO]"
         ));
 
-        assert!(html_stdout.contains("unexplained review-surface items"));
-        assert!(html_stdout.contains("unexplained internal items"));
-        assert!(html_stdout.contains("unexplained module-backed items"));
-        assert!(html_stdout.contains("unexplained module-connected items"));
-        assert!(html_stdout.contains("unexplained module-isolated items"));
-        assert!(html_stdout.contains("these unexplained items are the main review pile: public API or root-visible entrypoints that behave like product surface."));
+        assert!(html_stdout.contains("unsupported review-surface items"));
+        assert!(html_stdout.contains("unsupported internal items"));
+        assert!(html_stdout.contains("unsupported module-backed items"));
+        assert!(html_stdout.contains("unsupported module-connected items"));
+        assert!(html_stdout.contains("unsupported module-isolated items"));
+        assert!(html_stdout.contains("these unsupported items are the main review pile: public API or root-visible entrypoints that behave like product surface."));
         assert!(
             html_stdout.contains(
-                "these unexplained items are public entrypoints or exported API surface."
+                "these unsupported items are public entrypoints or exported API surface."
             )
         );
         assert!(html_stdout.contains("src/lib.rs:connected_helper [internal; module-backed; connected inside module; modules DEMO]"));
@@ -1064,7 +1064,7 @@ fn repo_surfaces_typescript_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(unexplained.iter().any(|item| {
             item["name"] == "orphanImpl" && item["review_surface"] == true && item["public"] == true
         }));
@@ -1106,7 +1106,7 @@ fn repo_surfaces_typescript_tool_backed_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1146,7 +1146,7 @@ fn repo_surfaces_typescript_reference_backed_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1198,7 +1198,7 @@ fn repo_surfaces_typescript_react_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1246,7 +1246,7 @@ fn repo_surfaces_typescript_next_client_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1301,7 +1301,7 @@ fn repo_surfaces_typescript_event_callback_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1368,7 +1368,7 @@ fn repo_surfaces_typescript_forwarded_callback_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1435,7 +1435,7 @@ fn repo_surfaces_typescript_hook_callback_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1497,7 +1497,7 @@ fn repo_surfaces_typescript_effect_callback_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1560,7 +1560,7 @@ fn repo_surfaces_typescript_context_callback_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1610,7 +1610,7 @@ fn repo_surfaces_go_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(unexplained.iter().any(|item| {
             item["name"] == "OrphanImpl" && item["review_surface"] == true && item["public"] == true
         }));
@@ -1652,7 +1652,7 @@ fn repo_surfaces_go_tool_backed_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1692,7 +1692,7 @@ fn repo_surfaces_go_reference_backed_traceability() {
 
         let unexplained = traceability["unexplained_items"]
             .as_array()
-            .expect("unexplained items should be an array");
+            .expect("unsupported items should be an array");
         assert!(
             unexplained
                 .iter()
@@ -1737,7 +1737,7 @@ fn repo_review_surface_excludes_public_test_helpers() {
 
     let unexplained = json["analysis"]["traceability"]["unexplained_items"]
         .as_array()
-        .expect("unexplained items should be an array");
+        .expect("unsupported items should be an array");
     let public_names = unexplained
         .iter()
         .filter(|item| item["public"] == true)
@@ -1798,7 +1798,7 @@ fn repo_health_config_ignores_unexplained_traceability_paths() {
     );
     let unexplained = traceability["unexplained_items"]
         .as_array()
-        .expect("unexplained items should be present");
+        .expect("unsupported items should be present");
     assert!(unexplained.iter().all(|item| item["path"] != "src/lib.rs"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");

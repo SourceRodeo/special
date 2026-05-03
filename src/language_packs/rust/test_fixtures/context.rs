@@ -39,7 +39,7 @@ pub fn write_traceability_module_context_fixture(root: &Path) {
     write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.MODULE_CONTEXT`\nRepo traceability exposes whether unexplained items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
+        "### `@group APP`\nApp root.\n\n### `@spec APP.MODULE_CONTEXT`\nRepo traceability exposes whether unsupported items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
     );
     write_file(
         root,

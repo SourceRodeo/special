@@ -1266,7 +1266,7 @@ fn write_rust_module_context_fixture(root: &std::path::Path) {
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.MODULE_CONTEXT`\nRepo traceability exposes whether unexplained items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
+        "### `@group APP`\nApp root.\n\n### `@spec APP.MODULE_CONTEXT`\nRepo traceability exposes whether unsupported items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
     )
     .expect("spec fixture should be written");
     fs::write(

@@ -35,12 +35,12 @@ pub(super) fn append_traceability(
     );
     push_traceability_group(
         meta_lines,
-        "planned-only item",
+        "planned-spec-only item",
         &traceability.planned_only_items,
     );
     push_traceability_group(
         meta_lines,
-        "deprecated-only item",
+        "deprecated-spec-only item",
         &traceability.deprecated_only_items,
     );
     push_traceability_group(
@@ -50,7 +50,7 @@ pub(super) fn append_traceability(
     );
     push_traceability_group(
         meta_lines,
-        "unverified-test item",
+        "test-covered unlinked item",
         &traceability.unverified_test_items,
     );
     push_traceability_group(
@@ -60,7 +60,7 @@ pub(super) fn append_traceability(
     );
     push_traceability_group(
         meta_lines,
-        "unexplained item",
+        "unsupported item",
         &traceability.unexplained_items,
     );
 }

@@ -225,45 +225,45 @@ pub(super) fn format_repo_traceability_metrics_html(metrics: &RepoTraceabilityMe
                 value: metrics.statically_mediated_items.to_string(),
             },
             HtmlCount {
-                label: "unverified test items",
+                label: "test-covered unlinked items",
                 value: metrics.unverified_test_items.to_string(),
             },
             HtmlCount {
-                label: "unexplained items",
+                label: "unsupported items",
                 value: metrics.unexplained_items.to_string(),
             },
             HtmlCount {
-                label: "unexplained review-surface items",
+                label: "unsupported review-surface items",
                 value: metrics.unexplained_review_surface_items.to_string(),
             },
             HtmlCount {
-                label: "unexplained public items",
+                label: "unsupported public items",
                 value: metrics.unexplained_public_items.to_string(),
             },
             HtmlCount {
-                label: "unexplained internal items",
+                label: "unsupported internal items",
                 value: metrics.unexplained_internal_items.to_string(),
             },
             HtmlCount {
-                label: "unexplained module-backed items",
+                label: "unsupported module-backed items",
                 value: metrics.unexplained_module_backed_items.to_string(),
             },
             HtmlCount {
-                label: "unexplained module-connected items",
+                label: "unsupported module-connected items",
                 value: metrics.unexplained_module_connected_items.to_string(),
             },
             HtmlCount {
-                label: "unexplained module-isolated items",
+                label: "unsupported module-isolated items",
                 value: metrics.unexplained_module_isolated_items.to_string(),
             },
         ],
     );
     html.push_str(&render_grouped_metrics_section_html(
-        "unexplained items by file",
+        "unsupported items by file",
         &metrics.unexplained_items_by_file,
     ));
     html.push_str(&render_grouped_metrics_section_html(
-        "unexplained review-surface items by file",
+        "unsupported review-surface items by file",
         &metrics.unexplained_review_surface_items_by_file,
     ));
     html

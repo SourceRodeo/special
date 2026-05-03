@@ -48,7 +48,7 @@ pub fn write_traceability_mediated_fixture(root: &Path) {
     write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.RENDER`\nStatically mediated trait entrypoints are separated from unexplained items.\n",
+        "### `@group APP`\nApp root.\n\n### `@spec APP.RENDER`\nStatically mediated trait entrypoints are separated from unsupported items.\n",
     );
     write_file(
         root,

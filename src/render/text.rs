@@ -360,45 +360,45 @@ fn append_repo_traceability_metrics_text(output: &mut String, metrics: &RepoTrac
         metrics.statically_mediated_items
     ));
     output.push_str(&format!(
-        "    unverified test items: {}\n",
+        "    test-covered unlinked items: {}\n",
         metrics.unverified_test_items
     ));
     output.push_str(&format!(
-        "    unexplained items: {}\n",
+        "    unsupported items: {}\n",
         metrics.unexplained_items
     ));
     output.push_str(&format!(
-        "    unexplained review-surface items: {}\n",
+        "    unsupported review-surface items: {}\n",
         metrics.unexplained_review_surface_items
     ));
     output.push_str(&format!(
-        "    unexplained public items: {}\n",
+        "    unsupported public items: {}\n",
         metrics.unexplained_public_items
     ));
     output.push_str(&format!(
-        "    unexplained internal items: {}\n",
+        "    unsupported internal items: {}\n",
         metrics.unexplained_internal_items
     ));
     output.push_str(&format!(
-        "    unexplained module-backed items: {}\n",
+        "    unsupported module-backed items: {}\n",
         metrics.unexplained_module_backed_items
     ));
     output.push_str(&format!(
-        "    unexplained module-connected items: {}\n",
+        "    unsupported module-connected items: {}\n",
         metrics.unexplained_module_connected_items
     ));
     output.push_str(&format!(
-        "    unexplained module-isolated items: {}\n",
+        "    unsupported module-isolated items: {}\n",
         metrics.unexplained_module_isolated_items
     ));
     append_grouped_counts_text(
         output,
-        "unexplained items by file",
+        "unsupported items by file",
         &metrics.unexplained_items_by_file,
     );
     append_grouped_counts_text(
         output,
-        "unexplained review-surface items by file",
+        "unsupported review-surface items by file",
         &metrics.unexplained_review_surface_items_by_file,
     );
 }
