@@ -149,8 +149,9 @@ detail. Use `--metrics` when you want grouped counts and deeper analysis for the
 current view. Use `--json` when another tool should consume the output.
 `special docs` prints a documentation relationship view by default and writes
 materialized public files only when `--output` is present. Projects can set
-`[docs] source` and `output` in `special.toml` so `special docs --output` uses
-the configured source and output paths.
+`[[docs.outputs]]` entries in `special.toml` so `special docs --output`
+materializes every configured source/output mapping, including a root `README.md`
+generated from `docs/src/README.md`.
 For directory targets, materialization preserves the tree relative to the target
 root inside the output path.
 

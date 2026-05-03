@@ -3,7 +3,7 @@
 Parses and loads `special.toml` root, version, and shared discovery ignore settings. This module does not choose VCS or current-directory fallbacks when config is absent.
 
 @spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS
-special.toml accepts `[docs] source = "PATH"` and `output = "PATH"` as the configured docs materialization source and output paths.
+special.toml accepts `[[docs.outputs]]` entries with `source = "PATH"` and `output = "PATH"` as configured docs materialization mappings.
 */
 // @fileimplements SPECIAL.CONFIG.SPECIAL_TOML
 use std::fs;
@@ -21,11 +21,16 @@ pub(crate) struct SpecialToml {
     pub(crate) version: SpecialVersion,
     pub(crate) version_explicit: bool,
     pub(crate) ignore_patterns: Vec<String>,
-    pub(crate) docs_source: Option<PathBuf>,
-    pub(crate) docs_output: Option<PathBuf>,
+    pub(crate) docs_outputs: Vec<DocsOutputConfig>,
     pub(crate) health_ignore_unexplained_patterns: Vec<String>,
     pub(crate) toolchain_manager: Option<ToolchainManager>,
     pub(crate) pattern_benchmarks: PatternMetricBenchmarks,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct DocsOutputConfig {
+    pub(crate) source: PathBuf,
+    pub(crate) output: PathBuf,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -94,6 +99,12 @@ struct RawSpecialToml {
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawDocsConfig {
+    outputs: Option<Vec<RawDocsOutputConfig>>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawDocsOutputConfig {
     source: Option<String>,
     output: Option<String>,
 }
@@ -183,8 +194,9 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
 
     if let Some(docs) = raw.docs {
         let line = key_lines.get("docs").copied().unwrap_or(1);
-        config.docs_source = parse_optional_path(docs.source, "docs source", line)?;
-        config.docs_output = parse_optional_path(docs.output, "docs output", line)?;
+        if let Some(outputs) = docs.outputs {
+            config.docs_outputs = parse_docs_outputs(outputs, line)?;
+        }
     }
 
     if let Some(health) = raw.health
@@ -217,14 +229,29 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
     Ok(config)
 }
 
-fn parse_optional_path(value: Option<String>, label: &str, line: usize) -> Result<Option<PathBuf>> {
+fn parse_docs_outputs(
+    raw_outputs: Vec<RawDocsOutputConfig>,
+    line: usize,
+) -> Result<Vec<DocsOutputConfig>> {
+    raw_outputs
+        .into_iter()
+        .map(|raw| {
+            Ok(DocsOutputConfig {
+                source: parse_required_path(raw.source, "docs output source", line)?,
+                output: parse_required_path(raw.output, "docs output path", line)?,
+            })
+        })
+        .collect()
+}
+
+fn parse_required_path(value: Option<String>, label: &str, line: usize) -> Result<PathBuf> {
     let Some(value) = value else {
-        return Ok(None);
+        bail!("line {} must declare {label}", line);
     };
     if value.trim().is_empty() {
         bail!("line {} must not use an empty {label} path", line);
     }
-    Ok(Some(PathBuf::from(value)))
+    Ok(PathBuf::from(value))
 }
 
 fn parse_pattern_benchmark_config(
@@ -268,7 +295,7 @@ fn collect_top_level_key_lines(content: &str) -> std::collections::BTreeMap<Stri
         }
 
         if trimmed.starts_with('[') {
-            if trimmed == "[docs]" {
+            if trimmed == "[docs]" || trimmed.starts_with("[[docs.") {
                 key_lines.entry("docs".to_string()).or_insert(index + 1);
             }
             if trimmed == "[toolchain]" {

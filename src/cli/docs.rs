@@ -12,7 +12,7 @@ use clap::Args;
 use super::common::{report_cache_stats, resolve_cli_paths};
 use super::status::{CommandStatus, StatusStep};
 use crate::cache::{reset_cache_stats, with_cache_status_notifier};
-use crate::config::resolve_project_root;
+use crate::config::{DocsOutputConfig, resolve_project_root};
 use crate::docs::{build_docs_document, materialize_path, render_docs_text};
 use crate::model::LintReport;
 use crate::render::render_lint_text;
@@ -33,7 +33,7 @@ pub(super) struct DocsArgs {
         long = "output",
         value_name = "PATH",
         num_args = 0..=1,
-        help = "Materialize the target docs file or subtree to this output path"
+        help = "Materialize docs to an output path; omit PATH to use configured docs outputs"
     )]
     output: Option<Option<PathBuf>>,
 }
@@ -66,18 +66,18 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
 
     status.phase("validating documentation links");
     let target_paths = resolve_cli_paths(current_dir, &args.targets);
-    let output_path = match args.output.as_ref() {
-        None => None,
-        Some(Some(output)) => Some(resolve_cli_path(current_dir, output)),
-        Some(None) => Some(configured_docs_path(
-            &resolution.root,
-            resolution.docs_output.as_deref(),
-            "[docs] output",
-        )?),
-    };
+    let output_path = args
+        .output
+        .as_ref()
+        .and_then(|output| output.as_ref())
+        .map(|output| resolve_cli_path(current_dir, output));
     let (report, rendered_document) = with_cache_status_notifier(status.notifier(), || {
-        match (target_paths.as_slice(), output_path.as_deref()) {
-            (targets, None) => {
+        match (
+            target_paths.as_slice(),
+            args.output.as_ref(),
+            output_path.as_deref(),
+        ) {
+            (targets, None, None) => {
                 let (document, report) = build_docs_document(
                     &resolution.root,
                     &resolution.ignore_patterns,
@@ -88,7 +88,7 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
                     (!report.has_errors()).then(|| render_docs_text(&resolution.root, &document));
                 Ok((report, rendered))
             }
-            ([input], Some(output)) => {
+            ([input], Some(Some(_)), Some(output)) => {
                 let report = materialize_path(
                     &resolution.root,
                     &resolution.ignore_patterns,
@@ -98,22 +98,22 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
                 )?;
                 Ok((report, None))
             }
-            ([], Some(output)) => {
-                let input = configured_docs_path(
-                    &resolution.root,
-                    resolution.docs_source.as_deref(),
-                    "[docs] source",
-                )?;
-                let report = materialize_path(
+            ([], Some(None), None) => {
+                let report = materialize_configured_outputs(
                     &resolution.root,
                     &resolution.ignore_patterns,
                     resolution.version,
-                    &input,
-                    output,
+                    &resolution.docs_outputs,
                 )?;
                 Ok((report, None))
             }
-            ([_, _, ..], Some(_)) => bail!("--output requires exactly one --target path"),
+            ([], Some(Some(_)), Some(_)) => {
+                bail!("special docs --output PATH requires --target PATH")
+            }
+            ([_], Some(None), None) => bail!("special docs --target PATH --output requires PATH"),
+            ([_, _, ..], Some(_), _) => bail!("--output requires exactly one --target path"),
+            (_, Some(Some(_)), None) => unreachable!("explicit output path should resolve"),
+            (_, _, Some(_)) => unreachable!("output path exists only when output is requested"),
         }
     })?;
     report_cache_stats(&status);
@@ -132,15 +132,40 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
     })
 }
 
-fn configured_docs_path(root: &Path, path: Option<&Path>, label: &str) -> Result<PathBuf> {
-    let Some(path) = path else {
-        bail!("special docs --output requires {label} in special.toml when the path is omitted");
-    };
-    Ok(if path.is_absolute() {
+fn materialize_configured_outputs(
+    root: &Path,
+    ignore_patterns: &[String],
+    version: crate::config::SpecialVersion,
+    outputs: &[DocsOutputConfig],
+) -> Result<LintReport> {
+    if outputs.is_empty() {
+        bail!("special docs --output requires at least one [[docs.outputs]] entry in special.toml");
+    }
+
+    let mut diagnostics = Vec::new();
+    for output in outputs {
+        let report = materialize_path(
+            root,
+            ignore_patterns,
+            version,
+            &configured_docs_path(root, &output.source),
+            &configured_docs_path(root, &output.output),
+        )?;
+        let has_errors = report.has_errors();
+        diagnostics.extend(report.diagnostics);
+        if has_errors {
+            break;
+        }
+    }
+    Ok(LintReport { diagnostics })
+}
+
+fn configured_docs_path(root: &Path, path: &Path) -> PathBuf {
+    if path.is_absolute() {
         path.to_path_buf()
     } else {
         root.join(path)
-    })
+    }
 }
 
 fn resolve_cli_path(current_dir: &Path, path: &Path) -> PathBuf {

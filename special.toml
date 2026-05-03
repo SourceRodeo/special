@@ -6,9 +6,13 @@ ignore = [
   "docs/dist",
 ]
 
-[docs]
+[[docs.outputs]]
 source = "docs/src"
 output = "docs/dist"
+
+[[docs.outputs]]
+source = "docs/src/README.md"
+output = "README.md"
 
 [health]
 ignore-unexplained = [

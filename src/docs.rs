@@ -36,7 +36,7 @@ special docs --target PATH --output PATH accepts an input directory and output d
 special docs --target PATH --output PATH refuses to materialize over the input path, into an input directory, or over an existing file that still contains docs evidence.
 
 @spec SPECIAL.DOCS_COMMAND.MATERIALIZE.CONFIG
-special docs --output uses `[docs] source` and `[docs] output` from special.toml to materialize configured public docs without repeating paths on the command line.
+special docs --output uses `[[docs.outputs]]` mappings from special.toml to materialize configured public docs without repeating paths on the command line.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet};

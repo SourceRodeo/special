@@ -63,7 +63,7 @@ fn docs_materialize_uses_configured_source_and_output_paths() {
     write_docs_fixture(&root);
     fs::write(
         root.join("special.toml"),
-        "version = \"1\"\nroot = \".\"\n\n[docs]\nsource = \"docs/src\"\noutput = \"docs/dist\"\n",
+        "version = \"1\"\nroot = \".\"\n\n[[docs.outputs]]\nsource = \"docs/src\"\noutput = \"docs/dist\"\n\n[[docs.outputs]]\nsource = \"docs/src/README.md\"\noutput = \"README.md\"\n",
     )
     .expect("special.toml should be written");
     fs::create_dir_all(root.join("docs/src/nested")).expect("nested docs dir should be created");
@@ -85,6 +85,8 @@ fn docs_materialize_uses_configured_source_and_output_paths() {
     let rendered =
         fs::read_to_string(root.join("docs/dist/README.md")).expect("rendered docs should exist");
     assert!(rendered.contains("CSV exports include headers."));
+    let readme = fs::read_to_string(root.join("README.md")).expect("root README should exist");
+    assert!(readme.contains("CSV exports include headers."));
     assert_eq!(
         fs::read_to_string(root.join("docs/dist/nested/asset.txt"))
             .expect("plain asset should preserve its relative tree path"),
