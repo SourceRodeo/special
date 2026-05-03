@@ -1,6 +1,6 @@
 ---
 name: validate-architecture-implementation
-description: Use this skill when reviewing whether code matches an intended module or subsystem responsibility. Compare the module description to the attached implementation, then decide whether to keep, move, narrow, split, or add architecture annotations.
+description: 'Use this skill when reviewing whether code matches an intended module or subsystem responsibility. Compare the module description to the attached implementation, then decide whether to keep, move, narrow, split, or add architecture annotations.'
 ---
 
 # Validate Architecture Implementation

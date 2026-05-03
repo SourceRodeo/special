@@ -1,6 +1,6 @@
 ---
 name: special-workflow
-description: Use this skill when working in a repository that uses Special. Prefer Special MCP tools for specs, architecture, patterns, docs, lint, and health before falling back to shell commands.
+description: 'Use this skill when working in a repository that uses Special. Prefer Special MCP tools for specs, architecture, patterns, docs, lint, and health before falling back to shell commands.'
 ---
 
 # Special Workflow

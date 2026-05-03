@@ -1,6 +1,6 @@
 ---
 name: ship-product-change
-description: Use this skill when adding a feature, fixing a bug, or changing behavior. Keep the product contract current: define or revise the relevant claim, implement the change, attach one honest proof, then run the focused Special checks.
+description: 'Use this skill when adding a feature, fixing a bug, or changing behavior. Keep the product contract current: define or revise the relevant claim, implement the change, attach one honest proof, then run the focused Special checks.'
 ---
 
 # Ship Product Change

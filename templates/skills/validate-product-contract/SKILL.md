@@ -1,6 +1,6 @@
 ---
 name: validate-product-contract
-description: Use this skill when reviewing whether a feature, bug fix, test, or release claim is honestly supported. Inspect the exact product claim, inspect the proof artifact, and decide whether to keep, tighten, split, plan, or remove the claim.
+description: 'Use this skill when reviewing whether a feature, bug fix, test, or release claim is honestly supported. Inspect the exact product claim, inspect the proof artifact, and decide whether to keep, tighten, split, plan, or remove the claim.'
 ---
 
 # Validate Product Contract

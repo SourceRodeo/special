@@ -1,6 +1,6 @@
 ---
 name: define-product-specs
-description: Use this skill when turning requirements, feature ideas, bug reports, roadmap notes, or vague behavior into clear product claims. Create or update Special specs as the durable contract: `@group` for structure, `@spec` for real claims, and planned/current state based on what actually ships.
+description: 'Use this skill when turning requirements, feature ideas, bug reports, roadmap notes, or vague behavior into clear product claims. Create or update Special specs as the durable contract: `@group` for structure, `@spec` for real claims, and planned/current state based on what actually ships.'
 ---
 
 # Define Product Specs

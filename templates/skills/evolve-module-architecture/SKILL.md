@@ -1,6 +1,6 @@
 ---
 name: evolve-module-architecture
-description: Use this skill when changing ownership boundaries, module responsibilities, subsystem splits, or command-surface design. Capture the intended architecture with `@module`/`@area`, attach implementation with `@implements`, and keep architecture separate from product specs and patterns.
+description: 'Use this skill when changing ownership boundaries, module responsibilities, subsystem splits, or command-surface design. Capture the intended architecture with `@module`/`@area`, attach implementation with `@implements`, and keep architecture separate from product specs and patterns.'
 ---
 
 # Evolve Module Architecture

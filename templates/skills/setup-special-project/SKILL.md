@@ -1,6 +1,6 @@
 ---
 name: setup-special-project
-description: Use this skill when configuring, validating, or updating Special in a project where the `special` binary is available. Initialize config, inspect specs, wire docs outputs, and run checks.
+description: 'Use this skill when configuring, validating, or updating Special in a project where the `special` binary is available. Initialize config, inspect specs, wire docs outputs, and run checks.'
 ---
 
 # Setup Special Project

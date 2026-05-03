@@ -1,6 +1,6 @@
 ---
 name: install-or-update-special
-description: Use this skill when the Special Codex plugin is installed but the `special` binary is missing, too old, or not on PATH. Guide the user through normal install or update channels without silently installing binaries.
+description: 'Use this skill when the Special Codex plugin is installed but the `special` binary is missing, too old, or not on PATH. Guide the user through normal install or update channels without silently installing binaries.'
 ---
 
 # Install Or Update Special

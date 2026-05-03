@@ -1,6 +1,9 @@
 /**
 @module SPECIAL.SKILLS
-Bundled skill catalog and install-facing asset definitions in `src/skills.rs`. This module owns which bundled skills ship with the binary and the files each skill installation materializes.
+Bundled skill catalog and install-facing asset definitions in `src/skills.rs`. This module owns which bundled skills ship with the binary and the files each skill installation writes.
+
+@spec SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+special validates bundled `SKILL.md` frontmatter before printing or installing bundled skills. Bundled skill frontmatter must declare a matching `name` and a quoted `description`.
 */
 // @fileimplements SPECIAL.SKILLS
 mod install;
@@ -10,6 +13,8 @@ use anyhow::Result;
 pub(crate) use install::{
     conflicting_skill_paths, install_bundled_skills, resolve_global_skills_root,
 };
+
+use anyhow::{bail, Context};
 
 pub struct SkillAsset {
     relative_path: &'static str,
@@ -230,10 +235,251 @@ pub fn bundled_skill(skill_id: &str) -> Option<&'static BundledSkill> {
 pub(crate) fn primary_skill_contents(skill_id: &str) -> Result<&'static str> {
     let skill =
         bundled_skill(skill_id).ok_or_else(|| anyhow::anyhow!("unknown skill id `{skill_id}`"))?;
+    validate_bundled_skill_frontmatter(skill)?;
     skill
         .assets
         .iter()
         .find(|asset| asset.relative_path == "SKILL.md")
         .map(|asset| asset.contents)
         .ok_or_else(|| anyhow::anyhow!("bundled skill `{skill_id}` is missing `SKILL.md`"))
+}
+
+pub(crate) fn validate_bundled_skill_frontmatter(skill: &BundledSkill) -> Result<()> {
+    let contents = skill
+        .assets
+        .iter()
+        .find(|asset| asset.relative_path == "SKILL.md")
+        .map(|asset| asset.contents)
+        .ok_or_else(|| anyhow::anyhow!("bundled skill `{}` is missing `SKILL.md`", skill.id))?;
+    let frontmatter = parse_skill_frontmatter(contents).with_context(|| {
+        format!(
+            "bundled skill `{}` has invalid SKILL.md frontmatter",
+            skill.id
+        )
+    })?;
+    if frontmatter.name.as_deref() != Some(skill.id) {
+        bail!(
+            "bundled skill `{}` has invalid SKILL.md frontmatter: name must be `{}`",
+            skill.id,
+            skill.id
+        );
+    }
+    if frontmatter.description.is_none() {
+        bail!(
+            "bundled skill `{}` has invalid SKILL.md frontmatter: missing description",
+            skill.id
+        );
+    }
+    Ok(())
+}
+
+#[derive(Debug, Default)]
+struct SkillFrontmatter {
+    name: Option<String>,
+    description: Option<String>,
+}
+
+fn parse_skill_frontmatter(contents: &str) -> Result<SkillFrontmatter> {
+    let mut lines = contents.lines();
+    if lines.next() != Some("---") {
+        bail!("SKILL.md must start with YAML frontmatter");
+    }
+
+    let mut frontmatter = SkillFrontmatter::default();
+    for (index, line) in lines.enumerate() {
+        let line_number = index + 2;
+        if line == "---" {
+            return Ok(frontmatter);
+        }
+        if line.trim().is_empty() {
+            continue;
+        }
+        let Some((key, value)) = line.split_once(':') else {
+            bail!("frontmatter line {line_number} must use `key: value`");
+        };
+        let key = key.trim();
+        let value = value.trim();
+        match key {
+            "name" => {
+                frontmatter.name = Some(parse_frontmatter_scalar(value, line_number, false)?);
+            }
+            "description" => {
+                frontmatter.description = Some(parse_frontmatter_scalar(value, line_number, true)?);
+            }
+            _ => {}
+        }
+    }
+
+    bail!("SKILL.md frontmatter must close with `---`")
+}
+
+fn parse_frontmatter_scalar(
+    value: &str,
+    line_number: usize,
+    require_quoted: bool,
+) -> Result<String> {
+    if value.is_empty() {
+        bail!("frontmatter line {line_number} must not use an empty value");
+    }
+
+    let quoted = parse_quoted_frontmatter_scalar(value)?;
+    match (quoted, require_quoted) {
+        (Some(value), _) => Ok(value),
+        (None, true) => bail!("frontmatter line {line_number} description must be quoted"),
+        (None, false) => Ok(value.to_string()),
+    }
+}
+
+fn parse_quoted_frontmatter_scalar(value: &str) -> Result<Option<String>> {
+    let Some(quote) = value
+        .chars()
+        .next()
+        .filter(|quote| *quote == '\'' || *quote == '"')
+    else {
+        return Ok(None);
+    };
+    if !value.ends_with(quote) || value.len() == 1 {
+        bail!("quoted frontmatter value must end with a matching quote");
+    }
+    let inner = &value[1..value.len() - 1];
+    if quote == '\'' {
+        let mut parsed = String::new();
+        let mut chars = inner.chars().peekable();
+        while let Some(character) = chars.next() {
+            if character == '\'' {
+                if chars.peek() == Some(&'\'') {
+                    chars.next();
+                    parsed.push('\'');
+                } else {
+                    bail!("single-quoted frontmatter values must escape `'` as `''`");
+                }
+            } else {
+                parsed.push(character);
+            }
+        }
+        Ok(Some(parsed))
+    } else {
+        let mut parsed = String::new();
+        let mut chars = inner.chars();
+        while let Some(character) = chars.next() {
+            if character == '"' {
+                bail!("double-quoted frontmatter values must escape `\"` as `\\\"`");
+            }
+            if character == '\\' {
+                match chars.next() {
+                    Some('"') => parsed.push('"'),
+                    Some('\\') => parsed.push('\\'),
+                    Some(other) => {
+                        parsed.push('\\');
+                        parsed.push(other);
+                    }
+                    None => bail!("double-quoted frontmatter value must not end in `\\`"),
+                }
+            } else {
+                parsed.push(character);
+            }
+        }
+        Ok(Some(parsed))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        parse_skill_frontmatter, validate_bundled_skill_frontmatter, BundledSkill, SkillAsset,
+    };
+
+    #[test]
+    // @verifies SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+    fn skill_frontmatter_requires_quoted_description() {
+        let error = parse_skill_frontmatter(
+            "---\nname: example\ndescription: Use this when values contain: punctuation\n---\n",
+        )
+        .expect_err("unquoted description should fail");
+
+        assert!(error.to_string().contains("description must be quoted"));
+    }
+
+    #[test]
+    // @verifies SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+    fn skill_frontmatter_accepts_quoted_description_with_punctuation() {
+        let parsed = parse_skill_frontmatter(
+            "---\nname: example\ndescription: 'Use this when values contain: punctuation and `code`.'\n---\n",
+        )
+        .expect("quoted description should parse");
+
+        assert_eq!(parsed.name.as_deref(), Some("example"));
+        assert_eq!(
+            parsed.description.as_deref(),
+            Some("Use this when values contain: punctuation and `code`.")
+        );
+    }
+
+    #[test]
+    // @verifies SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+    fn skill_frontmatter_accepts_nested_double_quotes_in_single_quoted_description() {
+        let parsed = parse_skill_frontmatter(
+            "---\nname: example\ndescription: 'Capture the \"why is it done this way?\" answer.'\n---\n",
+        )
+        .expect("single-quoted description should allow double quotes");
+
+        assert_eq!(
+            parsed.description.as_deref(),
+            Some("Capture the \"why is it done this way?\" answer.")
+        );
+    }
+
+    #[test]
+    // @verifies SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+    fn skill_frontmatter_rejects_missing_frontmatter() {
+        let error =
+            parse_skill_frontmatter("# Example\n").expect_err("frontmatter should be required");
+
+        assert!(error
+            .to_string()
+            .contains("must start with YAML frontmatter"));
+    }
+
+    #[test]
+    // @verifies SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+    fn skill_frontmatter_rejects_unclosed_frontmatter() {
+        let error = parse_skill_frontmatter("---\nname: example\ndescription: 'Example.'\n")
+            .expect_err("frontmatter should require a closing marker");
+
+        assert!(error.to_string().contains("must close with `---`"));
+    }
+
+    #[test]
+    // @verifies SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+    fn bundled_skill_frontmatter_requires_matching_name() {
+        let skill = BundledSkill {
+            id: "expected",
+            summary: "Example skill.",
+            assets: &[SkillAsset {
+                relative_path: "SKILL.md",
+                contents: "---\nname: actual\ndescription: 'Example.'\n---\n",
+            }],
+        };
+        let error = validate_bundled_skill_frontmatter(&skill)
+            .expect_err("skill name should match bundled skill id");
+
+        assert!(error.to_string().contains("name must be `expected`"));
+    }
+
+    #[test]
+    // @verifies SPECIAL.SKILLS.BUNDLED_FRONTMATTER_VALIDATION
+    fn bundled_skill_frontmatter_requires_description() {
+        let skill = BundledSkill {
+            id: "example",
+            summary: "Example skill.",
+            assets: &[SkillAsset {
+                relative_path: "SKILL.md",
+                contents: "---\nname: example\n---\n",
+            }],
+        };
+        let error = validate_bundled_skill_frontmatter(&skill)
+            .expect_err("skill description should be required");
+
+        assert!(error.to_string().contains("missing description"));
+    }
 }

@@ -1,6 +1,6 @@
 ---
 name: use-project-patterns
-description: Use this skill when adding, reviewing, or refactoring code that resembles a recurring project approach. Capture the "why is it done this way?" answer with `@pattern`, attach `@applies` only to real source applications, and use pattern metrics as advisory evidence.
+description: 'Use this skill when adding, reviewing, or refactoring code that resembles a recurring project approach. Capture the "why is it done this way?" answer with `@pattern`, attach `@applies` only to real source applications, and use pattern metrics as advisory evidence.'
 ---
 
 # Use Project Patterns

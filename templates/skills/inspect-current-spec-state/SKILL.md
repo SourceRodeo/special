@@ -1,6 +1,6 @@
 ---
 name: inspect-current-spec-state
-description: Use this skill when you need to know what behavior the project currently claims and supports. Use `special specs --current` when available, or identify that the project lacks a tracked current contract.
+description: 'Use this skill when you need to know what behavior the project currently claims and supports. Use `special specs --current` when available, or identify that the project lacks a tracked current contract.'
 ---
 
 # Inspect Current Spec State

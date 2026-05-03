@@ -1,6 +1,6 @@
 ---
 name: find-planned-work
-description: Use this skill when looking for future product work, release blockers, or requirements that are not current yet. Use `special specs --planned` when available, or convert untracked roadmap/backlog prose into planned specs.
+description: 'Use this skill when looking for future product work, release blockers, or requirements that are not current yet. Use `special specs --planned` when available, or convert untracked roadmap/backlog prose into planned specs.'
 ---
 
 # Find Planned Work
