@@ -91,7 +91,7 @@ index that keeps claims, evidence, and implementation boundaries connected.
 | `special arch` | Inspect architecture declarations and implementation ownership. |
 | `special patterns` | Inspect adopted implementation patterns and their source applications. |
 | `special health` | Inspect repo-wide quality and traceability signals. |
-| `special docs` | Validate or materialize docs relationships. |
+| `special docs` | Validate docs relationships or write docs outputs. |
 | `special mcp` | Run the stdio MCP server for controlled agent access. |
 | `special lint` | Check annotation and reference structure. |
 | `special init` | Add a starter `special.toml`. |
@@ -151,11 +151,11 @@ Use `--verbose` when you want attached bodies, source evidence, or item-level
 detail. Use `--metrics` when you want grouped counts and deeper analysis for the
 current view. Use `--json` when another tool should consume the output.
 `special docs` prints a documentation relationship view by default and writes
-materialized public files only when `--output` is present. Projects can set
+public output files only when `--output` is present. Projects can set
 `[[docs.outputs]]` entries in `special.toml` so `special docs --output`
-materializes every configured source/output mapping, including a root `README.md`
+writes every configured source/output mapping, including a root `README.md`
 generated from `docs/src/README.md`.
-For directory targets, materialization preserves the tree relative to the target
+For directory targets, output writing preserves the tree relative to the target
 root inside the output path.
 
 ## Examples
@@ -479,6 +479,6 @@ own `special` declarations, primarily colocated with the owning source and test
 boundaries. Central markdown remains only for structural and planned contract
 scaffolding.
 
-If this README and the materialized spec disagree, the spec wins.
+If this README and the spec output disagree, the spec wins.
 
 The repo root is explicitly anchored by [special.toml](special.toml).

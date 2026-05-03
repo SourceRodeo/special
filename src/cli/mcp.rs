@@ -8,8 +8,8 @@ special mcp runs a stdio MCP server that speaks newline-delimited JSON-RPC and k
 @spec SPECIAL.MCP_COMMAND.TOOLS
 special mcp exposes controlled tools for root discovery plus existing Special inspection and validation surfaces.
 
-@spec SPECIAL.MCP_COMMAND.DOCS_MATERIALIZE
-special mcp exposes docs materialization as a bounded write tool that preserves the same target/output safety policy as the CLI.
+@spec SPECIAL.MCP_COMMAND.DOCS_OUTPUT
+special mcp exposes docs output as a bounded write tool that preserves the same target/output safety policy as the CLI.
 */
 // @fileimplements SPECIAL.CLI.MCP
 use std::io::{self, BufRead, Write};
@@ -23,7 +23,7 @@ use serde_json::{Value, json};
 use super::common::resolve_cli_paths;
 use super::spec::{add_config_lint_warnings, normalize_report};
 use crate::config::{RootResolution, RootSource, SpecialVersion, resolve_project_root};
-use crate::docs::{build_docs_document, materialize_path, materialize_paths, render_docs_text};
+use crate::docs::{build_docs_document, render_docs_text, write_docs_path, write_docs_paths};
 use crate::index::{build_lint_report, build_spec_document};
 use crate::model::{
     DeclaredStateFilter, LintReport, ModuleAnalysisOptions, ModuleFilter, PatternFilter, SpecFilter,
@@ -127,7 +127,7 @@ fn handle_tool_call(current_dir: &Path, params: Option<&Value>) -> Result<Value>
         "special_arch" => arch_tool(current_dir, arguments),
         "special_patterns" => patterns_tool(current_dir, arguments),
         "special_docs" => docs_tool(current_dir, arguments),
-        "special_docs_materialize" => docs_materialize_tool(current_dir, arguments),
+        "special_docs_output" => docs_output_tool(current_dir, arguments),
         "special_lint" => lint_tool(current_dir),
         "special_health" => health_tool(current_dir, arguments),
         _ => bail!("unknown Special MCP tool `{name}`"),
@@ -204,16 +204,16 @@ fn tool_definitions() -> Vec<Value> {
             )]),
         ),
         tool(
-            "special_docs_materialize",
-            "Materialize configured docs outputs, or one explicit target/output pair, using CLI safety checks.",
+            "special_docs_output",
+            "Write configured docs outputs, or one explicit target/output pair, using CLI safety checks.",
             object_schema(vec![
                 string_property(
                     "target",
-                    "Docs source file or directory for explicit materialization.",
+                    "Docs source file or directory for explicit output writing.",
                 ),
                 string_property(
                     "output",
-                    "Output file or directory for explicit materialization.",
+                    "Output file or directory for explicit output writing.",
                 ),
             ]),
         ),
@@ -472,26 +472,26 @@ fn docs_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
     })
 }
 
-fn docs_materialize_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
+fn docs_output_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
     let resolution = resolve_project_root(current_dir)?;
     let target = optional_path_arg(arguments, "target")?;
     let output = optional_path_arg(arguments, "output")?;
     let report = match (target, output) {
-        (None, None) => materialize_configured_outputs(
+        (None, None) => render_configured_outputs(
             &resolution.root,
             &resolution.ignore_patterns,
             resolution.version,
             &resolution,
         )?,
-        (Some(target), Some(output)) => materialize_path(
+        (Some(target), Some(output)) => write_docs_path(
             &resolution.root,
             &resolution.ignore_patterns,
             resolution.version,
             &resolve_cli_path(current_dir, &target),
             &resolve_cli_path(current_dir, &output),
         )?,
-        (Some(_), None) => bail!("special_docs_materialize target requires output"),
-        (None, Some(_)) => bail!("special_docs_materialize output requires target"),
+        (Some(_), None) => bail!("special_docs_output target requires output"),
+        (None, Some(_)) => bail!("special_docs_output output requires target"),
     };
     let rendered = if report.has_errors() {
         render_lint_text(&report)
@@ -506,7 +506,7 @@ fn docs_materialize_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOu
     })
 }
 
-fn materialize_configured_outputs(
+fn render_configured_outputs(
     root: &Path,
     ignore_patterns: &[String],
     version: SpecialVersion,
@@ -525,7 +525,7 @@ fn materialize_configured_outputs(
             )
         })
         .collect::<Vec<_>>();
-    materialize_paths(root, ignore_patterns, version, &mappings)
+    write_docs_paths(root, ignore_patterns, version, &mappings)
 }
 
 fn lint_tool(current_dir: &Path) -> Result<ToolOutput> {

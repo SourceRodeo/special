@@ -3,7 +3,7 @@
 Parses and loads `special.toml` root, version, and shared discovery ignore settings. This module does not choose VCS or current-directory fallbacks when config is absent.
 
 @spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS
-special.toml accepts `[[docs.outputs]]` entries with `source = "PATH"` and `output = "PATH"` as configured docs materialization mappings.
+special.toml accepts `[[docs.outputs]]` entries with `source = "PATH"` and `output = "PATH"` as configured docs output mappings.
 */
 // @fileimplements SPECIAL.CONFIG.SPECIAL_TOML
 use std::fs;

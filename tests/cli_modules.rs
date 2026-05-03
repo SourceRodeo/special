@@ -12,10 +12,10 @@ mod parse;
 // @fileimplements SPECIAL.TESTS.CLI_MODULES
 /**
 @spec SPECIAL.MODULE_COMMAND
-special arch materializes the declared architecture view.
+special arch renders the declared architecture view.
 
 @spec SPECIAL.MODULE_COMMAND.AREA_NODES
-special arch materializes both concrete `@module` nodes and structural `@area` nodes in the architecture tree.
+special arch renders both concrete `@module` nodes and structural `@area` nodes in the architecture tree.
 
 @spec SPECIAL.MODULE_COMMAND.KIND_LABELS
 special arch identifies architecture node kinds in output so `@area` nodes remain distinguishable from `@module` nodes.
@@ -30,7 +30,7 @@ special arch --current excludes planned modules.
 special arch --planned shows only planned modules.
 
 @spec SPECIAL.MODULE_COMMAND.ID_SCOPE
-special arch MODULE.ID scopes the materialized view to the matching module and its descendants.
+special arch MODULE.ID scopes the rendered view to the matching module and its descendants.
 
 @spec SPECIAL.MODULE_COMMAND.UNIMPLEMENTED
 special arch --unimplemented shows current `@module` nodes with zero direct `@implements` attachments.
@@ -39,10 +39,10 @@ special arch --unimplemented shows current `@module` nodes with zero direct `@im
 special arch exits with an error status when architecture diagnostics include errors, even if it still prints diagnostics and best-effort rendered output.
 
 @spec SPECIAL.MODULE_COMMAND.JSON
-special arch --json emits the materialized architecture view as JSON.
+special arch --json emits the rendered architecture view as JSON.
 
 @spec SPECIAL.MODULE_COMMAND.HTML
-special arch --html emits the materialized architecture view as HTML.
+special arch --html emits the rendered architecture view as HTML.
 
 @spec SPECIAL.MODULE_COMMAND.VERBOSE
 special arch --verbose shows attached `@implements` locations and bodies for review.
@@ -57,7 +57,7 @@ special arch --html --verbose includes attached `@implements` bodies in collapse
 when a planned module declares release metadata, special arch surfaces that release string in text, json, and html output.
 
 @group SPECIAL.MODULE_COMMAND.METRICS_GROUP
-special arch can materialize slower implementation analysis evidence.
+special arch can render slower implementation analysis evidence.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS
 special arch --metrics surfaces module ownership granularity and per-module implementation summaries from built-in language analyzers.
@@ -288,7 +288,7 @@ special parses explicit item-scoped and file-scoped module attachments from supp
 `@implements` and `@fileimplements` accept exactly one module id and reject trailing content.
 
 @spec SPECIAL.MODULE_PARSE.FOREIGN_TAG_BOUNDARIES
-special treats foreign line-start `@...` and `\\...` tags as boundaries for attached module text without materializing them as part of the module description.
+special treats foreign line-start `@...` and `\\...` tags as boundaries for attached module text without rendering them as part of the module description.
 
 @spec SPECIAL.MODULE_PARSE.IMPLEMENTS.DUPLICATE_FILE_SCOPE
 when a file declares more than one `@fileimplements`, special lint reports an error.
@@ -330,8 +330,7 @@ fn top_level_help_presents_arch_as_the_primary_command_name() {
     assert!(
         top_level_help_commands(&stdout)
             .iter()
-            .any(|(name, summary)| name == "arch"
-                && summary == "Materialize and inspect architecture")
+            .any(|(name, summary)| name == "arch" && summary == "Inspect architecture")
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -339,7 +338,7 @@ fn top_level_help_presents_arch_as_the_primary_command_name() {
 
 #[test]
 // @verifies SPECIAL.MODULE_COMMAND
-fn modules_materializes_current_module_tree() {
+fn modules_renders_current_module_tree() {
     let root = temp_repo_dir("special-cli-modules");
     write_modules_fixture(&root);
 

@@ -3,7 +3,7 @@
 Spec and lint command behavior.
 
 @spec SPECIAL.SPEC_COMMAND
-special specs materializes the declared spec view from parsed annotations.
+special specs renders the declared spec view from parsed annotations.
 
 @spec SPECIAL.SPEC_COMMAND.FAILS_ON_ERRORS
 special specs exits with an error status when annotation diagnostics include errors, even if it still prints diagnostics and best-effort rendered output.
@@ -24,7 +24,7 @@ when a planned spec declares release metadata, special specs surfaces that relea
 when a deprecated spec declares release metadata, special specs surfaces that release string in text, json, and html output.
 
 @spec SPECIAL.SPEC_COMMAND.ID_SCOPE
-special specs SPEC.ID scopes the materialized view to the matching spec or group node and its descendants.
+special specs SPEC.ID scopes the rendered view to the matching spec or group node and its descendants.
 
 @spec SPECIAL.SPEC_COMMAND.UNVERIFIED
 special specs --unverified shows current items with zero verifies and zero attests.
@@ -33,10 +33,10 @@ special specs --unverified shows current items with zero verifies and zero attes
 special specs --metrics surfaces deeper contract analysis for the declared spec view.
 
 @spec SPECIAL.SPEC_COMMAND.JSON
-special specs --json emits the materialized spec as JSON.
+special specs --json emits the rendered spec as JSON.
 
 @spec SPECIAL.SPEC_COMMAND.HTML
-special specs --html emits the materialized spec as HTML.
+special specs --html emits the rendered spec as HTML.
 
 @spec SPECIAL.SPEC_COMMAND.VERBOSE
 special specs --verbose shows the attached verifies and attests bodies for review.

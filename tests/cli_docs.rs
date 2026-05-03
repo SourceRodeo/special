@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.TESTS.CLI_DOCS
-CLI integration tests for documentation relationship validation and materialized public docs output.
+CLI integration tests for documentation relationship validation and public docs output.
 */
 // @fileimplements SPECIAL.TESTS.CLI_DOCS
 #[path = "support/cli.rs"]
@@ -11,9 +11,9 @@ use std::fs;
 use support::{run_special, temp_repo_dir};
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE
-fn docs_materialize_rewrites_special_links_and_removes_document_lines() {
-    let root = temp_repo_dir("special-cli-docs-materialize");
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT
+fn docs_output_rewrites_special_links_and_removes_document_lines() {
+    let root = temp_repo_dir("special-cli-docs-output");
     write_docs_fixture(&root);
     fs::create_dir_all(root.join("docs/src/nested")).expect("nested docs dir should be created");
     fs::write(
@@ -38,7 +38,7 @@ fn docs_materialize_rewrites_special_links_and_removes_document_lines() {
 
     assert!(
         output.status.success(),
-        "docs materialize should succeed: {}",
+        "docs output should succeed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
     let rendered =
@@ -57,9 +57,9 @@ fn docs_materialize_rewrites_special_links_and_removes_document_lines() {
 }
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE.CONFIG
-fn docs_materialize_uses_configured_source_and_output_paths() {
-    let root = temp_repo_dir("special-cli-docs-materialize-config");
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG
+fn docs_output_uses_configured_source_and_output_paths() {
+    let root = temp_repo_dir("special-cli-docs-output-config");
     write_docs_fixture(&root);
     fs::write(
         root.join("special.toml"),
@@ -79,7 +79,7 @@ fn docs_materialize_uses_configured_source_and_output_paths() {
 
     assert!(
         output.status.success(),
-        "configured docs materialization should succeed: {}",
+        "configured docs output should succeed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
     let rendered =
@@ -95,7 +95,7 @@ fn docs_materialize_uses_configured_source_and_output_paths() {
 }
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE.SAFETY
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
 fn docs_configured_outputs_reject_duplicate_output_paths_before_writing() {
     let root = temp_repo_dir("special-cli-docs-duplicate-config-output");
     write_docs_fixture(&root);
@@ -121,7 +121,7 @@ fn docs_configured_outputs_reject_duplicate_output_paths_before_writing() {
     assert!(!output.status.success());
     assert!(
         !root.join("README.md").exists(),
-        "configured materialization should not partially write duplicate output plans"
+        "configured output writing should not partially write duplicate output plans"
     );
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
     assert!(stderr.contains("maps multiple inputs"));
@@ -201,7 +201,7 @@ fn docs_target_scopes_validation_without_writing_files() {
     );
     assert!(
         !root.join("docs/dist").exists(),
-        "targeted validation without --output should not write materialized files"
+        "targeted validation without --output should not write rendered files"
     );
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("good.md:1 link: CSV exports include headers"));
@@ -209,7 +209,7 @@ fn docs_target_scopes_validation_without_writing_files() {
 }
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT
 fn docs_help_names_output_as_path() {
     let root = temp_repo_dir("special-cli-docs-help-output-path");
     write_docs_fixture(&root);
@@ -221,7 +221,7 @@ fn docs_help_names_output_as_path() {
     assert!(stdout.contains("--output"));
     assert!(stdout.contains("PATH"));
     assert!(!stdout.contains("--output <OUTPUT>"));
-    assert!(!stdout.contains("--materialize"));
+    assert!(!stdout.contains("--render"));
 }
 
 #[test]
@@ -262,7 +262,7 @@ fn docs_rejects_hidden_positional_path_scope() {
 
 #[test]
 // @verifies SPECIAL.DOCS.LINKS
-fn docs_materialize_reports_malformed_special_links() {
+fn docs_output_reports_malformed_special_links() {
     let root = temp_repo_dir("special-cli-docs-malformed");
     write_docs_fixture(&root);
     fs::write(root.join("docs.md"), "[Broken](special://spec).\n")
@@ -276,15 +276,15 @@ fn docs_materialize_reports_malformed_special_links() {
     assert!(!output.status.success());
     assert!(
         !root.join("public.md").exists(),
-        "materialization should not write output when docs links are malformed"
+        "output writing should not write output when docs links are malformed"
     );
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("malformed Special docs URI `special://spec`"));
 }
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE.SAFETY
-fn docs_materialize_refuses_to_overwrite_docs_evidence() {
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
+fn docs_output_refuses_to_overwrite_docs_evidence() {
     let root = temp_repo_dir("special-cli-docs-overwrite-evidence");
     write_docs_fixture(&root);
     fs::write(

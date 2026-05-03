@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.CLI.DOCS
-Documentation command behavior for validating docs relationships and materializing public docs output.
+Documentation command behavior for validating docs relationships and writing public docs output.
 */
 // @fileimplements SPECIAL.CLI.DOCS
 use std::path::{Path, PathBuf};
@@ -13,7 +13,7 @@ use super::common::{report_cache_stats, resolve_cli_paths};
 use super::status::{CommandStatus, StatusStep};
 use crate::cache::{reset_cache_stats, with_cache_status_notifier};
 use crate::config::{DocsOutputConfig, resolve_project_root};
-use crate::docs::{build_docs_document, materialize_path, materialize_paths, render_docs_text};
+use crate::docs::{build_docs_document, render_docs_text, write_docs_path, write_docs_paths};
 use crate::model::LintReport;
 use crate::render::render_lint_text;
 
@@ -33,7 +33,7 @@ pub(super) struct DocsArgs {
         long = "output",
         value_name = "PATH",
         num_args = 0..=1,
-        help = "Materialize docs to an output path; omit PATH to use configured docs outputs"
+        help = "Write docs to an output path; omit PATH to use configured docs outputs"
     )]
     output: Option<Option<PathBuf>>,
 }
@@ -89,7 +89,7 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
                 Ok((report, rendered))
             }
             ([input], Some(Some(_)), Some(output)) => {
-                let report = materialize_path(
+                let report = write_docs_path(
                     &resolution.root,
                     &resolution.ignore_patterns,
                     resolution.version,
@@ -99,7 +99,7 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
                 Ok((report, None))
             }
             ([], Some(None), None) => {
-                let report = materialize_configured_outputs(
+                let report = render_configured_outputs(
                     &resolution.root,
                     &resolution.ignore_patterns,
                     resolution.version,
@@ -132,7 +132,7 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
     })
 }
 
-fn materialize_configured_outputs(
+fn render_configured_outputs(
     root: &Path,
     ignore_patterns: &[String],
     version: crate::config::SpecialVersion,
@@ -151,7 +151,7 @@ fn materialize_configured_outputs(
             )
         })
         .collect::<Vec<_>>();
-    materialize_paths(root, ignore_patterns, version, &mappings)
+    write_docs_paths(root, ignore_patterns, version, &mappings)
 }
 
 fn configured_docs_path(root: &Path, path: &Path) -> PathBuf {

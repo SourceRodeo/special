@@ -81,15 +81,18 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    #[command(name = "specs", about = "Materialize and inspect specs")]
+    #[command(name = "specs", about = "Inspect specs")]
     Specs(SpecArgs),
-    #[command(name = "arch", about = "Materialize and inspect architecture")]
+    #[command(name = "arch", about = "Inspect architecture")]
     Modules(ModulesArgs),
-    #[command(name = "patterns", about = "Materialize and inspect adopted patterns")]
+    #[command(name = "patterns", about = "Inspect adopted patterns")]
     Patterns(PatternsArgs),
     #[command(name = "health", about = "Inspect code health and traceability")]
     Health(HealthArgs),
-    #[command(name = "docs", about = "Validate or materialize docs relationships")]
+    #[command(
+        name = "docs",
+        about = "Validate docs relationships or write docs outputs"
+    )]
     Docs(DocsArgs),
     #[command(about = "Run the Special MCP server over stdio")]
     Mcp,

@@ -1,9 +1,9 @@
 /**
 @module SPECIAL.DOCS
-Validates documentation-to-Special relationships and materializes public markdown from docs sources.
+Validates documentation-to-Special relationships and renders public markdown from docs sources.
 
 @group SPECIAL.DOCS
-Documentation relationship and materialization behavior.
+Documentation relationship and docs-output behavior.
 
 @spec SPECIAL.DOCS.LINKS
 Markdown links whose destination is `special://KIND/ID` attach the linked label text as documentation evidence for the targeted Special identifier.
@@ -11,11 +11,11 @@ Markdown links whose destination is `special://KIND/ID` attach the linked label 
 @spec SPECIAL.DOCS.LINKS.POLYMORPHIC
 Documentation links accept `spec`, `group`, `module`, `area`, and `pattern` targets.
 
-@spec SPECIAL.DOCS.LINKS.MATERIALIZE
+@spec SPECIAL.DOCS.LINKS.OUTPUT
 special docs --target PATH --output PATH rewrites markdown `special://KIND/ID` links to their label text in the emitted artifact.
 
 @spec SPECIAL.DOCS.DOCUMENTS_LINES
-Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` can be stacked and are removed from materialized markdown output.
+Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` can be stacked and are removed from docs output.
 
 @spec SPECIAL.DOCS_COMMAND
 special docs validates documentation links and prints a documentation relationship view without writing files.
@@ -26,17 +26,17 @@ special docs --target PATH validates and prints only documentation relationships
 @spec SPECIAL.DOCS_COMMAND.PATH_SCOPE_SYNTAX
 special docs rejects hidden positional path scopes and requires path scopes to use --target PATH.
 
-@spec SPECIAL.DOCS_COMMAND.MATERIALIZE
+@spec SPECIAL.DOCS_COMMAND.OUTPUT
 special docs --target PATH --output PATH validates documentation links and writes public docs.
 
-@spec SPECIAL.DOCS_COMMAND.MATERIALIZE.DIRECTORY
-special docs --target PATH --output PATH accepts an input directory and output directory, then mirrors the input tree relative to the target root while materializing markdown files.
+@spec SPECIAL.DOCS_COMMAND.OUTPUT.DIRECTORY
+special docs --target PATH --output PATH accepts an input directory and output directory, then mirrors the input tree relative to the target root while writing markdown output files.
 
-@spec SPECIAL.DOCS_COMMAND.MATERIALIZE.SAFETY
-special docs --target PATH --output PATH refuses to materialize over the input path, into an input directory, or over an existing file that still contains docs evidence.
+@spec SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
+special docs --target PATH --output PATH refuses to write docs output over the input path, into an input directory, or over an existing file that still contains docs evidence.
 
-@spec SPECIAL.DOCS_COMMAND.MATERIALIZE.CONFIG
-special docs --output uses `[[docs.outputs]]` mappings from special.toml to materialize configured public docs without repeating paths on the command line.
+@spec SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG
+special docs --output uses `[[docs.outputs]]` mappings from special.toml to write configured public docs without repeating paths on the command line.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet};
@@ -157,14 +157,14 @@ pub(crate) fn build_docs_document(
     ))
 }
 
-pub(crate) fn materialize_path(
+pub(crate) fn write_docs_path(
     root: &Path,
     ignore_patterns: &[String],
     version: SpecialVersion,
     input: &Path,
     output: &Path,
 ) -> Result<LintReport> {
-    materialize_paths(
+    write_docs_paths(
         root,
         ignore_patterns,
         version,
@@ -172,7 +172,7 @@ pub(crate) fn materialize_path(
     )
 }
 
-pub(crate) fn materialize_paths(
+pub(crate) fn write_docs_paths(
     root: &Path,
     ignore_patterns: &[String],
     version: SpecialVersion,
@@ -180,13 +180,13 @@ pub(crate) fn materialize_paths(
 ) -> Result<LintReport> {
     let mut plan = Vec::new();
     for (input, output) in mappings {
-        expand_materialize_mapping(input, output, &mut plan)?;
+        expand_output_mapping(input, output, &mut plan)?;
     }
-    validate_materialize_plan(&plan)?;
-    materialize_files(root, ignore_patterns, version, &plan)
+    validate_output_plan(&plan)?;
+    write_docs_files(root, ignore_patterns, version, &plan)
 }
 
-fn expand_materialize_mapping(
+fn expand_output_mapping(
     input: &Path,
     output: &Path,
     plan: &mut Vec<(PathBuf, PathBuf)>,
@@ -217,7 +217,7 @@ fn expand_materialize_mapping(
     Ok(())
 }
 
-fn materialize_files(
+fn write_docs_files(
     root: &Path,
     ignore_patterns: &[String],
     version: SpecialVersion,
@@ -231,8 +231,9 @@ fn materialize_files(
         let content =
             fs::read_to_string(input).with_context(|| format!("reading {}", input.display()))?;
         if is_markdown_path(input) {
-            let materialized = materialize_markdown(input, &content, &mut refs, &mut diagnostics);
-            outputs.push((output.clone(), materialized.into_bytes()));
+            let output_content =
+                write_markdown_output(input, &content, &mut refs, &mut diagnostics);
+            outputs.push((output.clone(), output_content.into_bytes()));
         } else {
             outputs.push((output.clone(), content.into_bytes()));
         }
@@ -394,7 +395,7 @@ fn collect_markdown_refs(
     }
 }
 
-fn materialize_markdown(
+fn write_markdown_output(
     path: &Path,
     content: &str,
     refs: &mut Vec<DocumentRef>,
@@ -420,7 +421,7 @@ fn materialize_markdown(
             continue;
         }
 
-        output.push_str(&materialize_special_links(
+        output.push_str(&write_special_link_output(
             path,
             line,
             line_number,
@@ -448,7 +449,7 @@ fn parse_markdown_documents_line(
     parse_documents_annotation_line(trimmed, path, line_number, refs, diagnostics)
 }
 
-fn materialize_special_links(
+fn write_special_link_output(
     path: &Path,
     line: &str,
     line_number: usize,
@@ -720,7 +721,7 @@ fn is_markdown_path(path: &Path) -> bool {
     matches!(path.extension().and_then(|ext| ext.to_str()), Some("md"))
 }
 
-fn validate_materialize_plan(files: &[(PathBuf, PathBuf)]) -> Result<()> {
+fn validate_output_plan(files: &[(PathBuf, PathBuf)]) -> Result<()> {
     let mut outputs = BTreeSet::new();
     for (input, output) in files {
         ensure_distinct_paths(
@@ -730,10 +731,7 @@ fn validate_materialize_plan(files: &[(PathBuf, PathBuf)]) -> Result<()> {
         )?;
         let normalized_output = normalize_existing_path(output);
         if !outputs.insert(normalized_output) {
-            bail!(
-                "docs materialization maps multiple inputs to {}",
-                output.display()
-            );
+            bail!("docs output maps multiple inputs to {}", output.display());
         }
         if output.exists() && existing_file_contains_docs_evidence(output)? {
             bail!(

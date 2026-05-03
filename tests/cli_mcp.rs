@@ -45,7 +45,7 @@ fn mcp_initializes_and_lists_special_tools_as_jsonrpc_lines() {
         .collect::<Vec<_>>();
     assert!(tool_names.contains(&"special_status"));
     assert!(tool_names.contains(&"special_specs"));
-    assert!(tool_names.contains(&"special_docs_materialize"));
+    assert!(tool_names.contains(&"special_docs_output"));
 }
 
 #[test]
@@ -82,9 +82,9 @@ fn mcp_specs_tool_returns_special_projection_content() {
 }
 
 #[test]
-// @verifies SPECIAL.MCP_COMMAND.DOCS_MATERIALIZE
-fn mcp_docs_materialize_tool_scrubs_docs_output() {
-    let root = temp_repo_dir("special-cli-mcp-docs-materialize");
+// @verifies SPECIAL.MCP_COMMAND.DOCS_OUTPUT
+fn mcp_docs_output_tool_scrubs_docs_output() {
+    let root = temp_repo_dir("special-cli-mcp-docs-output");
     write_mcp_fixture(&root);
     fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
     fs::write(
@@ -103,7 +103,7 @@ fn mcp_docs_materialize_tool_scrubs_docs_output() {
                 "id": 1,
                 "method": "tools/call",
                 "params": {
-                    "name": "special_docs_materialize",
+                    "name": "special_docs_output",
                     "arguments": {
                         "target": "docs/src",
                         "output": "docs/dist"
@@ -115,7 +115,7 @@ fn mcp_docs_materialize_tool_scrubs_docs_output() {
 
     assert!(
         output.status.success(),
-        "mcp docs materialization should succeed: {}",
+        "mcp docs output should succeed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
     let responses = jsonrpc_responses(output.stdout);
