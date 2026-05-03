@@ -92,6 +92,7 @@ index that keeps claims, evidence, and implementation boundaries connected.
 | `special patterns` | Inspect adopted implementation patterns and their source applications. |
 | `special health` | Inspect repo-wide quality and traceability signals. |
 | `special docs` | Validate or materialize docs relationships. |
+| `special mcp` | Run the stdio MCP server for controlled agent access. |
 | `special lint` | Check annotation and reference structure. |
 | `special init` | Add a starter `special.toml`. |
 | `special skills` | Print or install bundled workflow skills. |
@@ -136,6 +137,8 @@ special docs
 special docs --target docs/src
 special docs --output
 special docs --target docs/src --output docs/dist
+
+special mcp
 
 special lint
 special init

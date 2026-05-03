@@ -94,6 +94,7 @@ index that keeps claims, evidence, and implementation boundaries connected.
 | `special patterns` | [Inspect adopted implementation patterns and their source applications](special://spec/SPECIAL.PATTERNS.COMMAND). |
 | `special health` | [Inspect repo-wide quality and traceability signals](special://spec/SPECIAL.HEALTH_COMMAND). |
 | `special docs` | [Validate or materialize docs relationships](special://spec/SPECIAL.DOCS_COMMAND). |
+| `special mcp` | [Run the stdio MCP server for controlled agent access](special://spec/SPECIAL.MCP_COMMAND). |
 | `special lint` | [Check annotation and reference structure](special://spec/SPECIAL.LINT_COMMAND). |
 | `special init` | Add a starter `special.toml`. |
 | `special skills` | [Print or install bundled workflow skills](special://spec/SPECIAL.SKILLS.COMMAND.HELP). |
@@ -138,6 +139,8 @@ special docs
 special docs --target docs/src
 special docs --output
 special docs --target docs/src --output docs/dist
+
+special mcp
 
 special lint
 special init

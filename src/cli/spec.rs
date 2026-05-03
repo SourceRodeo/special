@@ -274,7 +274,7 @@ pub(super) fn execute_lint(current_dir: &Path) -> Result<ExitCode> {
     })
 }
 
-fn add_config_lint_warnings(report: &mut LintReport, resolution: &RootResolution) {
+pub(super) fn add_config_lint_warnings(report: &mut LintReport, resolution: &RootResolution) {
     if resolution.version_explicit {
         return;
     }
@@ -300,7 +300,7 @@ fn add_config_lint_warnings(report: &mut LintReport, resolution: &RootResolution
     });
 }
 
-fn normalize_report(report: &mut LintReport) {
+pub(super) fn normalize_report(report: &mut LintReport) {
     report.diagnostics.sort_by(|left, right| {
         left.severity
             .cmp(&right.severity)
