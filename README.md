@@ -134,6 +134,7 @@ special health --json
 
 special docs
 special docs --target docs/src
+special docs --output
 special docs --target docs/src --output docs/dist
 
 special lint
@@ -147,7 +148,11 @@ Use `--verbose` when you want attached bodies, source evidence, or item-level
 detail. Use `--metrics` when you want grouped counts and deeper analysis for the
 current view. Use `--json` when another tool should consume the output.
 `special docs` prints a documentation relationship view by default and writes
-materialized public files only when `--output` is present.
+materialized public files only when `--output` is present. Projects can set
+`[docs] source` and `output` in `special.toml` so `special docs --output` uses
+the configured source and output paths.
+For directory targets, materialization preserves the tree relative to the target
+root inside the output path.
 
 ## Examples
 

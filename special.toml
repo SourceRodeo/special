@@ -3,7 +3,12 @@ root = "."
 ignore = [
   "CHANGELOG.md",
   "README.md",
+  "docs/dist",
 ]
+
+[docs]
+source = "docs/src"
+output = "docs/dist"
 
 [health]
 ignore-unexplained = [

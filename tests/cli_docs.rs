@@ -57,6 +57,42 @@ fn docs_materialize_rewrites_special_links_and_removes_document_lines() {
 }
 
 #[test]
+// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE.CONFIG
+fn docs_materialize_uses_configured_source_and_output_paths() {
+    let root = temp_repo_dir("special-cli-docs-materialize-config");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("special.toml"),
+        "version = \"1\"\nroot = \".\"\n\n[docs]\nsource = \"docs/src\"\noutput = \"docs/dist\"\n",
+    )
+    .expect("special.toml should be written");
+    fs::create_dir_all(root.join("docs/src/nested")).expect("nested docs dir should be created");
+    fs::write(
+        root.join("docs/src/README.md"),
+        "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("docs source should be written");
+    fs::write(root.join("docs/src/nested/asset.txt"), "plain\n")
+        .expect("plain asset should be written");
+
+    let output = run_special(&root, &["docs", "--output"]);
+
+    assert!(
+        output.status.success(),
+        "configured docs materialization should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let rendered =
+        fs::read_to_string(root.join("docs/dist/README.md")).expect("rendered docs should exist");
+    assert!(rendered.contains("CSV exports include headers."));
+    assert_eq!(
+        fs::read_to_string(root.join("docs/dist/nested/asset.txt"))
+            .expect("plain asset should preserve its relative tree path"),
+        "plain\n"
+    );
+}
+
+#[test]
 // @verifies SPECIAL.DOCS_COMMAND
 fn docs_validate_prints_relationship_dump() {
     let root = temp_repo_dir("special-cli-docs-dump");
@@ -110,6 +146,22 @@ fn docs_target_scopes_validation_without_writing_files() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("good.md:1 link: CSV exports include headers"));
     assert!(!stdout.contains("EXPORT.MISSING"));
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE
+fn docs_help_names_output_as_path() {
+    let root = temp_repo_dir("special-cli-docs-help-output-path");
+    write_docs_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--help"]);
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("--output"));
+    assert!(stdout.contains("PATH"));
+    assert!(!stdout.contains("--output <OUTPUT>"));
+    assert!(!stdout.contains("--materialize"));
 }
 
 #[test]

@@ -12,7 +12,7 @@ Markdown links whose destination is `special://KIND/ID` attach the linked label 
 Documentation links accept `spec`, `group`, `module`, `area`, and `pattern` targets.
 
 @spec SPECIAL.DOCS.LINKS.MATERIALIZE
-special docs --target PATH --output OUTPUT rewrites markdown `special://KIND/ID` links to their label text in the emitted artifact.
+special docs --target PATH --output PATH rewrites markdown `special://KIND/ID` links to their label text in the emitted artifact.
 
 @spec SPECIAL.DOCS.DOCUMENTS_LINES
 Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` can be stacked and are removed from materialized markdown output.
@@ -27,30 +27,33 @@ special docs --target PATH validates and prints only documentation relationships
 special docs rejects hidden positional path scopes and requires path scopes to use --target PATH.
 
 @spec SPECIAL.DOCS_COMMAND.MATERIALIZE
-special docs --target PATH --output OUTPUT validates documentation links and writes public docs.
+special docs --target PATH --output PATH validates documentation links and writes public docs.
 
 @spec SPECIAL.DOCS_COMMAND.MATERIALIZE.DIRECTORY
-special docs --target PATH --output OUTPUT accepts an input directory and output directory, then mirrors the input tree while materializing markdown files.
+special docs --target PATH --output PATH accepts an input directory and output directory, then mirrors the input tree relative to the target root while materializing markdown files.
 
 @spec SPECIAL.DOCS_COMMAND.MATERIALIZE.SAFETY
-special docs --target PATH --output OUTPUT refuses to materialize over the input path, into an input directory, or over an existing file that still contains docs evidence.
+special docs --target PATH --output PATH refuses to materialize over the input path, into an input directory, or over an existing file that still contains docs evidence.
+
+@spec SPECIAL.DOCS_COMMAND.MATERIALIZE.CONFIG
+special docs --output uses `[docs] source` and `[docs] output` from special.toml to materialize configured public docs without repeating paths on the command line.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 
 use crate::annotation_syntax::{
-    normalize_markdown_declaration_line, reserved_special_annotation_rest,
-    ReservedSpecialAnnotation,
+    ReservedSpecialAnnotation, normalize_markdown_declaration_line,
+    reserved_special_annotation_rest,
 };
 use crate::cache::{load_or_parse_architecture, load_or_parse_repo};
 use crate::config::SpecialVersion;
-use crate::discovery::{discover_annotation_files, DiscoveryConfig};
+use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::extractor::collect_comment_blocks;
 use crate::model::{
     ArchitectureKind, Diagnostic, DiagnosticSeverity, LintReport, NodeKind, SourceLocation,

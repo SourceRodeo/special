@@ -22,6 +22,8 @@ pub struct RootResolution {
     pub version_explicit: bool,
     pub config_path: Option<PathBuf>,
     pub ignore_patterns: Vec<String>,
+    pub(crate) docs_source: Option<PathBuf>,
+    pub(crate) docs_output: Option<PathBuf>,
     pub health_ignore_unexplained_patterns: Vec<String>,
     pub(crate) pattern_benchmarks: PatternMetricBenchmarks,
 }

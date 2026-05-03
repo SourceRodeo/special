@@ -6,7 +6,7 @@ Documentation command behavior for validating docs relationships and materializi
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::Args;
 
 use super::common::{report_cache_stats, resolve_cli_paths};
@@ -31,11 +31,11 @@ pub(super) struct DocsArgs {
 
     #[arg(
         long = "output",
-        value_name = "OUTPUT",
-        requires = "targets",
+        value_name = "PATH",
+        num_args = 0..=1,
         help = "Materialize the target docs file or subtree to this output path"
     )]
-    output: Option<PathBuf>,
+    output: Option<Option<PathBuf>>,
 }
 
 const DOCS_PLAN: &[StatusStep] = &[
@@ -55,7 +55,8 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
             args.positional_paths[0].display()
         );
     }
-    if args.targets.len() > 1 && args.output.is_some() {
+    let output_requested = args.output.is_some();
+    if args.targets.len() > 1 && output_requested {
         bail!("--output requires exactly one --target path");
     }
     let resolution = resolve_project_root(current_dir)?;
@@ -65,10 +66,15 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
 
     status.phase("validating documentation links");
     let target_paths = resolve_cli_paths(current_dir, &args.targets);
-    let output_path = args
-        .output
-        .as_ref()
-        .map(|output| resolve_cli_path(current_dir, output));
+    let output_path = match args.output.as_ref() {
+        None => None,
+        Some(Some(output)) => Some(resolve_cli_path(current_dir, output)),
+        Some(None) => Some(configured_docs_path(
+            &resolution.root,
+            resolution.docs_output.as_deref(),
+            "[docs] output",
+        )?),
+    };
     let (report, rendered_document) = with_cache_status_notifier(status.notifier(), || {
         match (target_paths.as_slice(), output_path.as_deref()) {
             (targets, None) => {
@@ -92,7 +98,21 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
                 )?;
                 Ok((report, None))
             }
-            ([], Some(_)) => bail!("special docs --output requires --target PATH"),
+            ([], Some(output)) => {
+                let input = configured_docs_path(
+                    &resolution.root,
+                    resolution.docs_source.as_deref(),
+                    "[docs] source",
+                )?;
+                let report = materialize_path(
+                    &resolution.root,
+                    &resolution.ignore_patterns,
+                    resolution.version,
+                    &input,
+                    output,
+                )?;
+                Ok((report, None))
+            }
             ([_, _, ..], Some(_)) => bail!("--output requires exactly one --target path"),
         }
     })?;
@@ -109,6 +129,17 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
         ExitCode::from(1)
     } else {
         ExitCode::SUCCESS
+    })
+}
+
+fn configured_docs_path(root: &Path, path: Option<&Path>, label: &str) -> Result<PathBuf> {
+    let Some(path) = path else {
+        bail!("special docs --output requires {label} in special.toml when the path is omitted");
+    };
+    Ok(if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        root.join(path)
     })
 }
 

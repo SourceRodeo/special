@@ -1,6 +1,9 @@
 /**
 @module SPECIAL.CONFIG.SPECIAL_TOML
 Parses and loads `special.toml` root, version, and shared discovery ignore settings. This module does not choose VCS or current-directory fallbacks when config is absent.
+
+@spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS
+special.toml accepts `[docs] source = "PATH"` and `output = "PATH"` as the configured docs materialization source and output paths.
 */
 // @fileimplements SPECIAL.CONFIG.SPECIAL_TOML
 use std::fs;
@@ -18,6 +21,8 @@ pub(crate) struct SpecialToml {
     pub(crate) version: SpecialVersion,
     pub(crate) version_explicit: bool,
     pub(crate) ignore_patterns: Vec<String>,
+    pub(crate) docs_source: Option<PathBuf>,
+    pub(crate) docs_output: Option<PathBuf>,
     pub(crate) health_ignore_unexplained_patterns: Vec<String>,
     pub(crate) toolchain_manager: Option<ToolchainManager>,
     pub(crate) pattern_benchmarks: PatternMetricBenchmarks,
@@ -80,9 +85,17 @@ struct RawSpecialToml {
     root: Option<String>,
     version: Option<String>,
     ignore: Option<Vec<String>>,
+    docs: Option<RawDocsConfig>,
     health: Option<RawHealthConfig>,
     toolchain: Option<RawToolchainConfig>,
     patterns: Option<RawPatternsConfig>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawDocsConfig {
+    source: Option<String>,
+    output: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -128,6 +141,7 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
         if key != "root"
             && key != "version"
             && key != "ignore"
+            && key != "docs"
             && key != "health"
             && key != "toolchain"
             && key != "patterns"
@@ -167,6 +181,12 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
         config.ignore_patterns = ignore_patterns;
     }
 
+    if let Some(docs) = raw.docs {
+        let line = key_lines.get("docs").copied().unwrap_or(1);
+        config.docs_source = parse_optional_path(docs.source, "docs source", line)?;
+        config.docs_output = parse_optional_path(docs.output, "docs output", line)?;
+    }
+
     if let Some(health) = raw.health
         && let Some(patterns) = health.ignore_unexplained
     {
@@ -195,6 +215,16 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
     }
 
     Ok(config)
+}
+
+fn parse_optional_path(value: Option<String>, label: &str, line: usize) -> Result<Option<PathBuf>> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    if value.trim().is_empty() {
+        bail!("line {} must not use an empty {label} path", line);
+    }
+    Ok(Some(PathBuf::from(value)))
 }
 
 fn parse_pattern_benchmark_config(
@@ -238,6 +268,9 @@ fn collect_top_level_key_lines(content: &str) -> std::collections::BTreeMap<Stri
         }
 
         if trimmed.starts_with('[') {
+            if trimmed == "[docs]" {
+                key_lines.entry("docs".to_string()).or_insert(index + 1);
+            }
             if trimmed == "[toolchain]" {
                 key_lines
                     .entry("toolchain".to_string())
