@@ -20,6 +20,9 @@ special Cargo build-script distribution behavior.
 @group SPECIAL.DISTRIBUTION.HOMEBREW
 special Homebrew distribution.
 
+@group SPECIAL.DISTRIBUTION.CODEX_PLUGIN
+special Codex plugin distribution.
+
 @spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.REPOSITORY_URL
 special release automation declares the `https://github.com/sourcerodeo/special` repository URL.
 
@@ -65,6 +68,12 @@ special release validation reads the published Homebrew tap formula and verifies
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
 @planned org-transfer
 special installs the `special` binary from sourcerodeo/homebrew-tap.
+
+@spec SPECIAL.DISTRIBUTION.CODEX_PLUGIN.SOURCE_LAYOUT
+special keeps a marketplace-installable Codex plugin source tree under `codex-plugin/special/` with manifest, MCP config, and skills.
+
+@spec SPECIAL.DISTRIBUTION.CODEX_PLUGIN.VERSION_AWARENESS
+special's Codex plugin manifest version and MCP startup version argument match the package version.
 
 @module SPECIAL.TESTS.DISTRIBUTION
 Distribution/release asset integration tests in `tests/distribution.rs`.
@@ -124,6 +133,18 @@ fn current_package_version() -> String {
         .as_str()
         .expect("package version should be a string")
         .to_string()
+}
+
+fn plugin_manifest() -> Value {
+    serde_json::from_str(&read_repo_file(
+        "codex-plugin/special/.codex-plugin/plugin.json",
+    ))
+    .expect("plugin manifest should be valid json")
+}
+
+fn plugin_mcp_config() -> Value {
+    serde_json::from_str(&read_repo_file("codex-plugin/special/.mcp.json"))
+        .expect("plugin MCP config should be valid json")
 }
 
 fn package_metadata() -> Value {
@@ -385,6 +406,51 @@ fn dist_manifest() -> Value {
     );
 
     serde_json::from_slice(&output.stdout).expect("dist manifest output should be valid json")
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.CODEX_PLUGIN.SOURCE_LAYOUT
+fn codex_plugin_source_has_marketplace_installable_layout() {
+    let manifest = plugin_manifest();
+    let mcp = plugin_mcp_config();
+
+    assert_eq!(manifest["name"], "special");
+    assert_eq!(manifest["skills"], "./skills/");
+    assert_eq!(manifest["mcpServers"], "./.mcp.json");
+    assert!(
+        repo_root()
+            .join("codex-plugin/special/skills/special-workflow/SKILL.md")
+            .exists()
+    );
+    assert!(
+        repo_root()
+            .join("codex-plugin/special/skills/install-or-update-special/SKILL.md")
+            .exists()
+    );
+    assert!(
+        repo_root()
+            .join("codex-plugin/special/skills/setup-special-project/SKILL.md")
+            .exists()
+    );
+    assert_eq!(mcp["mcpServers"]["special"]["command"], "special");
+    assert_eq!(mcp["mcpServers"]["special"]["args"][0], "mcp");
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.CODEX_PLUGIN.VERSION_AWARENESS
+fn codex_plugin_versions_match_package_version() {
+    let version = current_package_version();
+    let manifest = plugin_manifest();
+    let mcp = plugin_mcp_config();
+    let args = mcp["mcpServers"]["special"]["args"]
+        .as_array()
+        .expect("MCP args should be an array");
+
+    assert_eq!(manifest["version"], version);
+    assert!(
+        args.iter()
+            .any(|arg| arg.as_str() == Some(&format!("--special-version={version}")))
+    );
 }
 
 #[test]

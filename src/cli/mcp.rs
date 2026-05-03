@@ -10,6 +10,9 @@ special mcp exposes controlled tools for root discovery plus existing Special in
 
 @spec SPECIAL.MCP_COMMAND.DOCS_OUTPUT
 special mcp exposes docs output as a bounded write tool that preserves the same target/output safety policy as the CLI.
+
+@spec SPECIAL.MCP_COMMAND.PLUGIN_VERSION_NOTICE
+when the Codex plugin starts special mcp with an expected Special binary version that differs from the installed binary, initialize returns a nonfatal instruction telling the agent how to update Special.
 */
 // @fileimplements SPECIAL.CLI.MCP
 use std::io::{self, BufRead, Write};
@@ -17,6 +20,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::{Result, anyhow, bail};
+use clap::Args;
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -42,14 +46,36 @@ use crate::render::{
 
 const PROTOCOL_VERSION: &str = "2025-06-18";
 
-pub(super) fn execute_mcp(current_dir: &Path) -> Result<ExitCode> {
+#[derive(Debug, Args)]
+pub(super) struct McpArgs {
+    #[arg(long = "special-version", hide = true)]
+    pub(super) plugin_special_version: Option<String>,
+}
+
+struct McpStartup<'a> {
+    plugin_special_version: Option<&'a str>,
+}
+
+pub(super) fn execute_mcp(args: McpArgs, current_dir: &Path) -> Result<ExitCode> {
     let stdin = io::stdin();
     let stdout = io::stdout();
-    run_stdio_server(current_dir, stdin.lock(), stdout.lock())?;
+    run_stdio_server(
+        current_dir,
+        stdin.lock(),
+        stdout.lock(),
+        &McpStartup {
+            plugin_special_version: args.plugin_special_version.as_deref(),
+        },
+    )?;
     Ok(ExitCode::SUCCESS)
 }
 
-fn run_stdio_server<R, W>(current_dir: &Path, reader: R, mut writer: W) -> Result<()>
+fn run_stdio_server<R, W>(
+    current_dir: &Path,
+    reader: R,
+    mut writer: W,
+    startup: &McpStartup<'_>,
+) -> Result<()>
 where
     R: BufRead,
     W: Write,
@@ -61,7 +87,7 @@ where
             continue;
         }
         let response = match serde_json::from_str::<Value>(trimmed) {
-            Ok(message) => handle_message(current_dir, message),
+            Ok(message) => handle_message(current_dir, message, startup),
             Err(error) => Some(error_response(
                 Value::Null,
                 -32700,
@@ -77,7 +103,7 @@ where
     Ok(())
 }
 
-fn handle_message(current_dir: &Path, message: Value) -> Option<Value> {
+fn handle_message(current_dir: &Path, message: Value, startup: &McpStartup<'_>) -> Option<Value> {
     let id = message.get("id").cloned();
     let method = message.get("method").and_then(Value::as_str);
 
@@ -87,7 +113,7 @@ fn handle_message(current_dir: &Path, message: Value) -> Option<Value> {
     };
 
     match method {
-        "initialize" => Some(success_response(id, initialize_result())),
+        "initialize" => Some(success_response(id, initialize_result(startup))),
         "ping" => Some(success_response(id, json!({}))),
         "tools/list" => Some(success_response(id, json!({ "tools": tool_definitions() }))),
         "tools/call" => Some(success_response(
@@ -98,7 +124,7 @@ fn handle_message(current_dir: &Path, message: Value) -> Option<Value> {
     }
 }
 
-fn initialize_result() -> Value {
+fn initialize_result(startup: &McpStartup<'_>) -> Value {
     json!({
         "protocolVersion": PROTOCOL_VERSION,
         "capabilities": {
@@ -107,8 +133,22 @@ fn initialize_result() -> Value {
         "serverInfo": {
             "name": "special",
             "version": env!("CARGO_PKG_VERSION")
-        }
+        },
+        "instructions": startup_instructions(startup)
     })
+}
+
+fn startup_instructions(startup: &McpStartup<'_>) -> String {
+    let Some(plugin_version) = startup.plugin_special_version else {
+        return String::new();
+    };
+    if plugin_version == env!("CARGO_PKG_VERSION") {
+        return String::new();
+    }
+    format!(
+        "The Special Codex plugin was built for special {plugin_version}, but the installed special binary is {}. Continue working if possible. For Homebrew installs, run `brew upgrade special`; for GitHub Release installs, download the matching release from https://github.com/SourceRodeo/special/releases.",
+        env!("CARGO_PKG_VERSION")
+    )
 }
 
 fn handle_tool_call(current_dir: &Path, params: Option<&Value>) -> Result<Value> {

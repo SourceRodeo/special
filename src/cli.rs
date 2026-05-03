@@ -54,7 +54,7 @@ mod status;
 
 use self::docs::{DocsArgs, execute_docs};
 use self::init::execute_init;
-use self::mcp::execute_mcp;
+use self::mcp::{McpArgs, execute_mcp};
 use self::modules::{ModulesArgs, execute_modules};
 use self::overview::{OverviewArgs, execute_overview};
 use self::patterns::{PatternsArgs, execute_patterns};
@@ -95,7 +95,7 @@ enum Command {
     )]
     Docs(DocsArgs),
     #[command(about = "Run the Special MCP server over stdio")]
-    Mcp,
+    Mcp(McpArgs),
     #[command(about = "Check annotations and references for structural problems")]
     Lint,
     #[command(about = "Create a starter special.toml in the current directory")]
@@ -141,7 +141,7 @@ fn execute(cli: Cli) -> Result<ExitCode> {
         Some(Command::Patterns(args)) => execute_patterns(args, &current_dir),
         Some(Command::Health(args)) => execute_health(args, &current_dir),
         Some(Command::Docs(args)) => execute_docs(args, &current_dir),
-        Some(Command::Mcp) => execute_mcp(&current_dir),
+        Some(Command::Mcp(args)) => execute_mcp(args, &current_dir),
         Some(Command::Skills(args)) => execute_skills(args, &current_dir),
         Some(Command::Specs(args)) => execute_spec(args, &current_dir),
         Some(Command::Lint) => execute_lint(&current_dir),

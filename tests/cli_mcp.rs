@@ -49,6 +49,34 @@ fn mcp_initializes_and_lists_special_tools_as_jsonrpc_lines() {
 }
 
 #[test]
+// @verifies SPECIAL.MCP_COMMAND.PLUGIN_VERSION_NOTICE
+fn mcp_initialize_reports_nonfatal_plugin_binary_version_mismatch() {
+    let root = temp_repo_dir("special-cli-mcp-version-notice");
+    write_mcp_fixture(&root);
+
+    let output = run_special_with_input(
+        &root,
+        &["mcp", "--special-version=999.0.0"],
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n",
+    );
+
+    assert!(
+        output.status.success(),
+        "mcp server should exit cleanly: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let responses = jsonrpc_responses(output.stdout);
+    assert_eq!(responses[0]["result"]["serverInfo"]["name"], "special");
+    let instructions = responses[0]["result"]["instructions"]
+        .as_str()
+        .expect("initialize result should include instructions text");
+    assert!(instructions.contains("built for special 999.0.0"));
+    assert!(instructions.contains("brew upgrade special"));
+    assert!(instructions.contains("GitHub Release installs"));
+    assert_eq!(responses[0]["result"]["isError"], Value::Null);
+}
+
+#[test]
 // @verifies SPECIAL.MCP_COMMAND.TOOLS
 fn mcp_specs_tool_returns_special_projection_content() {
     let root = temp_repo_dir("special-cli-mcp-specs-tool");
