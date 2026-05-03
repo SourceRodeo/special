@@ -60,6 +60,13 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+      - name: Checkout parser source dependency
+        shell: bash
+        env:
+          SOURCE_DEPENDENCIES_TOKEN: ${{ secrets.SOURCE_DEPENDENCIES_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ../crates
+          git clone "https://x-access-token:${SOURCE_DEPENDENCIES_TOKEN}@github.com/sourcerodeo/parse-source-annotations" ../crates/parse-source-annotations
       - name: Install dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -120,6 +127,13 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+      - name: Checkout parser source dependency
+        shell: bash
+        env:
+          SOURCE_DEPENDENCIES_TOKEN: ${{ secrets.SOURCE_DEPENDENCIES_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ../crates
+          git clone "https://x-access-token:${SOURCE_DEPENDENCIES_TOKEN}@github.com/sourcerodeo/parse-source-annotations" ../crates/parse-source-annotations
       - name: Install Rust non-interactively if not already installed
         if: ${{ matrix.container }}
         run: |
@@ -190,6 +204,13 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+      - name: Checkout parser source dependency
+        shell: bash
+        env:
+          SOURCE_DEPENDENCIES_TOKEN: ${{ secrets.SOURCE_DEPENDENCIES_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ../crates
+          git clone "https://x-access-token:${SOURCE_DEPENDENCIES_TOKEN}@github.com/sourcerodeo/parse-source-annotations" ../crates/parse-source-annotations
       - name: Install cached dist
         uses: actions/download-artifact@v7
         with:
@@ -240,6 +261,13 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+      - name: Checkout parser source dependency
+        shell: bash
+        env:
+          SOURCE_DEPENDENCIES_TOKEN: ${{ secrets.SOURCE_DEPENDENCIES_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ../crates
+          git clone "https://x-access-token:${SOURCE_DEPENDENCIES_TOKEN}@github.com/sourcerodeo/parse-source-annotations" ../crates/parse-source-annotations
       - name: Install cached dist
         uses: actions/download-artifact@v7
         with:

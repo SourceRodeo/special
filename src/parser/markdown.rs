@@ -278,6 +278,24 @@ mod tests {
     }
 
     #[test]
+    fn markdown_accepts_bare_spec_declaration_lines() {
+        let parsed = parse_markdown_fixture("@spec APP.BARE\nBare declaration.\n");
+
+        assert_eq!(parsed.specs.len(), 1);
+        assert_eq!(parsed.specs[0].id, "APP.BARE");
+        assert_eq!(parsed.specs[0].text, "Bare declaration.");
+        assert!(parsed.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn markdown_does_not_materialize_list_or_blockquote_declarations() {
+        let parsed = parse_markdown_fixture("- @spec APP.LIST\n> @spec APP.QUOTE\n");
+
+        assert!(parsed.specs.is_empty());
+        assert!(parsed.diagnostics.is_empty());
+    }
+
+    #[test]
     fn markdown_rejects_duplicate_inline_and_adjacent_planned_markers() {
         let parsed = parse_markdown_fixture(
             "### `@spec APP.BAD @planned 0.4.0`\n### `@planned 0.5.0`\nPlanned.\n",

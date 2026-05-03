@@ -1,11 +1,13 @@
 /**
 @module SPECIAL.PARSER.MARKDOWN.DECLARATIONS
-Shared markdown declaration helpers for spec and group headings, adjacent planned markers, blank-line skipping, and description accumulation.
+Shared markdown declaration helpers for spec and group annotation lines, adjacent planned markers, blank-line skipping, and description accumulation.
 */
 // @fileimplements SPECIAL.PARSER.MARKDOWN.DECLARATIONS
 use std::path::Path;
 
-use crate::annotation_syntax::is_any_tag_boundary;
+use crate::annotation_syntax::{
+    ReservedSpecialAnnotation, is_any_tag_boundary, reserved_special_annotation_rest,
+};
 use crate::model::{
     DeprecatedRelease, Diagnostic, DiagnosticSeverity, NodeKind, ParsedRepo, PlannedRelease,
 };
@@ -16,18 +18,14 @@ use super::super::declarations::{
     AdjacentLifecycle, parse_adjacent_spec_deprecated, parse_adjacent_spec_planned,
     parse_spec_decl_header,
 };
-use super::super::normalize_markdown_annotation_line;
+use super::super::{normalize_markdown_annotation_line, normalize_markdown_declaration_line};
 
 pub(super) fn parse_markdown_spec_decl(line: &str) -> Option<(NodeKind, &str)> {
-    if !line.trim_start().starts_with('#') {
-        return None;
-    }
-    let trimmed = normalize_markdown_annotation_line(line)?;
-    if let Some(rest) = trimmed.strip_prefix("@spec ") {
+    let trimmed = normalize_markdown_declaration_line(line)?;
+    if let Some(rest) = reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::Spec) {
         Some((NodeKind::Spec, rest))
     } else {
-        trimmed
-            .strip_prefix("@group ")
+        reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::Group)
             .map(|rest| (NodeKind::Group, rest))
     }
 }
@@ -42,7 +40,7 @@ pub(super) fn maybe_consume_markdown_planned(
 ) -> (bool, Option<PlannedRelease>, usize) {
     let Some(annotation) = lines
         .get(cursor)
-        .and_then(|line| normalize_markdown_annotation_line(line))
+        .and_then(|line| normalize_markdown_declaration_line(line))
     else {
         return (false, None, cursor);
     };
@@ -75,7 +73,7 @@ pub(super) fn maybe_consume_markdown_deprecated(
 ) -> (bool, Option<DeprecatedRelease>, usize) {
     let Some(annotation) = lines
         .get(cursor)
-        .and_then(|line| normalize_markdown_annotation_line(line))
+        .and_then(|line| normalize_markdown_declaration_line(line))
     else {
         return (false, None, cursor);
     };

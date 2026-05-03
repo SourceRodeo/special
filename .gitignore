@@ -1,9 +1,11 @@
 /target
+.DS_Store
 /lean/.lake/
 /lean/lake-manifest.json
 special-spec.html
 .agents/skills/
 .projector/
+.kimura/
 __pycache__/
 *.pyc
 AGENTS.md

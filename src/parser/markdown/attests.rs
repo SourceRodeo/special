@@ -11,14 +11,13 @@ use crate::model::{
 };
 
 use super::super::attestation::parse_markdown_attestation_metadata;
-use super::super::{normalize_markdown_annotation_line, starts_markdown_fence};
+use super::super::{
+    normalize_markdown_annotation_line, normalize_markdown_declaration_line, starts_markdown_fence,
+};
 use super::declarations::skip_blank_markdown_lines;
 
 pub(super) fn parse_markdown_file_attest(line: &str) -> Option<&str> {
-    if !line.trim_start().starts_with('#') {
-        return None;
-    }
-    let trimmed = normalize_markdown_annotation_line(line)?;
+    let trimmed = normalize_markdown_declaration_line(line)?;
     reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::FileAttests)
 }
 

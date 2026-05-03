@@ -26,7 +26,7 @@ print(version if re.match(r"^[^/]+/", version) or version.startswith("v") else f
 PY
 )"
 
-release_json="$(gh release view "$release_tag" --repo LabLeaks/special --json tagName,isDraft,isPrerelease,assets)"
+release_json="$(gh release view "$release_tag" --repo sourcerodeo/special --json tagName,isDraft,isPrerelease,assets)"
 
 python3 - "$version" "$release_tag" "$release_json" <<'PY'
 import json

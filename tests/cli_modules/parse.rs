@@ -47,6 +47,34 @@ fn modules_read_markdown_architecture_declarations_when_present() {
 }
 
 #[test]
+// @verifies SPECIAL.MODULE_PARSE.MARKDOWN_DECLARATIONS
+fn modules_read_bare_markdown_architecture_declaration_lines() {
+    let root = temp_repo_dir("special-cli-modules-bare-architecture-lines");
+    fs::write(
+        root.join("architecture.md"),
+        "@area DEMO\nDemo area.\n\n@module DEMO.API @planned\nAPI module.\n",
+    )
+    .expect("bare markdown architecture declarations should be written");
+
+    let output = run_special(&root, &["arch", "--json"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let module = json["nodes"]
+        .as_array()
+        .and_then(|nodes| {
+            nodes
+                .iter()
+                .find_map(|node| find_node_by_id(node, "DEMO.API"))
+        })
+        .expect("DEMO.API module should be present");
+    assert_eq!(module["text"], Value::String("API module.".to_string()));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.MODULE_PARSE.MODULE_DECLARATIONS
 fn modules_parse_source_local_module_declarations() {
     let root = temp_repo_dir("special-cli-modules-source-local-decls");

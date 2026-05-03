@@ -1,13 +1,13 @@
 /**
 @module SPECIAL.MODULES.PARSE.DECLARATIONS
-Shared architecture declaration helpers for markdown and source-local module parsing, including heading normalization, planned handling, and description accumulation.
+Shared architecture declaration helpers for markdown and source-local module parsing, including annotation-line normalization, planned handling, and description accumulation.
 */
 // @fileimplements SPECIAL.MODULES.PARSE.DECLARATIONS
 use std::path::Path;
 
 use crate::annotation_syntax::{
     ReservedSpecialAnnotation, is_any_tag_boundary, normalize_markdown_annotation_line,
-    reserved_special_annotation_rest,
+    normalize_markdown_declaration_line, reserved_special_annotation_rest,
 };
 use crate::model::{
     ArchitectureKind, Diagnostic, DiagnosticSeverity, ParsedArchitecture, PatternStrictness,
@@ -20,31 +20,19 @@ use crate::planned_syntax::{
 pub(crate) use crate::text_lines::skip_blank_lines as skip_blank_doc_lines;
 
 pub(crate) fn normalized_architecture_heading(line: &str) -> Option<(ArchitectureKind, &str)> {
-    if !line.trim_start().starts_with('#') {
-        return None;
-    }
-    let trimmed = normalize_markdown_annotation_line(line)?;
-    let trimmed = trimmed.trim_start_matches('#').trim();
-    let trimmed = trimmed.strip_prefix('`').unwrap_or(trimmed);
-    let trimmed = trimmed.strip_suffix('`').unwrap_or(trimmed);
-    if let Some(rest) = trimmed.strip_prefix("@module ") {
+    let trimmed = normalize_markdown_declaration_line(line)?;
+    if let Some(rest) = reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::Module)
+    {
         Some((ArchitectureKind::Module, rest))
     } else {
-        trimmed
-            .strip_prefix("@area ")
+        reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::Area)
             .map(|rest| (ArchitectureKind::Area, rest))
     }
 }
 
 pub(crate) fn normalized_pattern_heading(line: &str) -> Option<&str> {
-    if !line.trim_start().starts_with('#') {
-        return None;
-    }
-    let trimmed = normalize_markdown_annotation_line(line)?;
-    let trimmed = trimmed.trim_start_matches('#').trim();
-    let trimmed = trimmed.strip_prefix('`').unwrap_or(trimmed);
-    let trimmed = trimmed.strip_suffix('`').unwrap_or(trimmed);
-    trimmed.strip_prefix("@pattern ")
+    let trimmed = normalize_markdown_declaration_line(line)?;
+    reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::Pattern)
 }
 
 pub(crate) fn normalized_annotation_line(line: Option<&str>) -> Option<&str> {
@@ -63,7 +51,11 @@ pub(crate) fn maybe_consume_doc_planned(
     if planned {
         return (planned, planned_release, cursor);
     }
-    if let Some(annotation) = normalized_annotation_line(lines.get(cursor).copied()) {
+    if let Some(annotation) = lines
+        .get(cursor)
+        .copied()
+        .and_then(normalize_markdown_declaration_line)
+    {
         match maybe_consume_standalone_planned(kind, annotation, parsed, path, cursor + 1) {
             StandalonePlanned::Absent => {}
             StandalonePlanned::Parsed(release) => {

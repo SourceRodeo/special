@@ -11,6 +11,9 @@ special installs the `special` binary from the `special-cli` package.
 @group SPECIAL.DISTRIBUTION.GITHUB_RELEASES
 special GitHub release distribution.
 
+@group SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES
+special source dependencies used by GitHub release builds.
+
 @group SPECIAL.DISTRIBUTION.BUILD_SCRIPT
 special Cargo build-script distribution behavior.
 
@@ -18,7 +21,16 @@ special Cargo build-script distribution behavior.
 special Homebrew distribution.
 
 @spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.REPOSITORY_URL
-special release automation declares the `https://github.com/LabLeaks/special` repository URL.
+special release automation declares the `https://github.com/sourcerodeo/special` repository URL.
+
+@spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE
+special consumes `parse-source-annotations` from a sibling source checkout instead of requiring crates.io publication.
+
+@spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.LOCAL_OVERRIDE
+special documents the sibling parser checkout layout used by local development and release builds.
+
+@spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PRIVATE_GITHUB_AUTH
+special GitHub release automation clones the parser source dependency with token authentication so private source dependency repositories can be fetched during release builds.
 
 @spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.WORKFLOW
 special keeps a GitHub Actions release workflow in `.github/workflows/release.yml`.
@@ -39,21 +51,17 @@ special GitHub release automation publishes versioned release archives for suppo
 special GitHub release automation publishes checksums for its release archives.
 
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA
-special ships a Homebrew formula in LabLeaks/homebrew-tap.
+special ships a Homebrew formula in sourcerodeo/homebrew-tap.
 
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.PATH
-special keeps its Homebrew formula at `Formula/special.rb` in LabLeaks/homebrew-tap.
+special keeps its Homebrew formula at `Formula/special.rb` in sourcerodeo/homebrew-tap.
 
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.PLATFORM_SELECTION
 special selects its platform-specific Homebrew archive URL and checksum with Homebrew's standard `on_system_conditional` and `on_arch_conditional` helpers.
 
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
-special installs the `special` binary from LabLeaks/homebrew-tap.
-
-@attests SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
-artifact: brew install LabLeaks/homebrew-tap/special (confirmed local install for /opt/homebrew/bin/special at v0.8.0)
-owner: gk
-last_reviewed: 2026-04-27
+@planned org-transfer
+special installs the `special` binary from sourcerodeo/homebrew-tap.
 
 @module SPECIAL.TESTS.DISTRIBUTION
 Distribution/release asset integration tests in `tests/distribution.rs`.
@@ -66,7 +74,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, path::Path};
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
 static HOMEBREW_VERIFIER_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -275,7 +283,7 @@ fn valid_formula_for_release(version: &str, sha_override: Option<(&str, String)>
       intel: "{sha_linux_intel}"
     )
   )
-  url "https://github.com/LabLeaks/special/releases/download/v{version}/#{{archive}}"
+  url "https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}"
 
   def install
     bin.install "special"
@@ -417,7 +425,52 @@ fn github_release_repository_url_is_declared() {
         .as_str()
         .expect("repository should be a string");
 
-    assert_eq!(repository, "https://github.com/LabLeaks/special");
+    assert_eq!(repository, "https://github.com/sourcerodeo/special");
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE
+fn shared_parser_crate_uses_sibling_source_checkout_dependency() {
+    let package = package_metadata();
+    let dependencies = package["dependencies"]
+        .as_array()
+        .expect("dependencies should be an array");
+    let dependency = dependencies
+        .iter()
+        .find(|dependency| dependency["name"].as_str() == Some("parse-source-annotations"))
+        .expect("special should depend on parse-source-annotations");
+    assert!(
+        dependency["source"].is_null(),
+        "path dependency should not require crates.io or a Cargo git source"
+    );
+
+    let manifest = read_repo_file("Cargo.toml");
+    assert!(manifest.contains(
+        "parse-source-annotations = { version = \"0.1.0\", path = \"../crates/parse-source-annotations\" }"
+    ));
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.LOCAL_OVERRIDE
+fn parser_crate_source_layout_is_documented() {
+    let readme = read_repo_file("README.md");
+    assert!(readme.contains("Source development currently expects sibling checkouts"));
+    assert!(readme.contains("../crates/parse-source-annotations"));
+    assert!(readme.contains("Release builds recreate the same source layout"));
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PRIVATE_GITHUB_AUTH
+fn release_workflow_clones_private_parser_source_dependency() {
+    let workflow = read_repo_file(".github/workflows/release.yml");
+
+    assert!(workflow.contains("Checkout parser source dependency"));
+    assert!(workflow.contains("SOURCE_DEPENDENCIES_TOKEN"));
+    assert!(workflow.contains("secrets.SOURCE_DEPENDENCIES_TOKEN || secrets.GITHUB_TOKEN"));
+    assert!(workflow.contains("mkdir -p ../crates"));
+    assert!(workflow.contains(
+        "git clone \"https://x-access-token:${SOURCE_DEPENDENCIES_TOKEN}@github.com/sourcerodeo/parse-source-annotations\" ../crates/parse-source-annotations"
+    ));
 }
 
 #[test]
@@ -550,7 +603,7 @@ fn homebrew_formula_uses_standard_platform_selection_helpers() {
     );
     assert!(
         updater.contains(
-            "url \"https://github.com/LabLeaks/special/releases/download/v{version}/#{{archive}}\""
+            "url \"https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}\""
         ),
         "Homebrew updater should emit a single active url from the selected archive"
     );
@@ -570,7 +623,7 @@ fn homebrew_formula_uses_standard_platform_selection_helpers() {
         &release_json,
         &formula.replace(
             &format!(
-                "url \"https://github.com/LabLeaks/special/releases/download/v{version}/#{{archive}}\""
+                "url \"https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}\""
             ),
             "",
         ),

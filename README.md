@@ -66,7 +66,7 @@ The repo root is explicitly anchored by [special.toml](special.toml).
 
 Today `special` is a Rust CLI that:
 
-- parses annotation blocks from supported source files and markdown headings
+- parses annotation blocks from supported source files and markdown annotation lines
 - builds one spec tree across files and file types
 - builds one architecture module tree across source-local declarations and
   project architecture notes
@@ -529,12 +529,12 @@ repo.
 
 ## Install
 
-Published binaries are available from GitHub Releases for `LabLeaks/special`.
+Published binaries are available from GitHub Releases for `sourcerodeo/special`.
 
 Homebrew is the primary install path:
 
 ```sh
-brew install LabLeaks/homebrew-tap/special
+brew install sourcerodeo/homebrew-tap/special
 ```
 
 Cargo is a secondary install path:
@@ -546,6 +546,22 @@ cargo install special-cli
 That installs the `special` binary.
 
 ## Development
+
+Source development currently expects sibling checkouts:
+
+```text
+workspace/
+  special/
+  crates/
+    parse-source-annotations/
+```
+
+`special` consumes `parse-source-annotations` from
+`../crates/parse-source-annotations`. Local development keeps that sibling
+checkout in place. Release builds recreate the same source layout by cloning
+`https://github.com/sourcerodeo/parse-source-annotations` into `../crates/` before
+Cargo runs, using GitHub token authentication so the parser crate repository may
+remain private.
 
 For local repo development, use the tool-managed commands:
 
@@ -733,7 +749,7 @@ Current self-hosted current support covers:
 - TypeScript block comments
 - shell `#` comments
 - Python `#` comments
-- markdown heading annotations
+- markdown annotation lines
 
 `special` supports spec and module trees spread across multiple files and mixed
 supported file types.
@@ -780,7 +796,7 @@ The current distribution slice covers:
 - GitHub repository metadata for release automation
 - committed GitHub Actions release workflow
 - published release archives and checksums for supported targets
-- committed Homebrew formula in `LabLeaks/homebrew-tap`
+- committed Homebrew formula in `sourcerodeo/homebrew-tap`
 
 Actual published GitHub Releases are a separate claim from release automation
 itself.

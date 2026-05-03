@@ -77,15 +77,7 @@ pub(crate) fn reserved_special_annotation_rest(
     text: &str,
     annotation: ReservedSpecialAnnotation,
 ) -> Option<&str> {
-    let trimmed = text.trim();
-    let rest = trimmed.strip_prefix(annotation.keyword())?;
-    if rest.is_empty() {
-        return Some("");
-    }
-    if rest.starts_with(char::is_whitespace) {
-        return Some(rest.trim_start());
-    }
-    None
+    parse_source_annotations::directive_rest(text, annotation.keyword())
 }
 
 pub(crate) fn is_reserved_special_annotation(text: &str) -> bool {
@@ -105,43 +97,23 @@ pub(crate) fn is_any_tag_boundary(text: &str) -> bool {
 }
 
 pub(crate) fn normalize_markdown_annotation_line(line: &str) -> Option<&str> {
-    let trimmed = line.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-    let trimmed = trimmed
-        .strip_prefix('>')
-        .map(str::trim_start)
-        .unwrap_or(trimmed);
-    let trimmed = trimmed.trim_start_matches('#').trim_start();
-    let trimmed = trimmed
-        .strip_prefix("- ")
-        .or_else(|| trimmed.strip_prefix("* "))
-        .unwrap_or(trimmed);
-    let trimmed = trimmed
-        .strip_prefix('`')
-        .and_then(|inner| inner.strip_suffix('`'))
-        .unwrap_or(trimmed);
-    let trimmed = trimmed.trim();
-    (!trimmed.is_empty()).then_some(trimmed)
+    parse_source_annotations::markdown_annotation_line(line).map(|line| line.text)
+}
+
+pub(crate) fn normalize_markdown_declaration_line(line: &str) -> Option<&str> {
+    parse_source_annotations::markdown_declaration_line(line)
 }
 
 fn starts_with_tag_like_boundary(text: &str) -> bool {
-    let Some(rest) = text.strip_prefix('@').or_else(|| text.strip_prefix('\\')) else {
-        return false;
-    };
-    rest.chars()
-        .next()
-        .map(|ch| ch.is_ascii_alphabetic())
-        .unwrap_or(false)
+    parse_source_annotations::starts_with_tag_like_boundary(text)
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
         ReservedSpecialAnnotation, is_any_tag_boundary, is_foreign_tag_boundary,
-        is_reserved_special_annotation, reserved_special_annotation,
-        reserved_special_annotation_rest,
+        is_reserved_special_annotation, normalize_markdown_declaration_line,
+        reserved_special_annotation, reserved_special_annotation_rest,
     };
 
     #[test]
@@ -198,5 +170,25 @@ mod tests {
             Some(ReservedSpecialAnnotation::Spec)
         );
         assert_eq!(reserved_special_annotation("@specly EXPORT.CSV"), None);
+    }
+
+    #[test]
+    fn markdown_declaration_lines_exclude_lists_and_blockquotes() {
+        assert_eq!(
+            normalize_markdown_declaration_line("@spec EXPORT.CSV"),
+            Some("@spec EXPORT.CSV")
+        );
+        assert_eq!(
+            normalize_markdown_declaration_line("### `@spec EXPORT.CSV`"),
+            Some("@spec EXPORT.CSV")
+        );
+        assert_eq!(
+            normalize_markdown_declaration_line("- @spec EXPORT.CSV"),
+            None
+        );
+        assert_eq!(
+            normalize_markdown_declaration_line("> @spec EXPORT.CSV"),
+            None
+        );
     }
 }

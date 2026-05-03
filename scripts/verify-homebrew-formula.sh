@@ -26,8 +26,8 @@ print(version if re.match(r"^[^/]+/", version) or version.startswith("v") else f
 PY
 )"
 
-release_json="$(gh release view "$release_tag" --repo LabLeaks/special --json assets)"
-formula="$(gh api repos/LabLeaks/homebrew-tap/contents/Formula/special.rb --jq .content | base64 --decode)"
+release_json="$(gh release view "$release_tag" --repo sourcerodeo/special --json assets)"
+formula="$(gh api repos/sourcerodeo/homebrew-tap/contents/Formula/special.rb --jq .content | base64 --decode)"
 
 FORMULA_TEXT="$formula" python3 - "$version" "$release_tag" "$release_json" <<'PY'
 import json
@@ -78,7 +78,7 @@ if 'bin.install "special"' not in formula:
 for helper in ('on_system_conditional(', 'on_arch_conditional('):
     if helper not in formula:
         fail("formula is missing platform selection helper", helper)
-expected_url = f'https://github.com/LabLeaks/special/releases/download/{release_tag}/#{{archive}}'
+expected_url = f'https://github.com/sourcerodeo/special/releases/download/{release_tag}/#{{archive}}'
 if f'url "{expected_url}"' not in formula:
     fail("formula is missing templated release asset url", expected_url)
 

@@ -255,7 +255,7 @@ special arch --json --metrics --verbose includes structured parameter-heavy, str
 special parses architecture module declarations and implementation attachments.
 
 @spec SPECIAL.MODULE_PARSE.MARKDOWN_DECLARATIONS
-special parses `@area` and `@module` declarations from markdown heading annotations under the project root.
+special parses `@area` and `@module` declarations from markdown annotation lines under the project root.
 
 @spec SPECIAL.MODULE_PARSE.MODULE_DECLARATIONS
 special parses `@module MODULE.ID` declarations from supported source comments.

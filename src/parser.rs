@@ -94,7 +94,9 @@ use std::path::Path;
 
 use anyhow::Result;
 
-pub(super) use crate::annotation_syntax::normalize_markdown_annotation_line;
+pub(super) use crate::annotation_syntax::{
+    normalize_markdown_annotation_line, normalize_markdown_declaration_line,
+};
 use crate::extractor::collect_comment_blocks;
 use crate::model::{CommentBlock, Diagnostic, DiagnosticSeverity, ParsedRepo};
 use block::{ParseRules, parse_block};
@@ -122,8 +124,7 @@ pub fn parse_repo(
 }
 
 pub(super) fn starts_markdown_fence(line: &str) -> bool {
-    let trimmed = line.trim_start();
-    trimmed.starts_with("```") || trimmed.starts_with("~~~")
+    parse_source_annotations::starts_markdown_fence(line)
 }
 
 fn push_diag(parsed: &mut ParsedRepo, block: &CommentBlock, line: usize, message: &str) {

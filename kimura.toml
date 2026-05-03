@@ -1,0 +1,10 @@
+discovery_paths = ["_project/BACKLOG.md"]
+authoring_paths = ["_project/**", "kimura.toml"]
+always_allowed_commands = []
+
+[vcs]
+mode = "jj"
+
+[vcs.auto_squash]
+empty_diffs = true
+exclude = ["Cargo.lock", "Cargo.toml", "kimura.toml", "mise.toml", "special.toml", "specs/**", "src/**", "tests/**"]

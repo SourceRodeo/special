@@ -19,11 +19,11 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from release_tooling import normalize_tag, package_version, run_checked
 
-REPOSITORY = "LabLeaks/special"
-TAP_REPOSITORY = "LabLeaks/homebrew-tap"
+REPOSITORY = "sourcerodeo/special"
+TAP_REPOSITORY = "sourcerodeo/homebrew-tap"
 FORMULA_PATH = "Formula/special.rb"
 FORMULA_DESC = "Repo-native semantic spec tool"
-FORMULA_HOMEPAGE = "https://github.com/LabLeaks/special"
+FORMULA_HOMEPAGE = "https://github.com/sourcerodeo/special"
 ARCHIVE_ORDER = [
     "special-cli-x86_64-apple-darwin.tar.xz",
     "special-cli-aarch64-apple-darwin.tar.xz",
@@ -94,7 +94,7 @@ class Special < Formula
       intel: "special-cli-x86_64-unknown-linux-gnu.tar.xz",
     ),
   )
-  url "https://github.com/LabLeaks/special/releases/download/v{version}/#{{archive}}"
+  url "https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}"
   sha256 on_system_conditional(
     macos: on_arch_conditional(
       arm: "{archive_sha('special-cli-aarch64-apple-darwin.tar.xz')}",

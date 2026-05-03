@@ -17,10 +17,10 @@ special.toml `ignore` patterns exclude matching paths from both spec and module 
 special respects `.gitignore` and `.jjignore` by default when discovering spec and module annotations.
 
 @spec SPECIAL.SPEC_COMMAND.MARKDOWN_DECLARATIONS
-special specs materializes `@group` and `@spec` declarations from markdown heading annotations under the project root.
+special specs materializes `@group` and `@spec` declarations from markdown annotation lines under the project root.
 
 @spec SPECIAL.MODULE_COMMAND.MARKDOWN_DECLARATIONS
-special arch materializes `@area` and `@module` declarations from markdown heading annotations under the project root.
+special arch materializes `@area` and `@module` declarations from markdown annotation lines under the project root.
 
 @spec SPECIAL.SPEC_COMMAND.NO_SPECIAL_SPECS_DIRECTORY
 special specs does not require declarations to live under a special `specs/` directory.
