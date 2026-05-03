@@ -32,6 +32,7 @@ pub fn bundled_skill_ids() -> Vec<&'static str> {
         "evolve-module-architecture",
         "find-planned-work",
         "inspect-current-spec-state",
+        "setup-special-project",
         "ship-product-change",
         "use-project-patterns",
         "validate-architecture-implementation",

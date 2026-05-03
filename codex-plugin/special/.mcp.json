@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "special": {
+      "command": "special",
+      "args": ["mcp"]
+    }
+  }
+}

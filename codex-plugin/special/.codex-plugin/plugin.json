@@ -1,0 +1,33 @@
+{
+  "name": "special",
+  "version": "0.1.0",
+  "description": "Codex integration for Special repo-native contracts, architecture, patterns, docs, and traceability.",
+  "author": {
+    "name": "source.rodeo",
+    "email": "hello@source.rodeo",
+    "url": "https://source.rodeo"
+  },
+  "homepage": "https://source.rodeo",
+  "repository": "https://github.com/sourcerodeo/special",
+  "license": "MIT",
+  "keywords": ["special", "codex", "specs", "architecture", "traceability"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Special",
+    "shortDescription": "Use Special contracts, architecture, docs, and traceability from Codex.",
+    "longDescription": "Special bundles Codex skills and MCP tools for repo-native product claims, architecture ownership, adopted patterns, documentation relationships, lint, and health checks.",
+    "developerName": "source.rodeo",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://source.rodeo",
+    "privacyPolicyURL": "https://source.rodeo",
+    "termsOfServiceURL": "https://source.rodeo",
+    "defaultPrompt": [
+      "Show my Special project status.",
+      "Inspect the current Special specs.",
+      "Run Special lint and docs checks."
+    ],
+    "brandColor": "#263238"
+  }
+}

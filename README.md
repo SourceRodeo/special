@@ -27,6 +27,18 @@ cargo install special-cli
 Both install the `special` binary. Release archives and checksums are published
 through GitHub Releases for `sourcerodeo/special`.
 
+For Codex users, the recommended integration path is the SourceRodeo plugin
+marketplace:
+
+```sh
+codex plugin marketplace add SourceRodeo/codex-marketplace
+```
+
+Install the Special plugin from that marketplace. The plugin provides workflow
+skills and MCP access through `special mcp`; if the `special` binary is missing,
+its install/update skill points you back to the normal Homebrew or Cargo install
+path.
+
 ## Quick Start
 
 Initialize a repo root:

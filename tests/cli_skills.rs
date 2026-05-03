@@ -80,6 +80,9 @@ installed bundled skills use the `.agents/skills/SKILL_ID/SKILL.md` layout.
 @spec SPECIAL.SKILLS.COMMAND.INSTALLS_FIND_PLANNED_WORK_SKILL
 `special skills install` includes the `find-planned-work` bundled skill.
 
+@spec SPECIAL.SKILLS.COMMAND.INSTALLS_SETUP_SPECIAL_PROJECT_SKILL
+`special skills install` includes the `setup-special-project` bundled skill.
+
 @spec SPECIAL.SKILLS.COMMAND.BUNDLES_REFERENCES_FOR_PROGRESSIVE_DISCLOSURE
 installed bundled skills keep their reference files for progressive disclosure.
 
@@ -723,6 +726,20 @@ fn skills_install_find_planned_work_skill() {
     let skill = fs::read_to_string(root.join(".agents/skills/find-planned-work/SKILL.md"))
         .expect("find-planned-work skill should exist");
     assert_eq!(skill, bundled_skill_markdown("find-planned-work"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_SETUP_SPECIAL_PROJECT_SKILL
+fn skills_install_setup_special_project_skill() {
+    let root = temp_repo_dir("special-cli-skills-setup-special");
+    let output = install_skills(&root);
+    assert!(output.status.success());
+
+    let skill = fs::read_to_string(root.join(".agents/skills/setup-special-project/SKILL.md"))
+        .expect("setup-special-project skill should exist");
+    assert_eq!(skill, bundled_skill_markdown("setup-special-project"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

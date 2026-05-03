@@ -166,6 +166,11 @@ const FIND_PLANNED_WORK_ASSETS: &[SkillAsset] = &[
     },
 ];
 
+const SETUP_SPECIAL_PROJECT_ASSETS: &[SkillAsset] = &[SkillAsset {
+    relative_path: "SKILL.md",
+    contents: include_str!("../templates/skills/setup-special-project/SKILL.md"),
+}];
+
 const BUNDLED_SKILLS: &[BundledSkill] = &[
     BundledSkill {
         id: "ship-product-change",
@@ -206,6 +211,11 @@ const BUNDLED_SKILLS: &[BundledSkill] = &[
         id: "find-planned-work",
         summary: "Find planned product-spec work that is not current yet.",
         assets: FIND_PLANNED_WORK_ASSETS,
+    },
+    BundledSkill {
+        id: "setup-special-project",
+        summary: "Configure and validate Special in a project.",
+        assets: SETUP_SPECIAL_PROJECT_ASSETS,
     },
 ];
 
