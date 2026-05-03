@@ -81,9 +81,7 @@ fn handle_message(current_dir: &Path, message: Value) -> Option<Value> {
     let id = message.get("id").cloned();
     let method = message.get("method").and_then(Value::as_str);
 
-    let Some(id) = id else {
-        return None;
-    };
+    let id = id?;
     let Some(method) = method else {
         return Some(error_response(id, -32600, "request is missing method"));
     };

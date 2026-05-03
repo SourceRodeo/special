@@ -308,6 +308,36 @@ fn docs_output_refuses_to_overwrite_docs_evidence() {
     assert!(stderr.contains("refusing to overwrite docs evidence"));
 }
 
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
+fn docs_output_allows_overwriting_fenced_docs_examples() {
+    let root = temp_repo_dir("special-cli-docs-overwrite-fenced-example");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("source.md"),
+        "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("source docs markdown should be written");
+    fs::write(
+        root.join("public.md"),
+        "```markdown\n@filedocuments spec APP.CONFIG\n[Config](special://spec/APP.CONFIG)\n```\n\n`@documents` lines and `special://spec/APP.CONFIG` links are examples here.\n",
+    )
+    .expect("existing docs example should be written");
+
+    let output = run_special(
+        &root,
+        &["docs", "--target", "source.md", "--output", "public.md"],
+    );
+
+    assert!(
+        output.status.success(),
+        "fenced examples should not block overwrite: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let rendered = fs::read_to_string(root.join("public.md")).expect("output should be written");
+    assert_eq!(rendered, "CSV exports include headers.\n");
+}
+
 fn write_docs_fixture(root: &std::path::Path) {
     fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
         .expect("special.toml should be written");

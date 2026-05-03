@@ -14,7 +14,7 @@ pub(crate) use install::{
     conflicting_skill_paths, install_bundled_skills, resolve_global_skills_root,
 };
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 
 pub struct SkillAsset {
     relative_path: &'static str,
@@ -386,7 +386,7 @@ fn parse_quoted_frontmatter_scalar(value: &str) -> Result<Option<String>> {
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_skill_frontmatter, validate_bundled_skill_frontmatter, BundledSkill, SkillAsset,
+        BundledSkill, SkillAsset, parse_skill_frontmatter, validate_bundled_skill_frontmatter,
     };
 
     #[test]
@@ -435,9 +435,11 @@ mod tests {
         let error =
             parse_skill_frontmatter("# Example\n").expect_err("frontmatter should be required");
 
-        assert!(error
-            .to_string()
-            .contains("must start with YAML frontmatter"));
+        assert!(
+            error
+                .to_string()
+                .contains("must start with YAML frontmatter")
+        );
     }
 
     #[test]

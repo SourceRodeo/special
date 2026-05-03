@@ -3,12 +3,42 @@ root = "."
 ignore = [
   "CHANGELOG.md",
   "README.md",
-  "docs/dist",
+  "docs/agents.md",
+  "docs/annotations.md",
+  "docs/commands.md",
+  "docs/configuration.md",
+  "docs/install.md",
+  "docs/release.md",
+  "docs/tutorial.md",
 ]
 
 [[docs.outputs]]
-source = "docs/src"
-output = "docs/dist"
+source = "docs/src/install.md"
+output = "docs/install.md"
+
+[[docs.outputs]]
+source = "docs/src/tutorial.md"
+output = "docs/tutorial.md"
+
+[[docs.outputs]]
+source = "docs/src/commands.md"
+output = "docs/commands.md"
+
+[[docs.outputs]]
+source = "docs/src/annotations.md"
+output = "docs/annotations.md"
+
+[[docs.outputs]]
+source = "docs/src/configuration.md"
+output = "docs/configuration.md"
+
+[[docs.outputs]]
+source = "docs/src/agents.md"
+output = "docs/agents.md"
+
+[[docs.outputs]]
+source = "docs/src/release.md"
+output = "docs/release.md"
 
 [[docs.outputs]]
 source = "docs/src/README.md"

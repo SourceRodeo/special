@@ -348,8 +348,11 @@ fn release_tag_prepare_writes_exact_changelog_section() {
         "[package]\nname = \"tag-fixture\"\nversion = \"1.2.3\"\nedition = \"2024\"\n",
     )
     .expect("Cargo.toml fixture should be written");
-    fs::write(root.join("CHANGELOG.md"), "# Changelog\n\n## 1.2.2 - 2026-01-01\n\n- Old.\n")
-        .expect("changelog fixture should be written");
+    fs::write(
+        root.join("CHANGELOG.md"),
+        "# Changelog\n\n## 1.2.2 - 2026-01-01\n\n- Old.\n",
+    )
+    .expect("changelog fixture should be written");
 
     run_jj(&root, &["git", "init", "."]);
     run_jj(
@@ -388,8 +391,8 @@ fn release_tag_prepare_writes_exact_changelog_section() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let changelog = fs::read_to_string(root.join("CHANGELOG.md"))
-        .expect("changelog should be readable");
+    let changelog =
+        fs::read_to_string(root.join("CHANGELOG.md")).expect("changelog should be readable");
     assert!(changelog.contains("## 1.2.3 - "));
     assert!(changelog.contains("- Added release pipeline."));
     assert!(changelog.contains("- Fixed docs."));

@@ -6,9 +6,9 @@ Resolves install destinations and executes staged bundled-skill filesystem insta
 use std::env;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 
-use super::{bundled_skill, bundled_skills, validate_bundled_skill_frontmatter, BundledSkill};
+use super::{BundledSkill, bundled_skill, bundled_skills, validate_bundled_skill_frontmatter};
 
 mod fs_ops;
 mod transaction;
@@ -107,8 +107,11 @@ pub(crate) fn install_bundled_skills(
 
 fn selected_skills(skill_id: Option<&str>) -> Result<Vec<&'static BundledSkill>> {
     match skill_id {
-        Some(skill_id) => Ok(vec![bundled_skill(skill_id)
-            .ok_or_else(|| anyhow::anyhow!("unknown skill id `{skill_id}`"))?]),
+        Some(skill_id) => {
+            Ok(vec![bundled_skill(skill_id).ok_or_else(|| {
+                anyhow::anyhow!("unknown skill id `{skill_id}`")
+            })?])
+        }
         None => Ok(bundled_skills().iter().collect()),
     }
 }

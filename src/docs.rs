@@ -746,11 +746,39 @@ fn validate_output_plan(files: &[(PathBuf, PathBuf)]) -> Result<()> {
 fn existing_file_contains_docs_evidence(path: &Path) -> Result<bool> {
     let content =
         fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
-    Ok(content.lines().any(|line| {
-        line.contains("special://")
-            || line.contains("@documents")
-            || line.contains("@filedocuments")
-    }))
+    let mut in_fenced_code = false;
+    for line in content.lines() {
+        if line.trim_start().starts_with("```") {
+            in_fenced_code = !in_fenced_code;
+            continue;
+        }
+        if in_fenced_code {
+            continue;
+        }
+        let evidence_line = remove_inline_code_spans(line);
+        if evidence_line.contains("special://")
+            || evidence_line.contains("@documents")
+            || evidence_line.contains("@filedocuments")
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn remove_inline_code_spans(line: &str) -> String {
+    let mut output = String::new();
+    let mut in_code = false;
+    for character in line.chars() {
+        if character == '`' {
+            in_code = !in_code;
+            continue;
+        }
+        if !in_code {
+            output.push(character);
+        }
+    }
+    output
 }
 
 fn ensure_distinct_paths(left: &Path, right: &Path, message: &str) -> Result<()> {

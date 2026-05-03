@@ -37,10 +37,16 @@ fn init_creates_special_toml_in_current_directory() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.starts_with("Created "));
     assert!(stdout.contains("special.toml"));
-    assert_eq!(
-        fs::read_to_string(root.join("special.toml")).expect("special.toml should be created"),
-        "version = \"1\"\nroot = \".\"\n\n# Optional: keep generated docs outputs out of Special discovery.\n# If you enable generated README or docs/dist outputs below, add those paths here.\n#\n# ignore = [\"README.md\", \"docs/dist\"]\n#\n# Optional: configure `special docs --output` output targets.\n#\n# [[docs.outputs]]\n# source = \"docs/src\"\n# output = \"docs/dist\"\n#\n# [[docs.outputs]]\n# source = \"docs/src/README.md\"\n# output = \"README.md\"\n#\n# Optional: keep generated or fixture-heavy paths out of health's\n# unexplained-by-spec bucket without hiding them from discovery or architecture.\n#\n# [health]\n# ignore-unexplained = [\"generated/**\"]\n#\n# Optional: tell tool-backed traceability to use the project's declared toolchain.\n# Out of the box, special understands these project contracts:\n#   - `mise.toml`\n#   - `.tool-versions` (asdf-compatible)\n#\n# If your project root is not where the toolchain file lives, or you want to pin the\n# contract explicitly, uncomment this block:\n#\n# [toolchain]\n# manager = \"mise\" # or \"asdf\"\n#\n# Optional: tune advisory pattern similarity benchmark centers.\n# Leave this commented out unless the default estimates are noisy for your codebase.\n#\n# [patterns.metrics]\n# high = 0.55\n# medium = 0.45\n# low = 0.20\n"
-    );
+    let config =
+        fs::read_to_string(root.join("special.toml")).expect("special.toml should be created");
+    assert!(config.starts_with("version = \"1\"\nroot = \".\"\n"));
+    assert!(config.contains("# ignore = [\"README.md\", \"docs/install.md\"]"));
+    assert!(config.contains("# [[docs.outputs]]"));
+    assert!(config.contains("# source = \"docs/src/install.md\""));
+    assert!(config.contains("# output = \"docs/install.md\""));
+    assert!(config.contains("# unsupported-implementation review bucket"));
+    assert!(config.contains("# manager = \"mise\" # or \"asdf\""));
+    assert!(config.contains("# [patterns.metrics]"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

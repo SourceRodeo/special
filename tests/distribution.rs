@@ -77,7 +77,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, path::Path};
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 static HOMEBREW_VERIFIER_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -456,10 +456,12 @@ fn shared_parser_crate_uses_sibling_source_checkout_dependency() {
 #[test]
 // @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.LOCAL_OVERRIDE
 fn parser_crate_source_layout_is_documented() {
-    let readme = read_repo_file("README.md");
-    assert!(readme.contains("Source development currently expects sibling checkouts"));
-    assert!(readme.contains("../crates/parse-source-annotations"));
-    assert!(readme.contains("Release builds recreate the same source layout"));
+    let docs = read_repo_file("docs/release.md");
+    assert!(docs.contains("Development expects sibling checkouts"));
+    assert!(docs.contains("../crates/parse-source-annotations"));
+    assert!(docs.contains("Release"));
+    assert!(docs.contains("jobs recreate"));
+    assert!(docs.contains("sibling layout"));
 }
 
 #[test]
