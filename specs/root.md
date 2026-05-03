@@ -1,18 +1,18 @@
 
-### `@group SPECIAL`
+### @group SPECIAL
 special top-level structure.
 
-### `@group SPECIAL.QUALITY`
+### @group SPECIAL.QUALITY
 special internal quality contracts.
 
-### `@group SPECIAL.CONFIG`
+### @group SPECIAL.CONFIG
 special configuration and root discovery.
 
-### `@group SPECIAL.INIT`
+### @group SPECIAL.INIT
 special project initialization workflow.
 
-### `@group SPECIAL.SKILLS`
+### @group SPECIAL.SKILLS
 special project skill installation workflow.
 
-### `@group SPECIAL.DISTRIBUTION`
+### @group SPECIAL.DISTRIBUTION
 special release and installation contract.

@@ -8,7 +8,7 @@ Patterns are not broad principles, style rules, specs, or one module's design no
 pattern names a reusable problem shape, explains the chosen solution shape, and gives enough
 criteria to decide whether a new surface should follow it or deliberately do something else.
 
-### `@pattern ADAPTER.FACTS_TO_MODEL`
+### @pattern ADAPTER.FACTS_TO_MODEL
 @strictness high
 
 Use this pattern when Special needs source-, language-, tool-, or ecosystem-specific facts but the
@@ -33,7 +33,7 @@ Do not use this when there is only one implementation and no real boundary, when
 renames a helper, or when the shared model is being distorted to force unrelated providers through
 a fake common shape.
 
-### `@pattern ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS`
+### @pattern ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
 @strictness high
 
 Use this pattern when a provider projects parsed source items plus ownership facts into Special's
@@ -60,7 +60,7 @@ Do not use this for parser-only helpers, owned-body item collection, or call gra
 may share nearby facts, but this pattern is specifically the projection into the shared traceability
 item model.
 
-### `@pattern TRACEABILITY.SCOPED_PROJECTED_KERNEL`
+### @pattern TRACEABILITY.SCOPED_PROJECTED_KERNEL
 @strictness low
 
 Use this pattern when a scoped traceability implementation needs fast target-focused analysis without
@@ -87,7 +87,7 @@ Do not use this for full-repo traceability, parser-only graph construction, or a
 simply drops output rows after full analysis. If a scoped route cannot preserve full-then-filtered
 traceability semantics, it should be treated as a degraded or experimental route instead.
 
-### `@pattern TEST_FIXTURE.REPRESENTATIVE_PROJECT`
+### @pattern TEST_FIXTURE.REPRESENTATIVE_PROJECT
 @strictness low
 
 Use this pattern when Special needs to prove behavior against a realistic throwaway project rather
@@ -117,7 +117,7 @@ Do not use this for pure parser snippets, standalone helper tests, or repo-indep
 checks. If many fixtures share exactly the same boilerplate, extract a helper; the pattern is for
 preserving realistic project shape, not duplicating identical setup.
 
-### `@pattern COMMAND.PROJECTION_PIPELINE`
+### @pattern COMMAND.PROJECTION_PIPELINE
 @strictness medium
 
 Use this pattern when a Special command materializes a read-only product view from source
@@ -147,7 +147,7 @@ Do not use this for mutating workflow commands, install commands, release script
 entrypoints. Those may share status helpers, but they do not promise the same read-only projection
 contract.
 
-### `@pattern SINGLE_FLIGHT.CACHE_FILL`
+### @pattern SINGLE_FLIGHT.CACHE_FILL
 @strictness high
 
 Use this pattern when Special fills a durable cache entry for expensive parse, analysis, or
@@ -169,7 +169,7 @@ This pattern is appropriate when equivalent callers can safely share the first c
 is not appropriate for ordinary exclusive mutation, work whose callers need distinct side effects,
 or cases where a stale shared result would be less honest than recomputation.
 
-### `@pattern REGISTRY.PROVIDER_DESCRIPTOR`
+### @pattern REGISTRY.PROVIDER_DESCRIPTOR
 @strictness low
 
 Use this pattern when Special has a known set of built-in providers and multiple shared subsystems

@@ -119,6 +119,31 @@ fn docs_validate_prints_relationship_dump() {
 }
 
 #[test]
+// @verifies SPECIAL.DOCS_COMMAND
+fn docs_validate_ignores_inline_code_examples() {
+    let root = temp_repo_dir("special-cli-docs-inline-code");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("docs.md"),
+        concat!(
+            "`@documents spec EXPORT.MISSING`\n",
+            "`[Missing](special://spec/EXPORT.MISSING)`\n",
+        ),
+    )
+    .expect("docs markdown should be written");
+
+    let output = run_special(&root, &["docs"]);
+
+    assert!(
+        output.status.success(),
+        "inline code examples should not become docs evidence: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(!stdout.contains("EXPORT.MISSING"));
+}
+
+#[test]
 // @verifies SPECIAL.DOCS_COMMAND.TARGET
 fn docs_target_scopes_validation_without_writing_files() {
     let root = temp_repo_dir("special-cli-docs-target");

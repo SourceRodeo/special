@@ -31,7 +31,7 @@ The repo does not need Special patterns yet. This skill can introduce the first 
 Example definition:
 
 ```md
-### `@pattern ADAPTER.FACTS_TO_MODEL`
+### @pattern ADAPTER.FACTS_TO_MODEL
 @strictness high
 Adapt analyzer-specific facts into stable public model structs at the language-pack boundary so parser and tool details do not leak into shared output.
 ```

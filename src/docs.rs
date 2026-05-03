@@ -420,6 +420,9 @@ fn parse_markdown_documents_line(
     refs: &mut Vec<DocumentRef>,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> bool {
+    if parse_source_annotations::is_whole_line_code_span(line) {
+        return false;
+    }
     let Some(trimmed) = normalize_markdown_declaration_line(line) else {
         return false;
     };

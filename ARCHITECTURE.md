@@ -43,12 +43,12 @@ This repo is intentionally split into a few broad responsibilities:
 These areas remain here because they are genuinely cross-cutting and do not have one obvious
 source-local owner.
 
-### `@area SPECIAL.DISTRIBUTION`
+### @area SPECIAL.DISTRIBUTION
 Release and distribution verification surface across scripts, workflow files, and distribution
 tests.
 
-### `@area SPECIAL.TESTS`
+### @area SPECIAL.TESTS
 Executable regression and contract-proof surface under `tests/`.
 
-### `@area SPECIAL.TESTS.SUPPORT`
+### @area SPECIAL.TESTS.SUPPORT
 Shared test-support surface under `tests/support/`.

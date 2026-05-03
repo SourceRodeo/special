@@ -38,7 +38,7 @@ special init
 Add a product claim in markdown or a source comment:
 
 ```text
-### `@spec EXPORT.CSV.HEADERS`
+### @spec EXPORT.CSV.HEADERS
 CSV exports include a header row with the selected column names.
 ```
 
@@ -162,14 +162,14 @@ root inside the output path.
 Declare current behavior:
 
 ```text
-### `@spec EXPORT.CSV.HEADERS`
+### @spec EXPORT.CSV.HEADERS
 CSV exports include a header row with the selected column names.
 ```
 
 Declare planned behavior:
 
 ```text
-### `@spec EXPORT.METADATA`
+### @spec EXPORT.METADATA
 @planned 1.4.0
 Exports include provenance metadata.
 ```
@@ -201,10 +201,10 @@ can judge whether the support really proves the claim.
 Declare architecture:
 
 ```text
-### `@area APP`
+### @area APP
 Application code.
 
-### `@module APP.PARSER`
+### @module APP.PARSER
 Parses reserved annotations from extracted source comments.
 ```
 
@@ -231,7 +231,7 @@ unreached-code indicators when the language pack can derive them.
 Declare an intentional implementation approach:
 
 ```text
-### `@pattern CACHE.SINGLE_FLIGHT_FILL`
+### @pattern CACHE.SINGLE_FLIGHT_FILL
 @strictness high
 Use single-flight cache fills when concurrent callers may request the same
 expensive cache entry and only one caller should rebuild it.

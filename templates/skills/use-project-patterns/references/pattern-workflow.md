@@ -14,7 +14,7 @@ Use this checklist when deciding whether repeated code should define or apply a 
 Good pattern definition:
 
 ```md
-### `@pattern ADAPTER.FACTS_TO_MODEL`
+### @pattern ADAPTER.FACTS_TO_MODEL
 @strictness high
 Adapt analyzer-specific fact collections into stable public model structs at the language-pack boundary. Use this when internal analysis facts need to cross into shared Special output without leaking parser or tool-specific types.
 ```
