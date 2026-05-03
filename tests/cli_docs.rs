@@ -95,6 +95,39 @@ fn docs_materialize_uses_configured_source_and_output_paths() {
 }
 
 #[test]
+// @verifies SPECIAL.DOCS_COMMAND.MATERIALIZE.SAFETY
+fn docs_configured_outputs_reject_duplicate_output_paths_before_writing() {
+    let root = temp_repo_dir("special-cli-docs-duplicate-config-output");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("special.toml"),
+        "version = \"1\"\nroot = \".\"\n\n[[docs.outputs]]\nsource = \"docs/a.md\"\noutput = \"README.md\"\n\n[[docs.outputs]]\nsource = \"docs/b.md\"\noutput = \"README.md\"\n",
+    )
+    .expect("special.toml should be written");
+    fs::create_dir_all(root.join("docs")).expect("docs dir should be created");
+    fs::write(
+        root.join("docs/a.md"),
+        "First [CSV](special://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("first docs source should be written");
+    fs::write(
+        root.join("docs/b.md"),
+        "Second [CSV](special://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("second docs source should be written");
+
+    let output = run_special(&root, &["docs", "--output"]);
+
+    assert!(!output.status.success());
+    assert!(
+        !root.join("README.md").exists(),
+        "configured materialization should not partially write duplicate output plans"
+    );
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("maps multiple inputs"));
+}
+
+#[test]
 // @verifies SPECIAL.DOCS_COMMAND
 fn docs_validate_prints_relationship_dump() {
     let root = temp_repo_dir("special-cli-docs-dump");

@@ -164,6 +164,33 @@ pub(crate) fn materialize_path(
     input: &Path,
     output: &Path,
 ) -> Result<LintReport> {
+    materialize_paths(
+        root,
+        ignore_patterns,
+        version,
+        &[(input.to_path_buf(), output.to_path_buf())],
+    )
+}
+
+pub(crate) fn materialize_paths(
+    root: &Path,
+    ignore_patterns: &[String],
+    version: SpecialVersion,
+    mappings: &[(PathBuf, PathBuf)],
+) -> Result<LintReport> {
+    let mut plan = Vec::new();
+    for (input, output) in mappings {
+        expand_materialize_mapping(input, output, &mut plan)?;
+    }
+    validate_materialize_plan(&plan)?;
+    materialize_files(root, ignore_patterns, version, &plan)
+}
+
+fn expand_materialize_mapping(
+    input: &Path,
+    output: &Path,
+    plan: &mut Vec<(PathBuf, PathBuf)>,
+) -> Result<()> {
     ensure_distinct_paths(
         input,
         output,
@@ -173,7 +200,6 @@ pub(crate) fn materialize_path(
         if path_is_inside(output, input) {
             bail!("docs output directory must not be inside the input directory");
         }
-        let mut plan = Vec::new();
         for entry in WalkBuilder::new(input).hidden(false).build() {
             let entry = entry?;
             let path = entry.path();
@@ -185,17 +211,10 @@ pub(crate) fn materialize_path(
                 .with_context(|| format!("building relative path for {}", path.display()))?;
             plan.push((path.to_path_buf(), output.join(relative)));
         }
-        validate_materialize_plan(&plan)?;
-        materialize_files(root, ignore_patterns, version, &plan)
     } else {
-        validate_materialize_plan(&[(input.to_path_buf(), output.to_path_buf())])?;
-        materialize_files(
-            root,
-            ignore_patterns,
-            version,
-            &[(input.to_path_buf(), output.to_path_buf())],
-        )
+        plan.push((input.to_path_buf(), output.to_path_buf()));
     }
+    Ok(())
 }
 
 fn materialize_files(

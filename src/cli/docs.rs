@@ -13,7 +13,7 @@ use super::common::{report_cache_stats, resolve_cli_paths};
 use super::status::{CommandStatus, StatusStep};
 use crate::cache::{reset_cache_stats, with_cache_status_notifier};
 use crate::config::{DocsOutputConfig, resolve_project_root};
-use crate::docs::{build_docs_document, materialize_path, render_docs_text};
+use crate::docs::{build_docs_document, materialize_path, materialize_paths, render_docs_text};
 use crate::model::LintReport;
 use crate::render::render_lint_text;
 
@@ -142,22 +142,16 @@ fn materialize_configured_outputs(
         bail!("special docs --output requires at least one [[docs.outputs]] entry in special.toml");
     }
 
-    let mut diagnostics = Vec::new();
-    for output in outputs {
-        let report = materialize_path(
-            root,
-            ignore_patterns,
-            version,
-            &configured_docs_path(root, &output.source),
-            &configured_docs_path(root, &output.output),
-        )?;
-        let has_errors = report.has_errors();
-        diagnostics.extend(report.diagnostics);
-        if has_errors {
-            break;
-        }
-    }
-    Ok(LintReport { diagnostics })
+    let mappings = outputs
+        .iter()
+        .map(|output| {
+            (
+                configured_docs_path(root, &output.source),
+                configured_docs_path(root, &output.output),
+            )
+        })
+        .collect::<Vec<_>>();
+    materialize_paths(root, ignore_patterns, version, &mappings)
 }
 
 fn configured_docs_path(root: &Path, path: &Path) -> PathBuf {
