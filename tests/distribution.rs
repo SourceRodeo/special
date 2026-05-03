@@ -59,6 +59,9 @@ special keeps its Homebrew formula at `Formula/special.rb` in sourcerodeo/homebr
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.PLATFORM_SELECTION
 special selects its platform-specific Homebrew archive URL and checksum with Homebrew's standard `on_system_conditional` and `on_arch_conditional` helpers.
 
+@spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK
+special release validation reads the published Homebrew tap formula and verifies its version, templated release URL, platform archive selectors, release asset digests, and selector checksum pairing against the GitHub release assets.
+
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
 @planned org-transfer
 special installs the `special` binary from sourcerodeo/homebrew-tap.
@@ -653,6 +656,7 @@ fn homebrew_formula_uses_standard_platform_selection_helpers() {
 }
 
 #[test]
+// @verifies SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK
 fn homebrew_formula_verifier_requires_release_asset_digests() {
     let version = current_package_version();
     let release_json = valid_release_assets_json(|assets| {
@@ -673,6 +677,7 @@ fn homebrew_formula_verifier_requires_release_asset_digests() {
 }
 
 #[test]
+// @verifies SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK
 fn homebrew_formula_verifier_checks_selector_checksum_pairing() {
     let version = current_package_version();
     let release_json = valid_release_assets_json(|_| {});
