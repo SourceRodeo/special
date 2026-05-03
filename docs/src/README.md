@@ -1,9 +1,11 @@
+@filedocuments module SPECIAL
+@filedocuments spec SPECIAL.DOCS_COMMAND.MATERIALIZE
 # special
 
-Repo-native contracts, architecture ownership, adopted patterns, and traceability
+[Repo-native contracts, architecture ownership, adopted patterns, and traceability](special://module/SPECIAL)
 for codebases maintained by humans and agents.
 
-`special` reads lightweight annotations from normal source files and markdown,
+`special` reads [lightweight annotations from normal source files and markdown](special://spec/SPECIAL.PARSE),
 then turns them into inspectable views: what the repo claims, what supports those
 claims, which code owns which architecture boundary, which implementation
 patterns are intentional, and which code is still hard to explain.
@@ -12,7 +14,7 @@ patterns are intentional, and which code is still hard to explain.
 
 ## Install
 
-Homebrew is the primary install path:
+[Homebrew is the primary install path](special://spec/SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL):
 
 ```sh
 brew install sourcerodeo/homebrew-tap/special
@@ -24,7 +26,7 @@ Cargo is the secondary install path:
 cargo install special-cli
 ```
 
-Both install the `special` binary. Release archives and checksums are published
+Both install the [`special` binary](special://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME). Release archives and checksums are published
 through GitHub Releases for `sourcerodeo/special`.
 
 ## Quick Start
@@ -86,15 +88,15 @@ index that keeps claims, evidence, and implementation boundaries connected.
 
 | Command | Use it to |
 | --- | --- |
-| `special` | See a compact repo overview and suggested next commands. |
-| `special specs` | Inspect current, planned, deprecated, and unsupported product claims. |
-| `special arch` | Inspect architecture declarations and implementation ownership. |
-| `special patterns` | Inspect adopted implementation patterns and their source applications. |
-| `special health` | Inspect repo-wide quality and traceability signals. |
-| `special docs` | Validate or materialize docs relationships. |
-| `special lint` | Check annotation and reference structure. |
+| `special` | [See a compact repo overview and suggested next commands](special://spec/SPECIAL.HELP.ROOT_OVERVIEW). |
+| `special specs` | [Inspect current, planned, deprecated, and unsupported product claims](special://spec/SPECIAL.SPEC_COMMAND). |
+| `special arch` | [Inspect architecture declarations and implementation ownership](special://spec/SPECIAL.MODULE_COMMAND). |
+| `special patterns` | [Inspect adopted implementation patterns and their source applications](special://spec/SPECIAL.PATTERNS.COMMAND). |
+| `special health` | [Inspect repo-wide quality and traceability signals](special://spec/SPECIAL.HEALTH_COMMAND). |
+| `special docs` | [Validate or materialize docs relationships](special://spec/SPECIAL.DOCS_COMMAND). |
+| `special lint` | [Check annotation and reference structure](special://spec/SPECIAL.LINT_COMMAND). |
 | `special init` | Add a starter `special.toml`. |
-| `special skills` | Print or install bundled workflow skills. |
+| `special skills` | [Print or install bundled workflow skills](special://spec/SPECIAL.SKILLS.COMMAND.HELP). |
 
 Common command shapes:
 
@@ -186,7 +188,7 @@ special specs --unverified
 special specs EXPORT.CSV.HEADERS --verbose
 ```
 
-`special specs --unverified` surfaces current claims with no direct verification
+[`special specs --unverified` surfaces current claims with no direct verification](special://spec/SPECIAL.SPEC_COMMAND.UNVERIFIED)
 or attestation. `special specs ID --verbose` shows the attached body so a reviewer
 can judge whether the support really proves the claim.
 
@@ -248,7 +250,7 @@ special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
 special patterns --metrics --target src/cache.rs
 ```
 
-Pattern metrics are advisory. They help find possible missing applications,
+Pattern metrics are advisory. They help find [possible missing applications](special://spec/SPECIAL.PATTERNS.METRICS.MISSING_APPLICATIONS),
 possible new pattern clusters, and implementations that may be similar enough to
 be a helper rather than a named pattern.
 
@@ -368,7 +370,7 @@ special skills install
 special skills install ship-product-change
 ```
 
-`special skills install` writes task-shaped skills
+[`special skills install` writes task-shaped skills](special://spec/SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND)
 into `.agents/skills/` or
 another selected destination for:
 

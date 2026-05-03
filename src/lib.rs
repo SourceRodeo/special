@@ -8,6 +8,7 @@ mod cache;
 mod cli;
 mod config;
 mod discovery;
+mod docs;
 mod extractor;
 mod id_path;
 mod index;

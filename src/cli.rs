@@ -41,6 +41,7 @@ use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 
 mod common;
+mod docs;
 mod init;
 mod modules;
 mod overview;
@@ -50,6 +51,7 @@ mod skills;
 mod spec;
 mod status;
 
+use self::docs::{DocsArgs, execute_docs};
 use self::init::execute_init;
 use self::modules::{ModulesArgs, execute_modules};
 use self::overview::{OverviewArgs, execute_overview};
@@ -63,7 +65,7 @@ use self::spec::{SpecArgs, execute_lint, execute_spec};
     name = "special",
     bin_name = "special",
     about = "Repo-native spec and skill tool. Run with no subcommand for a compact health overview.",
-    after_help = "Examples:\n  special\n  special specs\n  special specs --metrics\n  special specs APP.CONFIG --verbose\n  special arch\n  special arch --metrics\n  special arch APP.PARSER --verbose\n  special patterns\n  special patterns APP.CACHE_FILL\n  special patterns --metrics\n  special patterns --metrics --target src/foo.rs\n  special health\n  special health --target src/foo.rs\n  special health --target src/foo.rs --symbol bar\n  special health --metrics\n  special lint\n  special init\n  special skills\n  special skills ship-product-change\n  special skills install\n  special skills install define-product-specs",
+    after_help = "Examples:\n  special\n  special specs\n  special specs --metrics\n  special specs APP.CONFIG --verbose\n  special arch\n  special arch --metrics\n  special arch APP.PARSER --verbose\n  special patterns\n  special patterns APP.CACHE_FILL\n  special patterns --metrics\n  special patterns --metrics --target src/foo.rs\n  special health\n  special health --target src/foo.rs\n  special health --target src/foo.rs --symbol bar\n  special health --metrics\n  special docs\n  special docs --target docs/src --output docs/dist\n  special lint\n  special init\n  special skills\n  special skills ship-product-change\n  special skills install\n  special skills install define-product-specs",
     args_conflicts_with_subcommands = true,
     disable_help_subcommand = true
 )]
@@ -85,6 +87,8 @@ enum Command {
     Patterns(PatternsArgs),
     #[command(name = "health", about = "Inspect code health and traceability")]
     Health(HealthArgs),
+    #[command(name = "docs", about = "Validate or materialize docs relationships")]
+    Docs(DocsArgs),
     #[command(about = "Check annotations and references for structural problems")]
     Lint,
     #[command(about = "Create a starter special.toml in the current directory")]
@@ -129,6 +133,7 @@ fn execute(cli: Cli) -> Result<ExitCode> {
         Some(Command::Modules(args)) => execute_modules(args, &current_dir),
         Some(Command::Patterns(args)) => execute_patterns(args, &current_dir),
         Some(Command::Health(args)) => execute_health(args, &current_dir),
+        Some(Command::Docs(args)) => execute_docs(args, &current_dir),
         Some(Command::Skills(args)) => execute_skills(args, &current_dir),
         Some(Command::Specs(args)) => execute_spec(args, &current_dir),
         Some(Command::Lint) => execute_lint(&current_dir),

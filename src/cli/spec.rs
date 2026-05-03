@@ -94,6 +94,7 @@ use super::common::report_cache_stats;
 use super::status::{CommandStatus, StatusStep};
 use crate::cache::{reset_cache_stats, with_cache_status_notifier};
 use crate::config::{RootResolution, RootSource, resolve_project_root};
+use crate::docs::build_docs_lint_report;
 use crate::index::{build_lint_report, build_spec_document};
 use crate::model::{DeclaredStateFilter, Diagnostic, DiagnosticSeverity, LintReport, SpecFilter};
 use crate::modules::build_module_lint_report;
@@ -249,6 +250,12 @@ pub(super) fn execute_lint(current_dir: &Path) -> Result<ExitCode> {
     report.diagnostics.extend(
         with_cache_status_notifier(status.notifier(), || {
             build_module_lint_report(&root, &resolution.ignore_patterns)
+        })?
+        .diagnostics,
+    );
+    report.diagnostics.extend(
+        with_cache_status_notifier(status.notifier(), || {
+            build_docs_lint_report(&root, &resolution.ignore_patterns, resolution.version)
         })?
         .diagnostics,
     );
