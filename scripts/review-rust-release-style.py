@@ -12,6 +12,7 @@ sys.dont_write_bytecode = True
 
 import argparse
 import concurrent.futures
+import datetime as dt
 import json
 import os
 from pathlib import Path
@@ -48,6 +49,12 @@ from release_tooling import package_version
 
 
 SCHEMA_PATH = Path(__file__).with_name("rust-release-review.schema.json")
+EXPENSIVE_REVIEW_NOTE = (
+    "EXPENSIVE REVIEW PRESERVATION: output is written to disk as chunks complete. "
+    "Do not rerun to recover terminal output; inspect the JSON file instead. "
+    "When launched from Codex, run this script with sandbox escalation because nested codex exec "
+    "sessions must access Codex state outside the project sandbox."
+)
 
 
 def repo_root() -> Path:
@@ -86,6 +93,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print the assembled review payload as JSON instead of invoking Codex.",
     )
+    parser.add_argument(
+        "--output",
+        help=(
+            "Write merged review JSON to this path. Full scans and smart-model reviews "
+            "default to _project/release/reviews when this is omitted."
+        ),
+    )
     parser.add_argument("--allow-mock", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args()
 
@@ -105,6 +119,42 @@ def selected_model(args: argparse.Namespace) -> tuple[str, str]:
     return ("default", DEFAULT_MODEL)
 
 
+def status(message: str) -> None:
+    print(f"[rust-release-review] {message}", file=sys.stderr, flush=True)
+
+
+def is_expensive_review(args: argparse.Namespace, review_mode: str, model: str) -> bool:
+    return args.full or review_mode == "smart" or model == SMART_MODEL
+
+
+def default_output_path(root: Path, review_mode: str, full_scan: bool) -> Path:
+    timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
+    scope = "full" if full_scan else "diff"
+    return (
+        root
+        / "_project"
+        / "release"
+        / "reviews"
+        / f"rust-release-review-{scope}-{review_mode}-{timestamp}.json"
+    )
+
+
+def resolve_output_path(
+    args: argparse.Namespace, root: Path, review_mode: str, model: str
+) -> Path | None:
+    if args.dry_run:
+        return None
+    if args.output:
+        return Path(args.output)
+    if is_expensive_review(args, review_mode, model):
+        return default_output_path(root, review_mode, args.full)
+    return None
+
+
+def flush_status(output_path: Path | None) -> str:
+    return "partial output flushed" if output_path else "no output file configured"
+
+
 def has_jj_root(root: Path) -> bool:
     return root.joinpath(".jj").exists() and command_exists("jj")
 
@@ -119,6 +169,30 @@ def load_version(root: Path) -> str:
 
 def validate_response_shape(response: dict) -> dict:
     return validate_review_payload(response, subject="review response")
+
+
+def write_merged_review(
+    output_path: Path | None,
+    base: str | None,
+    full_scan: bool,
+    responses: list[tuple[str, int, dict]],
+    runner_warnings: list[str],
+    completed_chunks: int,
+    total_chunks: int,
+    complete: bool,
+) -> dict:
+    payload = merge_pass_responses(base, full_scan, responses, runner_warnings)
+    output_payload = {
+        **payload,
+        "complete": complete,
+        "completed_chunks": completed_chunks,
+        "total_chunks": total_chunks,
+        "runner_warnings": runner_warnings,
+    }
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(output_payload, indent=2) + "\n", encoding="utf-8")
+    return output_payload
 
 
 def main() -> int:
@@ -149,6 +223,15 @@ def main() -> int:
         raise SystemExit("repository root must contain .jj or .git")
 
     review_mode, model = selected_model(args)
+    output_path = resolve_output_path(args, root, review_mode, model)
+    if not args.dry_run:
+        if output_path:
+            status(EXPENSIVE_REVIEW_NOTE)
+            status(f"model: {model} ({review_mode}); output: {output_path}")
+        else:
+            status(
+                "stdout-only diff review. Use --output for durable capture before running any expensive review."
+            )
     version = load_version(root)
     head = args.head or ("@" if backend == "jj" else "HEAD")
     base = None if args.full else (args.base or discover_latest_semver_tag(root, backend, head))
@@ -230,14 +313,34 @@ def main() -> int:
         )
 
     if not chunk_records:
-        payload = merge_pass_responses(base, args.full, [], runner_warnings)
+        payload = write_merged_review(output_path, base, args.full, [], runner_warnings, 0, 0, True)
         for warning in runner_warnings:
             print(warning, file=sys.stderr)
-        print(json.dumps(payload, indent=2))
+        if output_path:
+            print(payload["summary"])
+            print(f"Wrote review JSON to {output_path}")
+        else:
+            print(json.dumps(merge_pass_responses(base, args.full, [], runner_warnings), indent=2))
         return 1 if runner_warnings else 0
 
     responses: list[tuple[str, int, dict]] = []
     max_workers = min(len(chunk_records), MAX_CONCURRENT_REVIEW_CHUNKS)
+    completed_chunks = 0
+    total_chunks = len(chunk_records)
+
+    status(
+        f"planned {total_chunks} review chunk(s) across {len(review_files)} file(s); max workers: {max_workers or 1}"
+    )
+    write_merged_review(
+        output_path,
+        base,
+        args.full,
+        responses,
+        runner_warnings,
+        completed_chunks,
+        total_chunks,
+        False,
+    )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers or 1) as executor:
         future_to_chunk = {
@@ -260,19 +363,79 @@ def main() -> int:
                 runner_warnings.append(
                     f"review chunk {chunk['name']}#{chunk['chunk_index']} failed: {error}"
                 )
+                completed_chunks += 1
+                status(
+                    f"failed {chunk['name']}#{chunk['chunk_index']}/{chunk['chunk_count']} "
+                    f"({completed_chunks}/{total_chunks} chunk(s) completed); {flush_status(output_path)}"
+                )
+                write_merged_review(
+                    output_path,
+                    base,
+                    args.full,
+                    responses,
+                    runner_warnings,
+                    completed_chunks,
+                    total_chunks,
+                    False,
+                )
                 continue
             except Exception as error:
                 runner_warnings.append(
                     f"review chunk {chunk['name']}#{chunk['chunk_index']} crashed: {error}"
                 )
+                completed_chunks += 1
+                status(
+                    f"failed {chunk['name']}#{chunk['chunk_index']}/{chunk['chunk_count']} "
+                    f"({completed_chunks}/{total_chunks} chunk(s) completed); {flush_status(output_path)}"
+                )
+                write_merged_review(
+                    output_path,
+                    base,
+                    args.full,
+                    responses,
+                    runner_warnings,
+                    completed_chunks,
+                    total_chunks,
+                    False,
+                )
                 continue
             responses.append((str(chunk["name"]), int(chunk["chunk_index"]), response))
+            completed_chunks += 1
+            warning_count = len(response.get("warnings", []))
+            status(
+                f"completed {chunk['name']}#{chunk['chunk_index']}/{chunk['chunk_count']} "
+                f"with {warning_count} warning(s) "
+                f"({completed_chunks}/{total_chunks} chunk(s) completed); {flush_status(output_path)}"
+            )
+            write_merged_review(
+                output_path,
+                base,
+                args.full,
+                responses,
+                runner_warnings,
+                completed_chunks,
+                total_chunks,
+                False,
+            )
 
     responses.sort(key=lambda item: (item[0], item[1]))
-    payload = merge_pass_responses(base, args.full, responses, runner_warnings)
+    payload = write_merged_review(
+        output_path,
+        base,
+        args.full,
+        responses,
+        runner_warnings,
+        completed_chunks,
+        total_chunks,
+        True,
+    )
     for warning in runner_warnings:
         print(warning, file=sys.stderr)
-    print(json.dumps(payload, indent=2))
+    if output_path:
+        print(payload["summary"])
+        print(f"Wrote review JSON to {output_path}")
+    else:
+        print(json.dumps(merge_pass_responses(base, args.full, responses, runner_warnings), indent=2))
     mock_exit_code = os.environ.get("SPECIAL_RUST_RELEASE_REVIEW_MOCK_EXIT_CODE")
     if mock_exit_code is not None and os.environ.get(MOCK_ALLOW_ENV) == "1":
         return int(mock_exit_code)

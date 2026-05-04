@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0 - 2026-05-03
+
+- Added the SourceRodeo Codex plugin source under `codex-plugin/special/`,
+  including plugin metadata, workflow/setup skills, and MCP configuration for
+  the native `special mcp` server.
+- Added `special mcp` as a controlled stdio MCP server for agent access to
+  status, overview, specs, architecture, patterns, docs validation/output, lint,
+  and health surfaces.
+- Added docs relationship annotations and `special docs --output` so authored
+  markdown can carry Special evidence links while public README and docs output
+  stay scrubbed.
+- Rebuilt the README and expanded public CLI docs around TypeScript-first
+  examples, SourceRodeo install paths, docs output, and agent/plugin setup.
+- Switched parser mechanics to the sibling `parse-source-annotations` source
+  dependency layout used for local development and release builds.
+- Hardened prerelease review and distribution checks around plugin version
+  awareness, skill-template drift, Homebrew formula metadata, and durable local
+  release-review output.
+
 ## 0.8.0 - 2026-04-27
 
 - Added first-class project patterns with `@pattern`, `@applies`, and

@@ -56,6 +56,9 @@ release review emits runner warnings when it must skip or degrade chunk context.
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.WARN_ONLY
 release review reports findings as warnings rather than failing the wrapper on model findings alone.
 
+@spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.DURABLE_OUTPUT
+release review can write merged review JSON to disk, defaults expensive runs to `_project/release/reviews`, and refreshes that JSON as chunks complete.
+
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.LOCAL_ONLY
 release review runs locally and does not publish findings to external services.
 
@@ -816,11 +819,14 @@ index 1111111..2222222 100644
 #[test]
 // @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.WARN_ONLY
 fn release_review_exits_successfully_when_codex_returns_warnings() {
+    let output_path = unique_review_temp_repo("warn-only-output").join("review.json");
     let mut command = python3_command();
     command
         .arg("scripts/review-rust-release-style.py")
         .arg("--allow-mock")
         .arg("--full")
+        .arg("--output")
+        .arg(&output_path)
         .current_dir(support::repo_root())
         .env("SPECIAL_RUST_RELEASE_REVIEW_ALLOW_MOCK", "1")
         .env(
@@ -859,13 +865,102 @@ fn release_review_exits_successfully_when_codex_returns_warnings() {
         String::from_utf8_lossy(&output.stderr)
     );
 
-    let response: Value =
-        serde_json::from_slice(&output.stdout).expect("script should print mocked json");
+    let response: Value = serde_json::from_str(
+        &fs::read_to_string(&output_path).expect("review output file should be written"),
+    )
+    .expect("script should write mocked json");
     assert_eq!(response["warnings"].as_array().unwrap().len(), 1);
     assert!(
-        response.get("runner_warnings").is_none(),
-        "runner warnings should stay local wrapper metadata"
+        response["runner_warnings"]
+            .as_array()
+            .expect("runner warnings should be present in durable output")
+            .is_empty()
     );
+    assert_eq!(response["complete"], true);
+    assert_eq!(response["completed_chunks"], response["total_chunks"]);
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("Wrote review JSON to"),
+        "stdout:\n{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    let _ = fs::remove_dir_all(output_path.parent().unwrap());
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.DURABLE_OUTPUT
+fn release_review_writes_progressive_output_and_status() {
+    let output_path = unique_review_temp_repo("durable-review-output").join("review.json");
+    let output = python3_command()
+        .arg("scripts/review-rust-release-style.py")
+        .arg("--allow-mock")
+        .arg("--full")
+        .arg("--output")
+        .arg(&output_path)
+        .current_dir(support::repo_root())
+        .env("SPECIAL_RUST_RELEASE_REVIEW_ALLOW_MOCK", "1")
+        .env(
+            "SPECIAL_RUST_RELEASE_REVIEW_MOCK_OUTPUT",
+            r#"{"baseline":null,"full_scan":true,"summary":"clean","warnings":[]}"#,
+        )
+        .output()
+        .expect("release review script should run with mocked output");
+
+    assert!(
+        output.status.success(),
+        "stdout:\n{}\n\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let response: Value = serde_json::from_str(
+        &fs::read_to_string(&output_path).expect("durable output file should be written"),
+    )
+    .expect("durable output should be json");
+    assert_eq!(response["complete"], true);
+    assert_eq!(response["completed_chunks"], response["total_chunks"]);
+    assert!(response["total_chunks"].as_u64().unwrap_or_default() > 0);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("EXPENSIVE REVIEW PRESERVATION"));
+    assert!(stderr.contains("planned"));
+    assert!(stderr.contains("completed"));
+    assert!(stderr.contains("partial output flushed"));
+    let _ = fs::remove_dir_all(output_path.parent().unwrap());
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.DURABLE_OUTPUT
+fn release_review_defaults_expensive_output_under_project() {
+    let output = python3_command()
+        .arg("scripts/review-rust-release-style.py")
+        .arg("--allow-mock")
+        .arg("--full")
+        .current_dir(support::repo_root())
+        .env("SPECIAL_RUST_RELEASE_REVIEW_ALLOW_MOCK", "1")
+        .env(
+            "SPECIAL_RUST_RELEASE_REVIEW_MOCK_OUTPUT",
+            r#"{"baseline":null,"full_scan":true,"summary":"clean","warnings":[]}"#,
+        )
+        .output()
+        .expect("release review script should run with mocked output");
+
+    assert!(
+        output.status.success(),
+        "stdout:\n{}\n\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let output_path = stdout
+        .lines()
+        .find_map(|line| line.strip_prefix("Wrote review JSON to "))
+        .map(PathBuf::from)
+        .expect("stdout should report durable output path");
+    assert!(output_path.starts_with(support::repo_root().join("_project/release/reviews")));
+    let response: Value = serde_json::from_str(
+        &fs::read_to_string(&output_path).expect("default durable output should exist"),
+    )
+    .expect("default durable output should be json");
+    assert_eq!(response["complete"], true);
+    let _ = fs::remove_file(output_path);
 }
 
 #[test]
