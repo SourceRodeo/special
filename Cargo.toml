@@ -21,7 +21,7 @@ globset = "0.4"
 ignore = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-parse-source-annotations = { version = "0.1.0", path = "../crates/parse-source-annotations" }
+parse-source-annotations = { version = "0.1.0", git = "https://github.com/SourceRodeo/crates", package = "parse-source-annotations" }
 syn = { version = "2.0", features = ["full", "visit"] }
 syntect = { version = "5.2", default-features = false, features = ["default-fancy", "html"] }
 tree-sitter = "0.26.8"

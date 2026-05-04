@@ -9,17 +9,17 @@ Homebrew, and Cargo.
 
 ## Source Dependency Layout
 
-Development expects sibling checkouts:
+The parser crate lives in the `SourceRodeo/crates` monorepo:
 
 ```text
-workspace/
-  special/
-  crates/
-    parse-source-annotations/
+crates/
+  parse-source-annotations/
 ```
 
-The `special-cli` crate depends on `../crates/parse-source-annotations`. Release
-jobs recreate that sibling layout before Cargo runs.
+The `special-cli` crate depends on the `parse-source-annotations` package from
+`https://github.com/SourceRodeo/crates`. Cargo resolves that package from the
+monorepo workspace during local development and release builds; Special no
+longer requires a local sibling parser checkout.
 
 ## Release Workflow
 

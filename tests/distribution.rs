@@ -27,13 +27,10 @@ special Codex plugin distribution.
 special release automation declares the `https://github.com/sourcerodeo/special` repository URL.
 
 @spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE
-special consumes `parse-source-annotations` from a sibling source checkout instead of requiring crates.io publication.
+special consumes `parse-source-annotations` from the `SourceRodeo/crates` Git monorepo package instead of requiring crates.io publication or a local sibling checkout.
 
-@spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.LOCAL_OVERRIDE
-special documents the sibling parser checkout layout used by local development and release builds.
-
-@spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PRIVATE_GITHUB_AUTH
-special GitHub release automation clones the parser source dependency with token authentication so private source dependency repositories can be fetched during release builds.
+@spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.NO_LOCAL_CHECKOUT
+special release automation relies on Cargo's Git dependency resolution for the parser crate and does not recreate a local `../crates/parse-source-annotations` checkout.
 
 @spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.WORKFLOW
 special keeps a GitHub Actions release workflow in `.github/workflows/release.yml`.
@@ -499,7 +496,7 @@ fn github_release_repository_url_is_declared() {
 
 #[test]
 // @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE
-fn shared_parser_crate_uses_sibling_source_checkout_dependency() {
+fn shared_parser_crate_uses_github_monorepo_dependency() {
     let package = package_metadata();
     let dependencies = package["dependencies"]
         .as_array()
@@ -508,40 +505,37 @@ fn shared_parser_crate_uses_sibling_source_checkout_dependency() {
         .iter()
         .find(|dependency| dependency["name"].as_str() == Some("parse-source-annotations"))
         .expect("special should depend on parse-source-annotations");
-    assert!(
-        dependency["source"].is_null(),
-        "path dependency should not require crates.io or a Cargo git source"
+    assert_eq!(
+        dependency["source"],
+        "git+https://github.com/SourceRodeo/crates"
     );
 
     let manifest = read_repo_file("Cargo.toml");
     assert!(manifest.contains(
-        "parse-source-annotations = { version = \"0.1.0\", path = \"../crates/parse-source-annotations\" }"
+        "parse-source-annotations = { version = \"0.1.0\", git = \"https://github.com/SourceRodeo/crates\", package = \"parse-source-annotations\" }"
     ));
+    assert!(!manifest.contains("../crates/parse-source-annotations"));
 }
 
 #[test]
-// @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.LOCAL_OVERRIDE
-fn parser_crate_source_layout_is_documented() {
+// @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE
+fn parser_crate_git_monorepo_contract_is_documented() {
     let docs = read_repo_file("docs/release.md");
-    assert!(docs.contains("Development expects sibling checkouts"));
-    assert!(docs.contains("../crates/parse-source-annotations"));
-    assert!(docs.contains("Release"));
-    assert!(docs.contains("jobs recreate"));
-    assert!(docs.contains("sibling layout"));
+    assert!(docs.contains("SourceRodeo/crates"));
+    assert!(docs.contains("parse-source-annotations"));
+    assert!(docs.contains("Cargo resolves that package"));
+    assert!(!docs.contains("../crates/parse-source-annotations"));
 }
 
 #[test]
-// @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PRIVATE_GITHUB_AUTH
-fn release_workflow_clones_private_parser_source_dependency() {
+// @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.NO_LOCAL_CHECKOUT
+fn release_workflow_does_not_clone_parser_source_dependency() {
     let workflow = read_repo_file(".github/workflows/release.yml");
 
-    assert!(workflow.contains("Checkout parser source dependency"));
-    assert!(workflow.contains("SOURCE_DEPENDENCIES_TOKEN"));
-    assert!(workflow.contains("secrets.SOURCE_DEPENDENCIES_TOKEN || secrets.GITHUB_TOKEN"));
-    assert!(workflow.contains("mkdir -p ../crates"));
-    assert!(workflow.contains(
-        "git clone \"https://x-access-token:${SOURCE_DEPENDENCIES_TOKEN}@github.com/sourcerodeo/parse-source-annotations\" ../crates/parse-source-annotations"
-    ));
+    assert!(!workflow.contains("Checkout parser source dependency"));
+    assert!(!workflow.contains("SOURCE_DEPENDENCIES_TOKEN"));
+    assert!(!workflow.contains("../crates/parse-source-annotations"));
+    assert!(!workflow.contains("sourcerodeo/parse-source-annotations"));
 }
 
 #[test]
