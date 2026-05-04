@@ -17,10 +17,10 @@ special.toml `ignore` patterns exclude matching paths from both spec and module 
 special respects `.gitignore` and `.jjignore` by default when discovering spec and module annotations.
 
 @spec SPECIAL.SPEC_COMMAND.MARKDOWN_DECLARATIONS
-special specs materializes `@group` and `@spec` declarations from markdown annotation lines under the project root.
+special specs renders `@group` and `@spec` declarations from markdown annotation lines under the project root.
 
 @spec SPECIAL.MODULE_COMMAND.MARKDOWN_DECLARATIONS
-special arch materializes `@area` and `@module` declarations from markdown annotation lines under the project root.
+special arch renders `@area` and `@module` declarations from markdown annotation lines under the project root.
 
 @spec SPECIAL.SPEC_COMMAND.NO_SPECIAL_SPECS_DIRECTORY
 special specs does not require declarations to live under a special `specs/` directory.
@@ -39,7 +39,7 @@ use support::{find_node_by_id, run_special, temp_repo_dir, write_markdown_declar
 
 #[test]
 // @verifies SPECIAL.SPEC_COMMAND.MARKDOWN_DECLARATIONS
-fn specs_materialize_markdown_declarations() {
+fn specs_render_markdown_declarations() {
     let root = temp_repo_dir("special-cli-discovery-markdown-specs");
     write_markdown_declarations_fixture(&root);
 
@@ -55,7 +55,7 @@ fn specs_materialize_markdown_declarations() {
 
 #[test]
 // @verifies SPECIAL.MODULE_COMMAND.MARKDOWN_DECLARATIONS
-fn modules_materialize_markdown_declarations() {
+fn modules_render_markdown_declarations() {
     let root = temp_repo_dir("special-cli-discovery-markdown-modules");
     write_markdown_declarations_fixture(&root);
 

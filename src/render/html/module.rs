@@ -18,7 +18,7 @@ pub(in crate::render) fn render_module_html(document: &ModuleDocument, verbose: 
     let document = project_module_document(document, verbose);
     if document.nodes.is_empty() {
         return format!(
-            "<!doctype html><html><head><meta charset=\"utf-8\"><title>special arch</title><style>{}</style></head><body><main><h1>special arch</h1><p class=\"lede\">Materialized architecture view for the current repository.</p>{}",
+            "<!doctype html><html><head><meta charset=\"utf-8\"><title>special arch</title><style>{}</style></head><body><main><h1>special arch</h1><p class=\"lede\">Rendered architecture view for the current repository.</p>{}",
             SPEC_HTML_STYLE, MODULES_HTML_EMPTY
         );
     }

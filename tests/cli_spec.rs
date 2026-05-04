@@ -20,7 +20,7 @@ use support::{
 
 #[test]
 // @verifies SPECIAL.SPEC_COMMAND
-fn spec_materializes_declared_spec_tree() {
+fn spec_renders_declared_spec_tree() {
     let root = temp_repo_dir("special-cli-spec");
     write_current_and_planned_fixture(&root);
 

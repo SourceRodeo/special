@@ -12,7 +12,7 @@ mod rust_test_fixtures;
 special health can surface repo-wide quality signals that are not tied to a single architecture module.
 
 @spec SPECIAL.HEALTH_COMMAND
-special health materializes repo-wide quality signals for the current repository.
+special health reports repo-wide quality signals for the current repository.
 
 @spec SPECIAL.HEALTH_COMMAND.JSON
 special health --json emits structured repo-wide quality signals.
@@ -195,7 +195,7 @@ fn top_level_help_presents_repo_command() {
 
 #[test]
 // @verifies SPECIAL.HEALTH_COMMAND
-fn repo_materializes_repo_wide_quality_signals() {
+fn repo_reports_repo_wide_quality_signals() {
     let root = temp_repo_dir("special-cli-repo");
     write_duplicate_item_signals_module_analysis_fixture(&root);
 

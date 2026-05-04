@@ -17,7 +17,7 @@ pub(in crate::render) fn render_spec_html(document: &SpecDocument, verbose: bool
     let document = project_document(document, verbose);
     if document.nodes.is_empty() && document.metrics.is_none() {
         return format!(
-            "<!doctype html><html><head><meta charset=\"utf-8\"><title>special specs</title><style>{}</style></head><body><main><h1>special specs</h1><p class=\"lede\">Materialized spec view for the current repository.</p>{}",
+            "<!doctype html><html><head><meta charset=\"utf-8\"><title>special specs</title><style>{}</style></head><body><main><h1>special specs</h1><p class=\"lede\">Rendered spec view for the current repository.</p>{}",
             SPEC_HTML_STYLE, SPEC_HTML_EMPTY
         );
     }

@@ -286,7 +286,7 @@ fn lint_reports_duplicate_item_scoped_implements() {
 
 #[test]
 // @verifies SPECIAL.MODULE_COMMAND.AREA_NODES
-fn modules_materialize_area_nodes() {
+fn modules_parse_area_nodes() {
     let root = temp_repo_dir("special-cli-modules-area-nodes");
     write_area_modules_fixture(&root);
 

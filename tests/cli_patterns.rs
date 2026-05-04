@@ -12,7 +12,7 @@ special parses `@pattern ID` as a pattern definition.
 special lint reports duplicate `@pattern ID` definitions.
 
 @spec SPECIAL.PATTERNS.DOT_NESTING
-special patterns materializes dotted pattern ids as a nested tree.
+special patterns renders dotted pattern ids as a nested tree.
 
 @spec SPECIAL.PATTERNS.SOURCE_APPLICATIONS
 when `@applies ID` is attached to a supported source item, special records the item body as a concrete application of that pattern.
@@ -154,7 +154,7 @@ fn patterns_verbose_includes_definition_text_and_application_bodies() {
 
 #[test]
 // @verifies SPECIAL.PATTERNS.MODULE_JOIN
-fn source_application_materializes_owned_module() {
+fn source_application_links_owned_module() {
     let root = temp_repo_dir("special-cli-pattern-applies");
     write_pattern_fixture(&root);
 
@@ -177,7 +177,7 @@ fn source_application_materializes_owned_module() {
 
 #[test]
 // @verifies SPECIAL.PATTERNS.FILE_APPLICATIONS
-fn file_application_materializes_owned_module_without_item_body() {
+fn file_application_links_owned_module_without_item_body() {
     let root = temp_repo_dir("special-cli-pattern-no-implicit-applies");
     write_pattern_fixture_with_fileapplies(&root);
 

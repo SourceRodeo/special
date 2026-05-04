@@ -89,7 +89,7 @@ mod tests {
                 SpecDecl::new(
                     "SPECIAL.SPEC_COMMAND".to_string(),
                     NodeKind::Spec,
-                    "special specs materializes the declared spec view.".to_string(),
+                    "special specs renders the declared spec view.".to_string(),
                     PlanState::current(),
                     false,
                     None,
