@@ -54,7 +54,7 @@ special health --target PATH --symbol NAME narrows the health view to items in t
 special health surfaces built-in TypeScript implementation traceability for analyzable TypeScript source items.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.INLINE_TEST_CALLBACKS
-special health treats calls from inline `it` and `test` verifier callbacks as support roots when `@verifies` attaches to those callbacks.
+special health treats calls from inline `it` and `test` verifier callbacks as support roots when `@verifies` attaches to those callbacks, including member and parameterized test-runner forms.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.TOOL_EDGES
 special health combines parser and TypeScript compiler edges so import-alias calls can trace to the correct owned implementation item.
@@ -1098,6 +1098,7 @@ fn repo_surfaces_typescript_inline_test_callback_traceability() {
             .collect::<Vec<_>>();
         for name in [
             "waitForProxyDaemonShutdown",
+            "waitForParameterizedProxyDaemonShutdown",
             "cleanupState",
             "finish",
             "closeServer",
@@ -1115,6 +1116,7 @@ fn repo_surfaces_typescript_inline_test_callback_traceability() {
             .expect("unsupported items should be an array");
         for name in [
             "waitForProxyDaemonShutdown",
+            "waitForParameterizedProxyDaemonShutdown",
             "cleanupState",
             "finish",
             "closeServer",

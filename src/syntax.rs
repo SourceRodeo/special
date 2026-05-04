@@ -477,6 +477,14 @@ it("covers live behavior", async () => {
 test.only("covers alternate behavior", () => {
     liveImpl();
 });
+
+test.each([["first"]])("covers %s behavior", () => {
+    liveImpl();
+});
+
+it.concurrent.each([["second"]])("covers %s behavior", async () => {
+    await liveImpl();
+});
 "#,
         )
         .expect("typescript graph should parse");
@@ -486,7 +494,7 @@ test.only("covers alternate behavior", () => {
             .iter()
             .filter(|item| item.is_test)
             .collect::<Vec<_>>();
-        assert_eq!(test_roots.len(), 2);
+        assert_eq!(test_roots.len(), 4);
         assert!(test_roots.iter().any(|item| {
             item.name == "it"
                 && item.span.start_line == 4
@@ -497,5 +505,31 @@ test.only("covers alternate behavior", () => {
                 && item.span.start_line == 8
                 && item.calls.iter().any(|call| call.name == "liveImpl")
         }));
+        assert!(test_roots.iter().any(|item| {
+            item.name == "test.each"
+                && item.span.start_line == 12
+                && item.calls.iter().any(|call| call.name == "liveImpl")
+        }));
+        assert!(test_roots.iter().any(|item| {
+            item.name == "it.concurrent.each"
+                && item.span.start_line == 16
+                && item.calls.iter().any(|call| call.name == "liveImpl")
+        }));
+    }
+
+    #[test]
+    fn typescript_provider_does_not_collect_test_callbacks_outside_test_files() {
+        let graph = parse_source_graph_for_language_at_path(
+            SourceLanguage::new("typescript"),
+            Path::new("src/example.ts"),
+            r#"
+it("ordinary source should not become a test root", () => {
+    liveImpl();
+});
+"#,
+        )
+        .expect("typescript graph should parse");
+
+        assert!(graph.items.is_empty());
     }
 }

@@ -50,12 +50,12 @@ pub fn write_typescript_inline_test_callback_traceability_fixture(root: &Path) {
     write_file(
         root,
         "src/app.ts",
-        "// @fileimplements APP\nexport function waitForProxyDaemonShutdown() {\n    cleanupState();\n    closeServer();\n    finishFromClose();\n    finishFromError();\n}\n\nfunction cleanupState() {\n    finish();\n}\n\nfunction finish() {\n    return undefined;\n}\n\nfunction closeServer() {\n    finish();\n}\n\nfunction finishFromClose() {\n    finish();\n}\n\nfunction finishFromError() {\n    finish();\n}\n\nexport function orphanImpl() {\n    return 1;\n}\n",
+        "// @fileimplements APP\nexport function waitForProxyDaemonShutdown() {\n    cleanupState();\n    closeServer();\n    finishFromClose();\n    finishFromError();\n}\n\nexport function waitForParameterizedProxyDaemonShutdown() {\n    finish();\n}\n\nfunction cleanupState() {\n    finish();\n}\n\nfunction finish() {\n    return undefined;\n}\n\nfunction closeServer() {\n    finish();\n}\n\nfunction finishFromClose() {\n    finish();\n}\n\nfunction finishFromError() {\n    finish();\n}\n\nexport function orphanImpl() {\n    return 1;\n}\n",
     );
     write_file(
         root,
         "src/app.test.ts",
-        "import { describe, it } from \"vitest\";\nimport { waitForProxyDaemonShutdown } from \"./app\";\n\ndescribe(\"daemon cleanup\", () => {\n    // @verifies APP.DAEMON_CLEANUP\n    it(\"cleans up from an inline callback\", async () => {\n        await waitForProxyDaemonShutdown();\n    });\n});\n",
+        "import { describe, it, test } from \"vitest\";\nimport { waitForParameterizedProxyDaemonShutdown, waitForProxyDaemonShutdown } from \"./app\";\n\ndescribe(\"daemon cleanup\", () => {\n    // @verifies APP.DAEMON_CLEANUP\n    it(\"cleans up from an inline callback\", async () => {\n        await waitForProxyDaemonShutdown();\n    });\n\n    // @verifies APP.DAEMON_CLEANUP\n    test.each([[\"parameterized\"]])(\"cleans up from a %s callback\", async () => {\n        await waitForParameterizedProxyDaemonShutdown();\n    });\n});\n",
     );
 }
 

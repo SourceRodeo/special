@@ -164,6 +164,10 @@ fn parse_function_variable(
 }
 
 fn parse_test_callback_call(path: &Path, node: Node<'_>, source: &[u8]) -> Option<SourceItem> {
+    if !is_typescript_test_item(path) {
+        return None;
+    }
+
     let callee = node.child_by_field_name("function")?;
     let name = test_callback_name(callee, source)?;
     let callback = test_callback_argument(node.child_by_field_name("arguments")?)?;
@@ -188,16 +192,17 @@ fn test_callback_name(callee: Node<'_>, source: &[u8]) -> Option<String> {
             is_test_callback_root(name).then(|| name.to_string())
         }
         "member_expression" => {
-            let object = callee
-                .child_by_field_name("object")?
-                .utf8_text(source)
-                .ok()?;
+            let object = test_callback_name(callee.child_by_field_name("object")?, source)?;
             let property = callee
                 .child_by_field_name("property")?
                 .utf8_text(source)
                 .ok()?
                 .trim_matches('"');
-            is_test_callback_root(object).then(|| format!("{object}.{property}"))
+            Some(format!("{object}.{property}"))
+        }
+        "call_expression" => {
+            let function = callee.child_by_field_name("function")?;
+            test_callback_name(function, source)
         }
         _ => None,
     }

@@ -209,7 +209,11 @@ fn expand_output_mapping(
             let relative = path
                 .strip_prefix(input)
                 .with_context(|| format!("building relative path for {}", path.display()))?;
-            plan.push((path.to_path_buf(), output.join(relative)));
+            let output_path = output.join(relative);
+            if path_is_inside(&output_path, input) {
+                bail!("docs output file must not be inside the input directory");
+            }
+            plan.push((path.to_path_buf(), output_path));
         }
     } else {
         plan.push((input.to_path_buf(), output.to_path_buf()));

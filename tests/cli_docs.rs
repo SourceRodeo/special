@@ -128,6 +128,26 @@ fn docs_configured_outputs_reject_duplicate_output_paths_before_writing() {
 }
 
 #[test]
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
+fn docs_directory_output_rejects_expanded_files_inside_input_tree() {
+    let root = temp_repo_dir("special-cli-docs-output-inside-input");
+    write_docs_fixture(&root);
+    fs::create_dir_all(root.join("docs/src/src")).expect("nested source dir should be created");
+    fs::write(root.join("docs/src/src/guide.md"), "plain\n")
+        .expect("nested docs source should be written");
+
+    let output = run_special(&root, &["docs", "--target", "docs/src", "--output", "docs"]);
+
+    assert!(!output.status.success());
+    assert!(
+        !root.join("docs/src/guide.md").exists(),
+        "docs output should not write generated content back into the source tree"
+    );
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("docs output file must not be inside the input directory"));
+}
+
+#[test]
 // @verifies SPECIAL.DOCS_COMMAND
 fn docs_validate_prints_relationship_dump() {
     let root = temp_repo_dir("special-cli-docs-dump");
