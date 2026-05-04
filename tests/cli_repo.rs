@@ -53,6 +53,9 @@ special health --target PATH --symbol NAME narrows the health view to items in t
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT
 special health surfaces built-in TypeScript implementation traceability for analyzable TypeScript source items.
 
+@spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.INLINE_TEST_CALLBACKS
+special health treats calls from inline `it` and `test` verifier callbacks as support roots when `@verifies` attaches to those callbacks.
+
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.TOOL_EDGES
 special health combines parser and TypeScript compiler edges so import-alias calls can trace to the correct owned implementation item.
 
@@ -154,6 +157,7 @@ use typescript_test_fixtures::{
     write_typescript_event_traceability_fixture,
     write_typescript_forwarded_callback_traceability_fixture,
     write_typescript_hook_callback_traceability_fixture,
+    write_typescript_inline_test_callback_traceability_fixture,
     write_typescript_next_traceability_fixture, write_typescript_react_traceability_fixture,
     write_typescript_reference_traceability_fixture, write_typescript_tool_traceability_fixture,
     write_typescript_traceability_fixture,
@@ -1054,6 +1058,75 @@ fn repo_surfaces_typescript_traceability() {
             traceability["unexplained_review_surface_items"],
             Value::from(1)
         );
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.INLINE_TEST_CALLBACKS
+fn repo_surfaces_typescript_inline_test_callback_traceability() {
+    let root = temp_repo_dir("special-cli-repo-traceability-typescript-inline-test");
+    write_typescript_inline_test_callback_traceability_fixture(&root);
+
+    let output = run_special(
+        &root,
+        &[
+            "health",
+            "--target",
+            "src/app.ts",
+            "--metrics",
+            "--verbose",
+            "--json",
+        ],
+    );
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        let current_names = current_items
+            .iter()
+            .filter_map(|item| item["name"].as_str())
+            .collect::<Vec<_>>();
+        for name in [
+            "waitForProxyDaemonShutdown",
+            "cleanupState",
+            "finish",
+            "closeServer",
+            "finishFromClose",
+            "finishFromError",
+        ] {
+            assert!(
+                current_names.contains(&name),
+                "inline Vitest verifier should support {name}"
+            );
+        }
+
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unsupported items should be an array");
+        for name in [
+            "waitForProxyDaemonShutdown",
+            "cleanupState",
+            "finish",
+            "closeServer",
+            "finishFromClose",
+            "finishFromError",
+        ] {
+            assert!(
+                !unexplained.iter().any(|item| item["name"] == name),
+                "inline Vitest verifier should not leave {name} unsupported"
+            );
+        }
+        assert!(unexplained.iter().any(|item| item["name"] == "orphanImpl"));
     } else {
         assert_typescript_traceability_unavailable(&json);
     }

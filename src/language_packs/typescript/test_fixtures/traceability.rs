@@ -39,6 +39,27 @@ pub fn write_typescript_traceability_fixture(root: &Path) {
 }
 
 // @applies TEST_FIXTURE.REPRESENTATIVE_PROJECT
+pub fn write_typescript_inline_test_callback_traceability_fixture(root: &Path) {
+    create_dirs(root, &["_project", "specs", "src"]);
+    write_special_toml(root);
+    write_architecture(root, "# Architecture\n\n### `@module APP`\nApp module.\n");
+    write_specs(
+        root,
+        "### `@group APP`\nApp root.\n\n### `@spec APP.DAEMON_CLEANUP`\nDaemon cleanup is verified from an inline Vitest callback.\n",
+    );
+    write_file(
+        root,
+        "src/app.ts",
+        "// @fileimplements APP\nexport function waitForProxyDaemonShutdown() {\n    cleanupState();\n    closeServer();\n    finishFromClose();\n    finishFromError();\n}\n\nfunction cleanupState() {\n    finish();\n}\n\nfunction finish() {\n    return undefined;\n}\n\nfunction closeServer() {\n    finish();\n}\n\nfunction finishFromClose() {\n    finish();\n}\n\nfunction finishFromError() {\n    finish();\n}\n\nexport function orphanImpl() {\n    return 1;\n}\n",
+    );
+    write_file(
+        root,
+        "src/app.test.ts",
+        "import { describe, it } from \"vitest\";\nimport { waitForProxyDaemonShutdown } from \"./app\";\n\ndescribe(\"daemon cleanup\", () => {\n    // @verifies APP.DAEMON_CLEANUP\n    it(\"cleans up from an inline callback\", async () => {\n        await waitForProxyDaemonShutdown();\n    });\n});\n",
+    );
+}
+
+// @applies TEST_FIXTURE.REPRESENTATIVE_PROJECT
 pub fn write_typescript_tool_traceability_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs", "src"]);
     write_special_toml(root);

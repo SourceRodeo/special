@@ -461,4 +461,41 @@ export const render = () => {
         let render = item_named(&graph, "render");
         assert!(render.public);
     }
+
+    #[test]
+    fn typescript_provider_collects_inline_test_callbacks() {
+        let graph = parse_source_graph_for_language_at_path(
+            SourceLanguage::new("typescript"),
+            Path::new("src/example.test.ts"),
+            r#"
+import { liveImpl } from "./app";
+
+it("covers live behavior", async () => {
+    await liveImpl();
+});
+
+test.only("covers alternate behavior", () => {
+    liveImpl();
+});
+"#,
+        )
+        .expect("typescript graph should parse");
+
+        let test_roots = graph
+            .items
+            .iter()
+            .filter(|item| item.is_test)
+            .collect::<Vec<_>>();
+        assert_eq!(test_roots.len(), 2);
+        assert!(test_roots.iter().any(|item| {
+            item.name == "it"
+                && item.span.start_line == 4
+                && item.calls.iter().any(|call| call.name == "liveImpl")
+        }));
+        assert!(test_roots.iter().any(|item| {
+            item.name == "test.only"
+                && item.span.start_line == 8
+                && item.calls.iter().any(|call| call.name == "liveImpl")
+        }));
+    }
 }

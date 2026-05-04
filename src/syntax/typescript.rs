@@ -70,6 +70,11 @@ fn collect_items(
                 items.push(item);
             }
         }
+        "call_expression" => {
+            if let Some(item) = parse_test_callback_call(path, node, source) {
+                items.push(item);
+            }
+        }
         _ => {}
     }
 
@@ -156,6 +161,57 @@ fn parse_function_variable(
             public: is_exported(node, &name, exported_names),
         },
     ))
+}
+
+fn parse_test_callback_call(path: &Path, node: Node<'_>, source: &[u8]) -> Option<SourceItem> {
+    let callee = node.child_by_field_name("function")?;
+    let name = test_callback_name(callee, source)?;
+    let callback = test_callback_argument(node.child_by_field_name("arguments")?)?;
+    Some(build_item(
+        path,
+        node,
+        source,
+        name,
+        callback,
+        TypeScriptItemMeta {
+            container_path: Vec::new(),
+            kind: SourceItemKind::Function,
+            public: false,
+        },
+    ))
+}
+
+fn test_callback_name(callee: Node<'_>, source: &[u8]) -> Option<String> {
+    match callee.kind() {
+        "identifier" => {
+            let name = callee.utf8_text(source).ok()?;
+            is_test_callback_root(name).then(|| name.to_string())
+        }
+        "member_expression" => {
+            let object = callee
+                .child_by_field_name("object")?
+                .utf8_text(source)
+                .ok()?;
+            let property = callee
+                .child_by_field_name("property")?
+                .utf8_text(source)
+                .ok()?
+                .trim_matches('"');
+            is_test_callback_root(object).then(|| format!("{object}.{property}"))
+        }
+        _ => None,
+    }
+}
+
+fn is_test_callback_root(name: &str) -> bool {
+    matches!(name, "it" | "test")
+}
+
+fn test_callback_argument(arguments: Node<'_>) -> Option<Node<'_>> {
+    let mut cursor = arguments.walk();
+    arguments
+        .named_children(&mut cursor)
+        .find(|child| matches!(child.kind(), "arrow_function" | "function"))
 }
 
 struct TypeScriptItemMeta {
