@@ -398,7 +398,10 @@ pub(crate) fn render_docs_json(document: &DocsDocument) -> Result<String> {
 pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: bool) -> String {
     let metrics = &document.metrics;
     let mut output = String::from("special docs metrics\n");
-    output.push_str(&format!("  total references: {}\n", metrics.total_references));
+    output.push_str(&format!(
+        "  total references: {}\n",
+        metrics.total_references
+    ));
     output.push_str(&format!(
         "    link references: {}\n",
         metrics.link_references
@@ -435,22 +438,22 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
         "  broken local doc links: {}\n",
         metrics.broken_local_doc_links
     ));
-    for issue in metrics.broken_local_doc_link_details.iter().take(if verbose {
-        usize::MAX
-    } else {
-        10
-    }) {
+    for issue in metrics
+        .broken_local_doc_link_details
+        .iter()
+        .take(if verbose { usize::MAX } else { 10 })
+    {
         output.push_str(&format!(
             "    {}:{} -> {}\n",
             issue.source, issue.line, issue.target
         ));
     }
     output.push_str(&format!("  orphan pages: {}\n", metrics.orphan_pages));
-    for path in metrics.orphan_page_paths.iter().take(if verbose {
-        usize::MAX
-    } else {
-        10
-    }) {
+    for path in metrics
+        .orphan_page_paths
+        .iter()
+        .take(if verbose { usize::MAX } else { 10 })
+    {
         output.push_str(&format!("    {path}\n"));
     }
     match (
@@ -653,8 +656,8 @@ fn build_public_docs_graph(
         .filter(|page| incoming.get(*page).copied().unwrap_or_default() == 0)
         .map(|page| display_path(root, page))
         .collect::<Vec<_>>();
-    let reachable_pages_from_entrypoints = (!entrypoints.is_empty())
-        .then(|| reachable_pages(&entrypoint_pages, &local_links).len());
+    let reachable_pages_from_entrypoints =
+        (!entrypoints.is_empty()).then(|| reachable_pages(&entrypoint_pages, &local_links).len());
     let entrypoint_pages_count = (!entrypoints.is_empty()).then_some(entrypoint_pages.len());
 
     Ok(PublicDocsGraph {

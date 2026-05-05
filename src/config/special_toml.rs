@@ -4,6 +4,9 @@ Parses and loads `special.toml` root, version, and shared discovery ignore setti
 
 @spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS
 special.toml accepts `[[docs.outputs]]` entries with `source = "PATH"` and `output = "PATH"` as configured docs output mappings.
+
+@spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_ENTRYPOINTS
+special.toml accepts `[docs] entrypoints = ["PATH"]` as public docs entrypoints for docs reachability metrics.
 */
 // @fileimplements SPECIAL.CONFIG.SPECIAL_TOML
 use std::fs;
@@ -254,7 +257,10 @@ fn parse_docs_entrypoints(raw_entrypoints: Vec<String>, line: usize) -> Result<V
         .into_iter()
         .map(|entrypoint| {
             if entrypoint.trim().is_empty() {
-                bail!("line {} must not contain an empty docs entrypoint path", line);
+                bail!(
+                    "line {} must not contain an empty docs entrypoint path",
+                    line
+                );
             }
             Ok(PathBuf::from(entrypoint))
         })

@@ -27,7 +27,10 @@ use serde_json::{Value, json};
 use super::common::resolve_cli_paths;
 use super::spec::{add_config_lint_warnings, normalize_report};
 use crate::config::{RootResolution, RootSource, SpecialVersion, resolve_project_root};
-use crate::docs::{build_docs_document, render_docs_text, write_docs_path, write_docs_paths};
+use crate::docs::{
+    build_docs_document, build_docs_metrics_document, render_docs_json, render_docs_metrics_json,
+    render_docs_metrics_text, render_docs_text, write_docs_path, write_docs_paths,
+};
 use crate::index::{build_lint_report, build_spec_document};
 use crate::model::{
     DeclaredStateFilter, LintReport, ModuleAnalysisOptions, ModuleFilter, PatternFilter, SpecFilter,
@@ -235,11 +238,19 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_docs",
-            "Validate documentation links and render the docs relationship dump.",
-            object_schema(vec![string_array_property(
-                "target",
-                "Optional docs file or subtree paths to validate.",
-            )]),
+            "Validate documentation links and render the docs relationship dump or docs metrics.",
+            object_schema(vec![
+                string_array_property("target", "Optional docs file or subtree paths to validate."),
+                bool_property(
+                    "metrics",
+                    "Include docs coverage and public docs graph metrics.",
+                ),
+                bool_property(
+                    "verbose",
+                    "Show undocumented target ids and full graph detail.",
+                ),
+                text_or_json_property(),
+            ]),
         ),
         tool(
             "special_docs_output",
@@ -493,16 +504,46 @@ fn patterns_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
 fn docs_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
     let resolution = resolve_project_root(current_dir)?;
     let target_paths = resolve_cli_paths(current_dir, &path_args(arguments, "target")?);
-    let (document, report) = build_docs_document(
-        &resolution.root,
-        &resolution.ignore_patterns,
-        resolution.version,
-        &target_paths,
-    )?;
-    let rendered = if report.has_errors() {
-        render_lint_text(&report)
+    let metrics = bool_arg(arguments, "metrics")?;
+    let format = format(arguments)?;
+    let (rendered, report) = if metrics {
+        let (document, report) = build_docs_metrics_document(
+            &resolution.root,
+            &resolution.ignore_patterns,
+            resolution.version,
+            &target_paths,
+            &resolution.docs_outputs,
+            &resolution.docs_entrypoints,
+        )?;
+        let rendered = if report.has_errors() {
+            render_lint_text(&report)
+        } else {
+            match format {
+                OutputFormat::Text => {
+                    render_docs_metrics_text(&document, bool_arg(arguments, "verbose")?)
+                }
+                OutputFormat::Json => render_docs_metrics_json(&document)?,
+                OutputFormat::Html => bail!("special_docs supports only text or json format"),
+            }
+        };
+        (rendered, report)
     } else {
-        render_docs_text(&resolution.root, &document)
+        let (document, report) = build_docs_document(
+            &resolution.root,
+            &resolution.ignore_patterns,
+            resolution.version,
+            &target_paths,
+        )?;
+        let rendered = if report.has_errors() {
+            render_lint_text(&report)
+        } else {
+            match format {
+                OutputFormat::Text => render_docs_text(&resolution.root, &document),
+                OutputFormat::Json => render_docs_json(&document)?,
+                OutputFormat::Html => bail!("special_docs supports only text or json format"),
+            }
+        };
+        (rendered, report)
     };
     Ok(ToolOutput {
         text: rendered,

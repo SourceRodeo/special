@@ -194,7 +194,6 @@ fn docs_output_uses_configured_source_and_output_paths() {
 }
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.METRICS
 // @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
 fn docs_metrics_reports_documentation_coverage() {
     let root = temp_repo_dir("special-cli-docs-metrics-coverage");
@@ -267,6 +266,24 @@ fn docs_metrics_json_exposes_structured_counts() {
     assert_eq!(specs["total"], 2);
     assert_eq!(specs["public"], 1);
     assert_eq!(specs["internal_only"], 1);
+}
+
+#[test]
+// @verifies SPECIAL.CONFIG.SPECIAL_TOML.DOCS_ENTRYPOINTS
+fn docs_metrics_uses_configured_entrypoints_for_reachability() {
+    let root = temp_repo_dir("special-cli-docs-metrics-entrypoints");
+    write_docs_metrics_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics", "--json"]);
+
+    assert!(
+        output.status.success(),
+        "docs metrics json should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    assert_eq!(json["metrics"]["entrypoint_pages"], 1);
+    assert_eq!(json["metrics"]["reachable_pages_from_entrypoints"], 2);
 }
 
 #[test]

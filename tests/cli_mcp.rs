@@ -110,6 +110,71 @@ fn mcp_specs_tool_returns_special_projection_content() {
 }
 
 #[test]
+// @verifies SPECIAL.MCP_COMMAND.TOOLS
+fn mcp_docs_tool_returns_docs_metrics() {
+    let root = temp_repo_dir("special-cli-mcp-docs-metrics");
+    write_mcp_fixture(&root);
+    fs::write(
+        root.join("special.toml"),
+        concat!(
+            "version = \"1\"\n",
+            "root = \".\"\n",
+            "ignore = [\"docs/dist\"]\n\n",
+            "[docs]\n",
+            "entrypoints = [\"docs/dist/README.md\"]\n\n",
+            "[[docs.outputs]]\n",
+            "source = \"docs/src\"\n",
+            "output = \"docs/dist\"\n",
+        ),
+    )
+    .expect("special.toml should be written");
+    fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
+    fs::write(
+        root.join("docs/src/README.md"),
+        concat!(
+            "# Guide\n\n",
+            "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
+            "[More](guide.md).\n",
+        ),
+    )
+    .expect("docs readme source should be written");
+    fs::write(root.join("docs/src/guide.md"), "More detail.\n")
+        .expect("docs guide source should be written");
+
+    let output = run_special_with_input(
+        &root,
+        &["mcp"],
+        &format!(
+            "{}\n",
+            json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {
+                    "name": "special_docs",
+                    "arguments": {
+                        "metrics": true,
+                        "format": "json"
+                    }
+                }
+            })
+        ),
+    );
+
+    assert!(
+        output.status.success(),
+        "mcp docs metrics should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let responses = jsonrpc_responses(output.stdout);
+    assert_eq!(responses[0]["result"]["isError"], false);
+    let metrics: Value = serde_json::from_str(tool_text(&responses[0]))
+        .expect("mcp docs metrics text should be json");
+    assert_eq!(metrics["metrics"]["public_pages"], 2);
+    assert_eq!(metrics["metrics"]["local_doc_links"], 1);
+}
+
+#[test]
 // @verifies SPECIAL.MCP_COMMAND.DOCS_OUTPUT
 fn mcp_docs_output_tool_scrubs_docs_output() {
     let root = temp_repo_dir("special-cli-mcp-docs-output");

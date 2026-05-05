@@ -31,6 +31,9 @@ should not parse as annotation source.
 ## Docs Outputs
 
 ```toml
+[docs]
+entrypoints = ["README.md"]
+
 [[docs.outputs]]
 source = "docs/src/public"
 output = "docs"
@@ -49,6 +52,8 @@ for public docs trees, with separate file mappings only for outputs that live
 outside those trees, such as a root README. Directory mappings preserve paths
 relative to the source directory. Keep generated output files ignored by exact
 path so the ignore rules do not also hide docs source files.
+`entrypoints`
+selects the public docs pages used for docs reachability metrics.
 
 ## Health Ignore
 

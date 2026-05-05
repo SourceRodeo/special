@@ -520,7 +520,7 @@ fn shared_parser_crate_uses_github_monorepo_dependency() {
 #[test]
 // @verifies SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE
 fn parser_crate_git_monorepo_contract_is_documented() {
-    let docs = read_repo_file("docs/release.md");
+    let docs = read_repo_file("docs/contributor/release.md");
     assert!(docs.contains("SourceRodeo/crates"));
     assert!(docs.contains("parse-source-annotations"));
     assert!(docs.contains("Cargo resolves that package"));
