@@ -32,6 +32,10 @@ python3 scripts/tag-release.py X.Y.Z --publish
 
 The validation phase records
 [evidence for the exact version and revision](special://spec/SPECIAL.DISTRIBUTION.RELEASE_FLOW.VALIDATION_EVIDENCE).
+The [publish phase](special://spec/SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_RELEASE_BOOKMARK_AND_TAG)
+pushes `main`, a `release/vX.Y.Z` bookmark, and the Git tag for the same
+revision; the bookmark gives JJ users a stable release handle, and the tag
+remains the GitHub release trigger.
 
 ## Homebrew
 

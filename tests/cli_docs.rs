@@ -30,10 +30,7 @@ fn docs_output_rewrites_special_links_and_removes_document_lines() {
     fs::write(root.join("docs/src/nested/asset.txt"), "plain\n")
         .expect("plain asset should be written");
 
-    let output = run_special(
-        &root,
-        &["docs", "--target", "docs/src", "--output", "docs/dist"],
-    );
+    let output = run_special(&root, &["docs", "build", "docs/src", "docs/dist"]);
 
     assert!(
         output.status.success(),
@@ -65,10 +62,7 @@ fn docs_output_rewrites_special_links_to_plain_text() {
     )
     .expect("source docs markdown should be written");
 
-    let output = run_special(
-        &root,
-        &["docs", "--target", "source.md", "--output", "public.md"],
-    );
+    let output = run_special(&root, &["docs", "build", "source.md", "public.md"]);
 
     assert!(
         output.status.success(),
@@ -149,7 +143,7 @@ fn special_toml_accepts_docs_output_mappings() {
     )
     .expect("docs source should be written");
 
-    let output = run_special(&root, &["docs", "--output"]);
+    let output = run_special(&root, &["docs", "build"]);
 
     assert!(
         output.status.success(),
@@ -178,7 +172,7 @@ fn docs_output_uses_configured_source_and_output_paths() {
     fs::write(root.join("docs/src/nested/asset.txt"), "plain\n")
         .expect("plain asset should be written");
 
-    let output = run_special(&root, &["docs", "--output"]);
+    let output = run_special(&root, &["docs", "build"]);
 
     assert!(
         output.status.success(),
@@ -219,7 +213,7 @@ fn docs_configured_outputs_reject_duplicate_output_paths_before_writing() {
     )
     .expect("second docs source should be written");
 
-    let output = run_special(&root, &["docs", "--output"]);
+    let output = run_special(&root, &["docs", "build"]);
 
     assert!(!output.status.success());
     assert!(
@@ -239,7 +233,7 @@ fn docs_directory_output_rejects_expanded_files_inside_input_tree() {
     fs::write(root.join("docs/src/src/guide.md"), "plain\n")
         .expect("nested docs source should be written");
 
-    let output = run_special(&root, &["docs", "--target", "docs/src", "--output", "docs"]);
+    let output = run_special(&root, &["docs", "build", "docs/src", "docs"]);
 
     assert!(!output.status.success());
     assert!(
@@ -324,7 +318,7 @@ fn docs_target_scopes_validation_without_writing_files() {
     );
     assert!(
         !root.join("docs/dist").exists(),
-        "targeted validation without --output should not write rendered files"
+        "targeted validation without docs build should not write rendered files"
     );
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("good.md:1 link: CSV exports include headers"));
@@ -337,14 +331,14 @@ fn docs_help_names_output_as_path() {
     let root = temp_repo_dir("special-cli-docs-help-output-path");
     write_docs_fixture(&root);
 
-    let output = run_special(&root, &["docs", "--help"]);
+    let output = run_special(&root, &["docs", "build", "--help"]);
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("--output"));
     assert!(stdout.contains("PATH"));
     assert!(!stdout.contains("--output <OUTPUT>"));
-    assert!(!stdout.contains("--render"));
+    assert!(stdout.contains("SOURCE"));
 }
 
 #[test]
@@ -391,10 +385,7 @@ fn docs_output_reports_malformed_special_links() {
     fs::write(root.join("docs.md"), "[Broken](special://spec).\n")
         .expect("docs markdown should be written");
 
-    let output = run_special(
-        &root,
-        &["docs", "--target", "docs.md", "--output", "public.md"],
-    );
+    let output = run_special(&root, &["docs", "build", "docs.md", "public.md"]);
 
     assert!(!output.status.success());
     assert!(
@@ -421,10 +412,7 @@ fn docs_output_refuses_to_overwrite_docs_evidence() {
     )
     .expect("existing evidence-bearing output should be written");
 
-    let output = run_special(
-        &root,
-        &["docs", "--target", "source.md", "--output", "public.md"],
-    );
+    let output = run_special(&root, &["docs", "build", "source.md", "public.md"]);
 
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
@@ -447,10 +435,7 @@ fn docs_output_allows_overwriting_fenced_docs_examples() {
     )
     .expect("existing docs example should be written");
 
-    let output = run_special(
-        &root,
-        &["docs", "--target", "source.md", "--output", "public.md"],
-    );
+    let output = run_special(&root, &["docs", "build", "source.md", "public.md"]);
 
     assert!(
         output.status.success(),

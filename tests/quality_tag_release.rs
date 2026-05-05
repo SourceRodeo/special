@@ -26,8 +26,8 @@ the release script requires the requested tag version to exactly match the curre
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.RELEASE_REVISION
 the release script publishes the current Jujutsu working-copy revision when it contains changes, or its parent when the working-copy revision is an empty child.
 
-@spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_AND_TAG
-the release script publishes only through the explicit publish phase, which pushes the `main` bookmark with Jujutsu and the release Git tag to origin.
+@spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_RELEASE_BOOKMARK_AND_TAG
+the release script publishes only through the explicit publish phase, which pushes the `main` bookmark and a versioned release bookmark with Jujutsu, then pushes the release Git tag to origin.
 
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.VERIFIES_GITHUB_RELEASE
 after pushing the release tag, the release script waits for the GitHub release artifacts to publish and verifies the release asset set.
@@ -109,6 +109,10 @@ fn release_tag_dry_run_lists_pipeline_and_publication_commands() {
 
     assert_eq!(payload["tag"], Value::String(format!("v{version}")));
     assert_eq!(
+        payload["release_bookmark"],
+        Value::String(format!("release/v{version}"))
+    );
+    assert_eq!(
         payload["release_revset"],
         Value::String(default_release_revset())
     );
@@ -151,6 +155,19 @@ fn release_tag_dry_run_lists_pipeline_and_publication_commands() {
             revision.clone(),
         ]
     );
+    assert_eq!(
+        payload["release_bookmark_command"]
+            .as_array()
+            .expect("release_bookmark_command should be an array"),
+        &vec![
+            Value::String("jj".to_string()),
+            Value::String("bookmark".to_string()),
+            Value::String("set".to_string()),
+            Value::String(format!("release/v{version}")),
+            Value::String("-r".to_string()),
+            revision.clone(),
+        ]
+    );
     let tag_command = payload["tag_command"]
         .as_array()
         .expect("tag_command should be an array");
@@ -179,6 +196,18 @@ fn release_tag_dry_run_lists_pipeline_and_publication_commands() {
             Value::String("push".to_string()),
             Value::String("--bookmark".to_string()),
             Value::String("main".to_string()),
+        ]
+    );
+    assert_eq!(
+        payload["push_release_bookmark_command"]
+            .as_array()
+            .expect("push_release_bookmark_command should be an array"),
+        &vec![
+            Value::String("jj".to_string()),
+            Value::String("git".to_string()),
+            Value::String("push".to_string()),
+            Value::String("--bookmark".to_string()),
+            Value::String(format!("release/v{version}")),
         ]
     );
     assert_eq!(
@@ -569,7 +598,7 @@ fn shipped_skill_templates_match_current_command_surface() {
 }
 
 #[test]
-// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_AND_TAG
+// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_RELEASE_BOOKMARK_AND_TAG
 fn release_tag_publish_runs_publication_steps_after_pipeline_gates() {
     let version = current_package_version();
     let execution = release_tag_live_output(&version, &["--publish"]);
@@ -586,7 +615,9 @@ fn release_tag_publish_runs_publication_steps_after_pipeline_gates() {
         .collect();
     assert_eq!(labels.first().copied(), Some("bookmark_main"));
     assert_eq!(labels.last().copied(), Some("verify_homebrew_formula"));
+    assert!(labels.contains(&"bookmark_release"));
     assert!(labels.contains(&"push_main"));
+    assert!(labels.contains(&"push_release_bookmark"));
     assert!(labels.contains(&"push_tag"));
     assert!(labels.contains(&"verify_github_release"));
     assert!(labels.contains(&"update_homebrew_formula"));
@@ -594,7 +625,9 @@ fn release_tag_publish_runs_publication_steps_after_pipeline_gates() {
     let expected = if tag_points_at_default_release_revision(&tag) {
         vec![
             "bookmark_main",
+            "bookmark_release",
             "push_main",
+            "push_release_bookmark",
             "push_tag",
             "verify_github_release",
             "update_homebrew_formula",
@@ -603,8 +636,10 @@ fn release_tag_publish_runs_publication_steps_after_pipeline_gates() {
     } else {
         vec![
             "bookmark_main",
+            "bookmark_release",
             "set_tag",
             "push_main",
+            "push_release_bookmark",
             "push_tag",
             "verify_github_release",
             "update_homebrew_formula",
@@ -615,7 +650,7 @@ fn release_tag_publish_runs_publication_steps_after_pipeline_gates() {
 }
 
 #[test]
-// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_AND_TAG
+// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_RELEASE_BOOKMARK_AND_TAG
 fn release_tag_dry_run_pushes_main_bookmark_and_release_tag() {
     let version = current_package_version();
     let payload = release_tag_dry_run(&version, &[]);
@@ -630,6 +665,18 @@ fn release_tag_dry_run_pushes_main_bookmark_and_release_tag() {
             Value::String("push".to_string()),
             Value::String("--bookmark".to_string()),
             Value::String("main".to_string()),
+        ]
+    );
+    assert_eq!(
+        payload["push_release_bookmark_command"]
+            .as_array()
+            .expect("push_release_bookmark_command should be an array"),
+        &vec![
+            Value::String("jj".to_string()),
+            Value::String("git".to_string()),
+            Value::String("push".to_string()),
+            Value::String("--bookmark".to_string()),
+            Value::String(format!("release/v{version}")),
         ]
     );
     assert_eq!(
@@ -656,7 +703,7 @@ fn release_tag_dry_run_pushes_main_bookmark_and_release_tag() {
 }
 
 #[test]
-// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_AND_TAG
+// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_RELEASE_BOOKMARK_AND_TAG
 fn release_tag_dry_run_force_pushes_existing_tag_when_requested() {
     let version = current_package_version();
     let payload = release_tag_dry_run(&version, &["--allow-existing-tag"]);

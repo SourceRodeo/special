@@ -551,7 +551,7 @@ fn render_configured_outputs(
     resolution: &RootResolution,
 ) -> Result<LintReport> {
     if resolution.docs_outputs.is_empty() {
-        bail!("special docs --output requires at least one [[docs.outputs]] entry in special.toml");
+        bail!("special docs build requires at least one [[docs.outputs]] entry in special.toml");
     }
     let mappings = resolution
         .docs_outputs

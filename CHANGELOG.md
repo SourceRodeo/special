@@ -1,23 +1,31 @@
 # Changelog
 
-## 0.9.0 - 2026-05-03
+## 0.9.0 - 2026-05-05
 
-- Added the SourceRodeo Codex plugin source under `codex-plugin/special/`,
-  including plugin metadata, workflow/setup skills, and MCP configuration for
-  the native `special mcp` server.
+- Added `special docs` and `special docs build` for traceable public docs:
+  markdown can link claims to `special://` specs, modules, areas, groups, and
+  patterns while generated README/docs output stays free of Special evidence
+  markup.
+- Added public docs coverage and interconnectivity metrics, including broken
+  local-link checks, orphan-page checks, configured entrypoints, public/internal
+  docs coverage, and no-stacking validation for docs relationship lines.
 - Added `special mcp` as a controlled stdio MCP server for agent access to
-  status, overview, specs, architecture, patterns, docs validation/output, lint,
+  status, overview, specs, architecture, patterns, docs validation/build, lint,
   and health surfaces.
-- Added docs relationship annotations and `special docs --output` so authored
-  markdown can carry Special evidence links while public README and docs output
-  stay scrubbed.
-- Rebuilt the README and expanded public CLI docs around TypeScript-first
-  examples, SourceRodeo install paths, docs output, and agent/plugin setup.
-- Switched parser mechanics to the sibling `parse-source-annotations` source
-  dependency layout used for local development and release builds.
-- Hardened prerelease review and distribution checks around plugin version
-  awareness, skill-template drift, Homebrew formula metadata, and durable local
-  release-review output.
+- Added the SourceRodeo Codex plugin source under `codex-plugin/special/`,
+  including plugin metadata, install/update and setup/workflow skills, MCP
+  configuration, and binary-version awareness.
+- Promoted Python to a first-class parser-backed language pack alongside Rust,
+  TypeScript, and Go, with syntax extraction, module metrics, import evidence,
+  health traceability, and explicit parse-failure diagnostics.
+- Hardened the Lean traceability kernel by proving executable reverse-closure
+  correspondence for the parsed graph model and ring-fencing raw JSON transport
+  as an adapter boundary covered by tests.
+- Switched `parse-source-annotations` to the SourceRodeo/crates Git monorepo
+  dependency and updated release/distribution metadata for the SourceRodeo org.
+- Hardened prerelease checks around release review output, skill-template drift,
+  Homebrew formula metadata, exact-prose test assertions, syntax-error handling,
+  MCP argument validation, and release evidence capture.
 
 ## 0.8.0 - 2026-04-27
 

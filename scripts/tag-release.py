@@ -99,6 +99,10 @@ def release_version(value: str) -> str:
     return normalize_tag(value).removeprefix("v")
 
 
+def release_bookmark_name(tag: str) -> str:
+    return f"release/{tag}"
+
+
 def existing_tags(root: Path) -> set[str]:
     output = run_checked(root, ["jj", "tag", "list"])
     return {line.split(":", 1)[0].strip() for line in output.splitlines() if ":" in line}
@@ -375,11 +379,14 @@ def main() -> int:
         upsert_changelog_section(root, version, bullets)
         return 0
 
+    release_bookmark = release_bookmark_name(tag)
     bookmark_command = ["jj", "bookmark", "set", "main", "-r", revision]
+    release_bookmark_command = ["jj", "bookmark", "set", release_bookmark, "-r", revision]
     tag_command = ["jj", "tag", "set", tag, "-r", revision]
     if tag_exists and args.allow_existing_tag:
         tag_command.insert(3, "--allow-move")
     push_main_command = ["jj", "git", "push", "--bookmark", "main"]
+    push_release_bookmark_command = ["jj", "git", "push", "--bookmark", release_bookmark]
     push_tag_command = ["git", "push"]
     if tag_exists and args.allow_existing_tag:
         push_tag_command.append("--force")
@@ -403,6 +410,7 @@ def main() -> int:
                 {
                     "tag": tag,
                     "version": version,
+                    "release_bookmark": release_bookmark,
                     "release_revset": target,
                     "revision": revision,
                     "pipeline": [
@@ -429,8 +437,10 @@ def main() -> int:
                     ],
                     "validation_commands": CORE_VALIDATION_COMMANDS,
                     "bookmark_command": bookmark_command,
+                    "release_bookmark_command": release_bookmark_command,
                     "tag_command": tag_command,
                     "push_main_command": push_main_command,
+                    "push_release_bookmark_command": push_release_bookmark_command,
                     "push_tag_command": push_tag_command,
                     "verify_github_release_command": verify_github_release_command,
                     "update_homebrew_formula_command": update_homebrew_formula_command,
@@ -453,9 +463,11 @@ def main() -> int:
         require_validation_evidence(root, version, revision)
 
     run_step(root, "bookmark_main", bookmark_command, args)
+    run_step(root, "bookmark_release", release_bookmark_command, args)
     if not (tag_exists and tag_revision(root, tag) == revision):
         run_step(root, "set_tag", tag_command, args)
     run_step(root, "push_main", push_main_command, args)
+    run_step(root, "push_release_bookmark", push_release_bookmark_command, args)
     run_step(root, "push_tag", push_tag_command, args)
     wait_for_github_release(root, "verify_github_release", verify_github_release_command, args)
     run_step(root, "update_homebrew_formula", update_homebrew_formula_command, args)

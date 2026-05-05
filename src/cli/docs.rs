@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::{Result, bail};
-use clap::Args;
+use clap::{Args, Subcommand};
 
 use super::common::{report_cache_stats, resolve_cli_paths};
 use super::status::{CommandStatus, StatusStep};
@@ -19,6 +19,9 @@ use crate::render::render_lint_text;
 
 #[derive(Debug, Args)]
 pub(super) struct DocsArgs {
+    #[command(subcommand)]
+    command: Option<DocsCommand>,
+
     #[arg(value_name = "PATH", hide = true)]
     positional_paths: Vec<PathBuf>,
 
@@ -38,6 +41,35 @@ pub(super) struct DocsArgs {
     output: Option<Option<PathBuf>>,
 }
 
+#[derive(Debug, Subcommand)]
+enum DocsCommand {
+    #[command(about = "Write configured docs outputs or one explicit docs output")]
+    Build(DocsBuildArgs),
+}
+
+#[derive(Debug, Args)]
+struct DocsBuildArgs {
+    #[arg(value_name = "SOURCE")]
+    source: Option<PathBuf>,
+
+    #[arg(value_name = "OUTPUT", requires = "source")]
+    positional_output: Option<PathBuf>,
+
+    #[arg(
+        long = "target",
+        value_name = "PATH",
+        help = "Input file or subtree to write from"
+    )]
+    targets: Vec<PathBuf>,
+
+    #[arg(
+        long = "output",
+        value_name = "PATH",
+        help = "Output file or directory"
+    )]
+    output: Option<PathBuf>,
+}
+
 const DOCS_PLAN: &[StatusStep] = &[
     StatusStep::new("resolving project root", 1),
     StatusStep::new("validating documentation links", 8),
@@ -49,6 +81,14 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
     let status = CommandStatus::with_plan("special docs", DOCS_PLAN);
     reset_cache_stats();
     status.phase("resolving project root");
+    if let Some(command) = args.command {
+        if !args.positional_paths.is_empty() || !args.targets.is_empty() || args.output.is_some() {
+            bail!("special docs build cannot be combined with parent docs options");
+        }
+        return match command {
+            DocsCommand::Build(build_args) => execute_docs_build(build_args, current_dir, status),
+        };
+    }
     if !args.positional_paths.is_empty() {
         bail!(
             "docs path scopes must use --target PATH; try `special docs --target {}`",
@@ -132,6 +172,78 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
     })
 }
 
+fn execute_docs_build(
+    args: DocsBuildArgs,
+    current_dir: &Path,
+    status: CommandStatus,
+) -> Result<ExitCode> {
+    if args.source.is_some() && (!args.targets.is_empty() || args.output.is_some()) {
+        bail!("special docs build accepts either positional SOURCE OUTPUT or --target/--output");
+    }
+    let resolution = resolve_project_root(current_dir)?;
+    if let Some(warning) = resolution.warning() {
+        eprintln!("{warning}");
+    }
+
+    status.phase("validating documentation links");
+    let target_paths = resolve_cli_paths(current_dir, &args.targets);
+    let report = with_cache_status_notifier(status.notifier(), || {
+        match (
+            args.source.as_ref(),
+            args.positional_output.as_ref(),
+            target_paths.as_slice(),
+            args.output.as_ref(),
+        ) {
+            (None, None, [], None) => render_configured_outputs(
+                &resolution.root,
+                &resolution.ignore_patterns,
+                resolution.version,
+                &resolution.docs_outputs,
+            ),
+            (Some(input), Some(output), [], None) => write_docs_path(
+                &resolution.root,
+                &resolution.ignore_patterns,
+                resolution.version,
+                &resolve_cli_path(current_dir, input),
+                &resolve_cli_path(current_dir, output),
+            ),
+            (None, None, [input], Some(output)) => write_docs_path(
+                &resolution.root,
+                &resolution.ignore_patterns,
+                resolution.version,
+                input,
+                &resolve_cli_path(current_dir, output),
+            ),
+            (Some(_), None, [], None) => {
+                bail!("special docs build requires SOURCE and OUTPUT paths")
+            }
+            (None, None, [], Some(_)) => {
+                bail!("special docs build --output PATH requires --target PATH")
+            }
+            (None, None, [_], None) => {
+                bail!("special docs build --target PATH requires --output PATH")
+            }
+            (None, None, [_, _, ..], _) => {
+                bail!("special docs build accepts exactly one --target path")
+            }
+            _ => bail!(
+                "special docs build accepts either positional SOURCE OUTPUT or --target/--output"
+            ),
+        }
+    })?;
+    report_cache_stats(&status);
+
+    status.phase("rendering output");
+    println!("{}", render_docs_report(&report, None));
+    status.finish();
+
+    Ok(if report.has_errors() {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    })
+}
+
 fn render_configured_outputs(
     root: &Path,
     ignore_patterns: &[String],
@@ -139,7 +251,7 @@ fn render_configured_outputs(
     outputs: &[DocsOutputConfig],
 ) -> Result<LintReport> {
     if outputs.is_empty() {
-        bail!("special docs --output requires at least one [[docs.outputs]] entry in special.toml");
+        bail!("special docs build requires at least one [[docs.outputs]] entry in special.toml");
     }
 
     let mappings = outputs

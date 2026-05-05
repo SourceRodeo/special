@@ -12,7 +12,7 @@ Markdown links whose destination is `special://KIND/ID` attach the linked label 
 Documentation links accept `spec`, `group`, `module`, `area`, and `pattern` targets.
 
 @spec SPECIAL.DOCS.LINKS.OUTPUT
-special docs --target PATH --output PATH rewrites markdown `special://KIND/ID` links to their label text in the emitted artifact.
+special docs build SOURCE OUTPUT rewrites markdown `special://KIND/ID` links to their label text in the emitted artifact.
 
 @spec SPECIAL.DOCS.DOCUMENTS_LINES
 Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` attach one documentation relationship per line, are removed from docs output, and may not appear as adjacent stacked relationship lines.
@@ -27,16 +27,16 @@ special docs --target PATH validates and prints only documentation relationships
 special docs rejects hidden positional path scopes and requires path scopes to use --target PATH.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT
-special docs --target PATH --output PATH validates documentation links and writes public docs.
+special docs build validates documentation links and writes public docs.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT.DIRECTORY
-special docs --target PATH --output PATH accepts an input directory and output directory, then mirrors the input tree relative to the target root while writing markdown output files.
+special docs build SOURCE OUTPUT accepts an input directory and output directory, then mirrors the input tree relative to the source root while writing markdown output files.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
-special docs --target PATH --output PATH refuses to write docs output over the input path, into an input directory, or over an existing file that still contains docs evidence.
+special docs build SOURCE OUTPUT refuses to write docs output over the input path, into an input directory, or over an existing file that still contains docs evidence.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG
-special docs --output uses `[[docs.outputs]]` mappings from special.toml to write configured public docs without repeating paths on the command line.
+special docs build uses `[[docs.outputs]]` mappings from special.toml to write configured public docs without repeating paths on the command line.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet};
