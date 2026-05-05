@@ -74,6 +74,10 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 }
 ```
 
+The `@area` declaration can stay structural. The `@module` declaration needs
+source ownership through `@implements` or `@fileimplements` unless it is planned;
+otherwise `special arch --unimplemented` will report it.
+
 Inspect it:
 
 ```sh

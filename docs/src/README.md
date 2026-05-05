@@ -36,7 +36,7 @@ New users should read:
 - [Annotation reference](docs/annotations.md)
 - [Configuration](docs/configuration.md)
 - [Agent and MCP setup](docs/agents.md)
-- [Release and distribution notes](docs/release.md)
+- [Release and distribution notes](docs/contributor/release.md)
 
 ## Quick Example
 

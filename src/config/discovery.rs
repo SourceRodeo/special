@@ -50,6 +50,7 @@ pub(super) fn resolve_project_root(start: &Path) -> Result<RootResolution> {
                 config_path: Some(config_path),
                 ignore_patterns: config.ignore_patterns,
                 docs_outputs: config.docs_outputs,
+                docs_entrypoints: config.docs_entrypoints,
                 health_ignore_unexplained_patterns: config.health_ignore_unexplained_patterns,
                 pattern_benchmarks: config.pattern_benchmarks,
             });
@@ -66,6 +67,7 @@ pub(super) fn resolve_project_root(start: &Path) -> Result<RootResolution> {
                 config_path: None,
                 ignore_patterns: Vec::new(),
                 docs_outputs: Vec::new(),
+                docs_entrypoints: Vec::new(),
                 health_ignore_unexplained_patterns: Vec::new(),
                 pattern_benchmarks: PatternMetricBenchmarks::default(),
             });
@@ -80,6 +82,7 @@ pub(super) fn resolve_project_root(start: &Path) -> Result<RootResolution> {
         config_path: None,
         ignore_patterns: Vec::new(),
         docs_outputs: Vec::new(),
+        docs_entrypoints: Vec::new(),
         health_ignore_unexplained_patterns: Vec::new(),
         pattern_benchmarks: PatternMetricBenchmarks::default(),
     })

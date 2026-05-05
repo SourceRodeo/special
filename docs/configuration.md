@@ -19,7 +19,9 @@ selection.
 ignore = [
   "CHANGELOG.md",
   "README.md",
-  "docs/*.md",
+  "docs/install.md",
+  "docs/tutorial.md",
+  "docs/contributor/release.md",
 ]
 ```
 
@@ -30,16 +32,23 @@ should not parse as annotation source.
 
 ```toml
 [[docs.outputs]]
-source = "docs/src/install.md"
-output = "docs/install.md"
+source = "docs/src/public"
+output = "docs"
+
+[[docs.outputs]]
+source = "docs/src/contributor"
+output = "docs/contributor"
 
 [[docs.outputs]]
 source = "docs/src/README.md"
 output = "README.md"
 ```
 
-`special docs build` writes every configured mapping. File mappings write one
-file. Directory mappings preserve the tree relative to the source directory.
+`special docs build` writes every configured mapping. Prefer directory mappings
+for public docs trees, with separate file mappings only for outputs that live
+outside those trees, such as a root README. Directory mappings preserve paths
+relative to the source directory. Keep generated output files ignored by exact
+path so the ignore rules do not also hide docs source files.
 
 ## Health Ignore
 

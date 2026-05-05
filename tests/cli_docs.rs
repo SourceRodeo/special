@@ -8,6 +8,8 @@ mod support;
 
 use std::fs;
 
+use serde_json::Value;
+
 use support::{run_special, temp_repo_dir};
 
 #[test]
@@ -189,6 +191,82 @@ fn docs_output_uses_configured_source_and_output_paths() {
             .expect("plain asset should preserve its relative tree path"),
         "plain\n"
     );
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.METRICS
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+fn docs_metrics_reports_documentation_coverage() {
+    let root = temp_repo_dir("special-cli-docs-metrics-coverage");
+    write_docs_metrics_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics"]);
+
+    assert!(
+        output.status.success(),
+        "docs metrics should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("special docs metrics"));
+    assert!(stdout.contains("specs: 2 total, 2 documented, 1 public, 1 internal-only"));
+    assert!(stdout.contains("modules: 1 total, 1 documented, 1 public"));
+    assert!(stdout.contains("patterns: 1 total, 1 documented, 1 public"));
+    assert!(stdout.contains("groups: 1 total, 0 documented"));
+    assert!(!stdout.contains("undocumented groups: EXPORT"));
+
+    let verbose = run_special(&root, &["docs", "--metrics", "--verbose"]);
+    assert!(verbose.status.success());
+    let verbose_stdout = String::from_utf8(verbose.stdout).expect("stdout should be utf-8");
+    assert!(verbose_stdout.contains("undocumented groups: EXPORT"));
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
+fn docs_metrics_reports_public_docs_graph() {
+    let root = temp_repo_dir("special-cli-docs-metrics-graph");
+    write_docs_metrics_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics"]);
+
+    assert!(
+        output.status.success(),
+        "docs metrics should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("public pages: 2"));
+    assert!(stdout.contains("local doc links: 1"));
+    assert!(stdout.contains("broken local doc links: 0"));
+    assert!(stdout.contains("orphan pages: 0"));
+    assert!(stdout.contains("reachable from entrypoints: 2/2 page(s), 1 entrypoint(s)"));
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.METRICS
+fn docs_metrics_json_exposes_structured_counts() {
+    let root = temp_repo_dir("special-cli-docs-metrics-json");
+    write_docs_metrics_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics", "--json"]);
+
+    assert!(
+        output.status.success(),
+        "docs metrics json should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    assert_eq!(json["metrics"]["public_pages"], 2);
+    assert_eq!(json["metrics"]["reachable_pages_from_entrypoints"], 2);
+    let specs = json["metrics"]["target_kinds"]
+        .as_array()
+        .expect("target kinds should be an array")
+        .iter()
+        .find(|kind| kind["kind"] == "spec")
+        .expect("spec metrics should exist");
+    assert_eq!(specs["total"], 2);
+    assert_eq!(specs["public"], 1);
+    assert_eq!(specs["internal_only"], 1);
 }
 
 #[test]
@@ -469,4 +547,74 @@ fn write_docs_fixture(root: &std::path::Path) {
         "// @fileimplements APP.PARSER\n// @documents spec EXPORT.CSV.HEADERS\nfn parse() {}\n",
     )
     .expect("source should be written");
+}
+
+fn write_docs_metrics_fixture(root: &std::path::Path) {
+    fs::write(
+        root.join("special.toml"),
+        concat!(
+            "version = \"1\"\n",
+            "root = \".\"\n",
+            "[docs]\n",
+            "entrypoints = [\"docs/README.md\"]\n",
+            "\n",
+            "[[docs.outputs]]\n",
+            "source = \"docs/src\"\n",
+            "output = \"docs\"\n",
+        ),
+    )
+    .expect("special.toml should be written");
+    fs::write(
+        root.join("specs.md"),
+        concat!(
+            "### `@group EXPORT`\n",
+            "Exports.\n\n",
+            "### `@spec EXPORT.CSV.HEADERS`\n",
+            "CSV headers.\n\n",
+            "### `@spec EXPORT.INTERNAL`\n",
+            "Internal export.\n",
+        ),
+    )
+    .expect("specs should be written");
+    fs::write(
+        root.join("architecture.md"),
+        concat!(
+            "### `@area APP`\n",
+            "App.\n\n",
+            "### `@module APP.PARSER`\n",
+            "Parser.\n",
+        ),
+    )
+    .expect("architecture should be written");
+    fs::write(
+        root.join("patterns.md"),
+        "### `@pattern CACHE.SINGLE_FLIGHT_FILL`\nCache fill.\n",
+    )
+    .expect("patterns should be written");
+    fs::write(
+        root.join("src.rs"),
+        concat!(
+            "// @fileimplements APP.PARSER\n",
+            "// @documents spec EXPORT.INTERNAL\n",
+            "fn parse() {}\n",
+        ),
+    )
+    .expect("source should be written");
+    fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
+    fs::write(
+        root.join("docs/src/README.md"),
+        concat!(
+            "[Guide](guide.md)\n",
+            "[CSV](special://spec/EXPORT.CSV.HEADERS)\n",
+        ),
+    )
+    .expect("docs index should be written");
+    fs::write(
+        root.join("docs/src/guide.md"),
+        concat!(
+            "[Parser](special://module/APP.PARSER)\n",
+            "[Cache](special://pattern/CACHE.SINGLE_FLIGHT_FILL)\n",
+        ),
+    )
+    .expect("docs guide should be written");
 }

@@ -37,9 +37,18 @@ special docs build SOURCE OUTPUT refuses to write docs output over the input pat
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG
 special docs build uses `[[docs.outputs]]` mappings from special.toml to write configured public docs without repeating paths on the command line.
+
+@spec SPECIAL.DOCS_COMMAND.METRICS
+special docs --metrics reports documentation coverage and public docs graph metrics without writing files.
+
+@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+special docs --metrics classifies specs, groups, modules, areas, and patterns as publicly documented, internally documented only, or undocumented.
+
+@spec SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
+special docs --metrics reports configured public docs pages, markdown links among those pages, broken local docs links, orphan pages, and configured-entrypoint reachability.
 */
 // @fileimplements SPECIAL.DOCS
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -52,7 +61,7 @@ use crate::annotation_syntax::{
     reserved_special_annotation_rest,
 };
 use crate::cache::{load_or_parse_architecture, load_or_parse_repo};
-use crate::config::SpecialVersion;
+use crate::config::{DocsOutputConfig, SpecialVersion};
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::extractor::collect_comment_blocks;
 use crate::model::{
@@ -71,6 +80,16 @@ pub(crate) enum DocumentTargetKind {
 }
 
 impl DocumentTargetKind {
+    fn all() -> [Self; 5] {
+        [
+            Self::Spec,
+            Self::Group,
+            Self::Module,
+            Self::Area,
+            Self::Pattern,
+        ]
+    }
+
     fn parse(value: &str) -> Option<Self> {
         match value {
             "spec" => Some(Self::Spec),
@@ -126,6 +145,60 @@ pub(crate) struct DocsDocument {
     pub references: Vec<DocumentRef>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct DocsMetricsDocument {
+    pub metrics: DocsMetricsSummary,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct DocsMetricsSummary {
+    pub total_references: usize,
+    pub link_references: usize,
+    pub documents_line_references: usize,
+    pub file_documents_line_references: usize,
+    pub public_pages: usize,
+    pub local_doc_links: usize,
+    pub broken_local_doc_links: usize,
+    pub orphan_pages: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reachable_pages_from_entrypoints: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entrypoint_pages: Option<usize>,
+    pub target_kinds: Vec<DocsTargetKindMetrics>,
+    pub broken_local_doc_link_details: Vec<DocsLocalLinkIssue>,
+    pub orphan_page_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct DocsTargetKindMetrics {
+    pub kind: DocumentTargetKind,
+    pub total: usize,
+    pub documented: usize,
+    pub public: usize,
+    pub internal_only: usize,
+    pub undocumented: usize,
+    pub undocumented_ids: Vec<String>,
+}
+
+impl DocsTargetKindMetrics {
+    fn plural_label(&self) -> &'static str {
+        match self.kind {
+            DocumentTargetKind::Spec => "specs",
+            DocumentTargetKind::Group => "groups",
+            DocumentTargetKind::Module => "modules",
+            DocumentTargetKind::Area => "areas",
+            DocumentTargetKind::Pattern => "patterns",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct DocsLocalLinkIssue {
+    pub source: String,
+    pub line: usize,
+    pub target: String,
+}
+
 pub(crate) fn build_docs_lint_report(
     root: &Path,
     ignore_patterns: &[String],
@@ -155,6 +228,22 @@ pub(crate) fn build_docs_document(
         DocsDocument { references: refs },
         LintReport { diagnostics },
     ))
+}
+
+pub(crate) fn build_docs_metrics_document(
+    root: &Path,
+    ignore_patterns: &[String],
+    version: SpecialVersion,
+    scope_paths: &[PathBuf],
+    outputs: &[DocsOutputConfig],
+    entrypoints: &[PathBuf],
+) -> Result<(DocsMetricsDocument, LintReport)> {
+    let (document, report) = build_docs_document(root, ignore_patterns, version, scope_paths)?;
+    let targets = DocumentTargets::load(root, ignore_patterns, version)?;
+    let public_sources = configured_output_sources(root, outputs);
+    let public_graph = build_public_docs_graph(root, outputs, entrypoints)?;
+    let metrics = docs_metrics_summary(root, &document, &targets, &public_sources, public_graph);
+    Ok((DocsMetricsDocument { metrics }, report))
 }
 
 pub(crate) fn write_docs_path(
@@ -300,6 +389,415 @@ pub(crate) fn render_docs_text(root: &Path, document: &DocsDocument) -> String {
     }
 
     output.trim_end().to_string()
+}
+
+pub(crate) fn render_docs_json(document: &DocsDocument) -> Result<String> {
+    Ok(serde_json::to_string_pretty(document)?)
+}
+
+pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: bool) -> String {
+    let metrics = &document.metrics;
+    let mut output = String::from("special docs metrics\n");
+    output.push_str(&format!("  total references: {}\n", metrics.total_references));
+    output.push_str(&format!(
+        "    link references: {}\n",
+        metrics.link_references
+    ));
+    output.push_str(&format!(
+        "    @documents references: {}\n",
+        metrics.documents_line_references
+    ));
+    output.push_str(&format!(
+        "    @filedocuments references: {}\n",
+        metrics.file_documents_line_references
+    ));
+    for kind in &metrics.target_kinds {
+        output.push_str(&format!(
+            "  {}: {} total, {} documented, {} public, {} internal-only, {} undocumented\n",
+            kind.plural_label(),
+            kind.total,
+            kind.documented,
+            kind.public,
+            kind.internal_only,
+            kind.undocumented
+        ));
+        if verbose && !kind.undocumented_ids.is_empty() {
+            output.push_str(&format!(
+                "    undocumented {}: {}\n",
+                kind.plural_label(),
+                kind.undocumented_ids.join(", ")
+            ));
+        }
+    }
+    output.push_str(&format!("  public pages: {}\n", metrics.public_pages));
+    output.push_str(&format!("  local doc links: {}\n", metrics.local_doc_links));
+    output.push_str(&format!(
+        "  broken local doc links: {}\n",
+        metrics.broken_local_doc_links
+    ));
+    for issue in metrics.broken_local_doc_link_details.iter().take(if verbose {
+        usize::MAX
+    } else {
+        10
+    }) {
+        output.push_str(&format!(
+            "    {}:{} -> {}\n",
+            issue.source, issue.line, issue.target
+        ));
+    }
+    output.push_str(&format!("  orphan pages: {}\n", metrics.orphan_pages));
+    for path in metrics.orphan_page_paths.iter().take(if verbose {
+        usize::MAX
+    } else {
+        10
+    }) {
+        output.push_str(&format!("    {path}\n"));
+    }
+    match (
+        metrics.reachable_pages_from_entrypoints,
+        metrics.entrypoint_pages,
+    ) {
+        (Some(reachable), Some(entrypoints)) => output.push_str(&format!(
+            "  reachable from entrypoints: {}/{} page(s), {} entrypoint(s)\n",
+            reachable, metrics.public_pages, entrypoints
+        )),
+        _ => output.push_str("  reachable from entrypoints: not configured\n"),
+    }
+    output.trim_end().to_string()
+}
+
+pub(crate) fn render_docs_metrics_json(document: &DocsMetricsDocument) -> Result<String> {
+    Ok(serde_json::to_string_pretty(document)?)
+}
+
+struct PublicDocsGraph {
+    pages: BTreeSet<PathBuf>,
+    local_links: Vec<PublicDocsLink>,
+    broken_links: Vec<DocsLocalLinkIssue>,
+    orphan_pages: Vec<String>,
+    reachable_pages_from_entrypoints: Option<usize>,
+    entrypoint_pages: Option<usize>,
+}
+
+struct PublicDocsLink {
+    source: PathBuf,
+    target: PathBuf,
+}
+
+fn docs_metrics_summary(
+    _root: &Path,
+    document: &DocsDocument,
+    targets: &DocumentTargets,
+    public_sources: &[PathBuf],
+    public_graph: PublicDocsGraph,
+) -> DocsMetricsSummary {
+    DocsMetricsSummary {
+        total_references: document.references.len(),
+        link_references: document
+            .references
+            .iter()
+            .filter(|reference| reference.source == DocumentRefSource::Link)
+            .count(),
+        documents_line_references: document
+            .references
+            .iter()
+            .filter(|reference| reference.source == DocumentRefSource::DocumentsLine)
+            .count(),
+        file_documents_line_references: document
+            .references
+            .iter()
+            .filter(|reference| reference.source == DocumentRefSource::FileDocumentsLine)
+            .count(),
+        public_pages: public_graph.pages.len(),
+        local_doc_links: public_graph.local_links.len(),
+        broken_local_doc_links: public_graph.broken_links.len(),
+        orphan_pages: public_graph.orphan_pages.len(),
+        reachable_pages_from_entrypoints: public_graph.reachable_pages_from_entrypoints,
+        entrypoint_pages: public_graph.entrypoint_pages,
+        target_kinds: DocumentTargetKind::all()
+            .into_iter()
+            .map(|kind| target_kind_metrics(kind, document, targets, public_sources))
+            .collect(),
+        broken_local_doc_link_details: public_graph.broken_links,
+        orphan_page_paths: public_graph.orphan_pages,
+    }
+}
+
+fn target_kind_metrics(
+    kind: DocumentTargetKind,
+    document: &DocsDocument,
+    targets: &DocumentTargets,
+    public_sources: &[PathBuf],
+) -> DocsTargetKindMetrics {
+    let target_ids = targets.ids(kind);
+    let mut documented = BTreeSet::new();
+    let mut public = BTreeSet::new();
+    let mut internal = BTreeSet::new();
+
+    for reference in &document.references {
+        if reference.target_kind != kind {
+            continue;
+        }
+        documented.insert(reference.target_id.clone());
+        if is_public_doc_source(&reference.location.path, public_sources) {
+            public.insert(reference.target_id.clone());
+        } else {
+            internal.insert(reference.target_id.clone());
+        }
+    }
+
+    let undocumented_ids = target_ids
+        .iter()
+        .filter(|id| !documented.contains(*id))
+        .cloned()
+        .collect::<Vec<_>>();
+    let internal_only = target_ids
+        .iter()
+        .filter(|id| internal.contains(*id) && !public.contains(*id))
+        .count();
+
+    DocsTargetKindMetrics {
+        kind,
+        total: target_ids.len(),
+        documented: target_ids
+            .iter()
+            .filter(|id| documented.contains(*id))
+            .count(),
+        public: target_ids.iter().filter(|id| public.contains(*id)).count(),
+        internal_only,
+        undocumented: undocumented_ids.len(),
+        undocumented_ids,
+    }
+}
+
+fn configured_output_sources(root: &Path, outputs: &[DocsOutputConfig]) -> Vec<PathBuf> {
+    outputs
+        .iter()
+        .map(|output| configured_docs_path(root, &output.source))
+        .collect()
+}
+
+fn configured_docs_path(root: &Path, path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        root.join(path)
+    }
+}
+
+fn is_public_doc_source(path: &Path, public_sources: &[PathBuf]) -> bool {
+    public_sources.iter().any(|source| {
+        if source.is_file() || is_markdown_path(source) {
+            path == source
+        } else {
+            path.starts_with(source)
+        }
+    })
+}
+
+fn build_public_docs_graph(
+    root: &Path,
+    outputs: &[DocsOutputConfig],
+    entrypoints: &[PathBuf],
+) -> Result<PublicDocsGraph> {
+    let mut plan = Vec::new();
+    for output in outputs {
+        expand_output_mapping(
+            &configured_docs_path(root, &output.source),
+            &configured_docs_path(root, &output.output),
+            &mut plan,
+        )?;
+    }
+    let markdown_plan = plan
+        .into_iter()
+        .filter(|(source, output)| is_markdown_path(source) && is_markdown_path(output))
+        .collect::<Vec<_>>();
+    let pages = markdown_plan
+        .iter()
+        .map(|(_, output)| output.clone())
+        .collect::<BTreeSet<_>>();
+    let page_lookup = pages.iter().cloned().collect::<BTreeSet<_>>();
+    let mut local_links = Vec::new();
+    let mut broken_links = Vec::new();
+
+    for (source, output) in &markdown_plan {
+        let content =
+            fs::read_to_string(source).with_context(|| format!("reading {}", source.display()))?;
+        for link in collect_local_markdown_links(&content) {
+            let target = resolve_local_doc_link(output, &link.target);
+            let display_target = display_path(root, &target);
+            if page_lookup.contains(&target) {
+                local_links.push(PublicDocsLink {
+                    source: output.clone(),
+                    target,
+                });
+            } else {
+                broken_links.push(DocsLocalLinkIssue {
+                    source: display_path(root, output),
+                    line: link.line,
+                    target: display_target,
+                });
+            }
+        }
+    }
+
+    let incoming = incoming_link_counts(&pages, &local_links);
+    let entrypoint_pages = entrypoints
+        .iter()
+        .map(|entrypoint| configured_docs_path(root, entrypoint))
+        .filter(|entrypoint| pages.contains(entrypoint))
+        .collect::<BTreeSet<_>>();
+    let orphan_pages = pages
+        .iter()
+        .filter(|page| !entrypoint_pages.contains(*page))
+        .filter(|page| incoming.get(*page).copied().unwrap_or_default() == 0)
+        .map(|page| display_path(root, page))
+        .collect::<Vec<_>>();
+    let reachable_pages_from_entrypoints = (!entrypoints.is_empty())
+        .then(|| reachable_pages(&entrypoint_pages, &local_links).len());
+    let entrypoint_pages_count = (!entrypoints.is_empty()).then_some(entrypoint_pages.len());
+
+    Ok(PublicDocsGraph {
+        pages,
+        local_links,
+        broken_links,
+        orphan_pages,
+        reachable_pages_from_entrypoints,
+        entrypoint_pages: entrypoint_pages_count,
+    })
+}
+
+#[derive(Debug)]
+struct LocalMarkdownLink {
+    line: usize,
+    target: String,
+}
+
+fn collect_local_markdown_links(content: &str) -> Vec<LocalMarkdownLink> {
+    let mut links = Vec::new();
+    let mut in_code_fence = false;
+    for (index, line) in content.lines().enumerate() {
+        if starts_markdown_fence(line) {
+            in_code_fence = !in_code_fence;
+            continue;
+        }
+        if in_code_fence {
+            continue;
+        }
+        collect_local_markdown_links_from_line(line, index + 1, &mut links);
+    }
+    links
+}
+
+fn collect_local_markdown_links_from_line(
+    line: &str,
+    line_number: usize,
+    links: &mut Vec<LocalMarkdownLink>,
+) {
+    let bytes = line.as_bytes();
+    let mut cursor = 0;
+    while let Some(label_start_offset) = line[cursor..].find('[') {
+        let label_start = cursor + label_start_offset;
+        if label_start > 0 && bytes[label_start - 1] == b'!' {
+            cursor = label_start + 1;
+            continue;
+        }
+        let Some(label_end_offset) = line[label_start + 1..].find(']') else {
+            break;
+        };
+        let label_end = label_start + 1 + label_end_offset;
+        if !line[label_end + 1..].starts_with('(') {
+            cursor = label_end + 1;
+            continue;
+        }
+        let target_start = label_end + 2;
+        let Some(target_end_offset) = line[target_start..].find(')') else {
+            break;
+        };
+        let target_end = target_start + target_end_offset;
+        let target = line[target_start..target_end].trim();
+        if is_local_docs_link_target(target) {
+            links.push(LocalMarkdownLink {
+                line: line_number,
+                target: target.to_string(),
+            });
+        }
+        cursor = target_end + 1;
+    }
+}
+
+fn is_local_docs_link_target(target: &str) -> bool {
+    !target.is_empty()
+        && !target.starts_with('#')
+        && !target.starts_with("special://")
+        && !target.starts_with("http://")
+        && !target.starts_with("https://")
+        && !target.starts_with("mailto:")
+}
+
+fn resolve_local_doc_link(source_output: &Path, target: &str) -> PathBuf {
+    let without_fragment = target.split('#').next().unwrap_or(target);
+    let target_path = Path::new(without_fragment);
+    let resolved = if target_path.is_absolute() {
+        target_path.to_path_buf()
+    } else {
+        source_output
+            .parent()
+            .unwrap_or_else(|| Path::new(""))
+            .join(target_path)
+    };
+    normalize_lexical_path(&resolved)
+}
+
+fn normalize_lexical_path(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                normalized.pop();
+            }
+            _ => normalized.push(component.as_os_str()),
+        }
+    }
+    normalized
+}
+
+fn incoming_link_counts(
+    pages: &BTreeSet<PathBuf>,
+    links: &[PublicDocsLink],
+) -> BTreeMap<PathBuf, usize> {
+    let mut incoming = pages
+        .iter()
+        .map(|page| (page.clone(), 0))
+        .collect::<BTreeMap<_, _>>();
+    for link in links {
+        if let Some(count) = incoming.get_mut(&link.target) {
+            *count += 1;
+        }
+    }
+    incoming
+}
+
+fn reachable_pages(entrypoints: &BTreeSet<PathBuf>, links: &[PublicDocsLink]) -> BTreeSet<PathBuf> {
+    let mut adjacency: BTreeMap<PathBuf, Vec<PathBuf>> = BTreeMap::new();
+    for link in links {
+        adjacency
+            .entry(link.source.clone())
+            .or_default()
+            .push(link.target.clone());
+    }
+    let mut visited = BTreeSet::new();
+    let mut pending = entrypoints.iter().cloned().collect::<VecDeque<_>>();
+    while let Some(page) = pending.pop_front() {
+        if !visited.insert(page.clone()) {
+            continue;
+        }
+        if let Some(targets) = adjacency.get(&page) {
+            pending.extend(targets.iter().cloned());
+        }
+    }
+    visited
 }
 
 fn collect_repo_document_refs(
@@ -749,6 +1247,16 @@ impl DocumentTargets {
             DocumentTargetKind::Module => self.modules.contains(id),
             DocumentTargetKind::Area => self.areas.contains(id),
             DocumentTargetKind::Pattern => self.patterns.contains(id),
+        }
+    }
+
+    fn ids(&self, kind: DocumentTargetKind) -> &BTreeSet<String> {
+        match kind {
+            DocumentTargetKind::Spec => &self.specs,
+            DocumentTargetKind::Group => &self.groups,
+            DocumentTargetKind::Module => &self.modules,
+            DocumentTargetKind::Area => &self.areas,
+            DocumentTargetKind::Pattern => &self.patterns,
         }
     }
 }

@@ -40,10 +40,16 @@ fn init_creates_special_toml_in_current_directory() {
     let config =
         fs::read_to_string(root.join("special.toml")).expect("special.toml should be created");
     assert!(config.starts_with("version = \"1\"\nroot = \".\"\n"));
-    assert!(config.contains("# ignore = [\"README.md\", \"docs/install.md\"]"));
+    assert!(config.contains(
+        "# ignore = [\"README.md\", \"docs/install.md\", \"docs/contributor/release.md\"]"
+    ));
+    assert!(config.contains("# [docs]"));
+    assert!(config.contains("# entrypoints = [\"README.md\"]"));
     assert!(config.contains("# [[docs.outputs]]"));
-    assert!(config.contains("# source = \"docs/src/install.md\""));
-    assert!(config.contains("# output = \"docs/install.md\""));
+    assert!(config.contains("# source = \"docs/src/public\""));
+    assert!(config.contains("# output = \"docs\""));
+    assert!(config.contains("# source = \"docs/src/contributor\""));
+    assert!(config.contains("# output = \"docs/contributor\""));
     assert!(config.contains("# unsupported-implementation review bucket"));
     assert!(config.contains("# manager = \"mise\" # or \"asdf\""));
     assert!(config.contains("# [patterns.metrics]"));

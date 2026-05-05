@@ -79,8 +79,10 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 ```
 
 Use `@area` for structure and [`@module`](special://spec/SPECIAL.MODULE_COMMAND)
-for concrete ownership. Current modules need direct implementation ownership
-unless they are planned.
+for concrete ownership. An area may be pure structure. A current module may be
+declared in markdown, but it only becomes implemented when real source attaches
+with `@implements` or `@fileimplements`; otherwise `special arch --unimplemented`
+keeps it visible as architecture drift.
 
 ## Patterns
 

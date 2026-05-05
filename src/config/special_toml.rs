@@ -22,6 +22,7 @@ pub(crate) struct SpecialToml {
     pub(crate) version_explicit: bool,
     pub(crate) ignore_patterns: Vec<String>,
     pub(crate) docs_outputs: Vec<DocsOutputConfig>,
+    pub(crate) docs_entrypoints: Vec<PathBuf>,
     pub(crate) health_ignore_unexplained_patterns: Vec<String>,
     pub(crate) toolchain_manager: Option<ToolchainManager>,
     pub(crate) pattern_benchmarks: PatternMetricBenchmarks,
@@ -100,6 +101,7 @@ struct RawSpecialToml {
 #[serde(deny_unknown_fields)]
 struct RawDocsConfig {
     outputs: Option<Vec<RawDocsOutputConfig>>,
+    entrypoints: Option<Vec<String>>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -197,6 +199,9 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
         if let Some(outputs) = docs.outputs {
             config.docs_outputs = parse_docs_outputs(outputs, line)?;
         }
+        if let Some(entrypoints) = docs.entrypoints {
+            config.docs_entrypoints = parse_docs_entrypoints(entrypoints, line)?;
+        }
     }
 
     if let Some(health) = raw.health
@@ -240,6 +245,18 @@ fn parse_docs_outputs(
                 source: parse_required_path(raw.source, "docs output source", line)?,
                 output: parse_required_path(raw.output, "docs output path", line)?,
             })
+        })
+        .collect()
+}
+
+fn parse_docs_entrypoints(raw_entrypoints: Vec<String>, line: usize) -> Result<Vec<PathBuf>> {
+    raw_entrypoints
+        .into_iter()
+        .map(|entrypoint| {
+            if entrypoint.trim().is_empty() {
+                bail!("line {} must not contain an empty docs entrypoint path", line);
+            }
+            Ok(PathBuf::from(entrypoint))
         })
         .collect()
 }

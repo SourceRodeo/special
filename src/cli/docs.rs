@@ -13,7 +13,10 @@ use super::common::{report_cache_stats, resolve_cli_paths};
 use super::status::{CommandStatus, StatusStep};
 use crate::cache::{reset_cache_stats, with_cache_status_notifier};
 use crate::config::{DocsOutputConfig, resolve_project_root};
-use crate::docs::{build_docs_document, render_docs_text, write_docs_path, write_docs_paths};
+use crate::docs::{
+    build_docs_document, build_docs_metrics_document, render_docs_json, render_docs_metrics_json,
+    render_docs_metrics_text, render_docs_text, write_docs_path, write_docs_paths,
+};
 use crate::model::LintReport;
 use crate::render::render_lint_text;
 
@@ -39,6 +42,24 @@ pub(super) struct DocsArgs {
         help = "Write docs to an output path; omit PATH to use configured docs outputs"
     )]
     output: Option<Option<PathBuf>>,
+
+    #[arg(
+        short = 'm',
+        long = "metrics",
+        help = "Show documentation coverage and public docs graph metrics"
+    )]
+    metrics: bool,
+
+    #[arg(long = "json", help = "Render the view as JSON")]
+    json: bool,
+
+    #[arg(
+        short = 'v',
+        long = "verbose",
+        requires = "metrics",
+        help = "Show undocumented target ids and full docs graph detail"
+    )]
+    verbose: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -82,7 +103,13 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
     reset_cache_stats();
     status.phase("resolving project root");
     if let Some(command) = args.command {
-        if !args.positional_paths.is_empty() || !args.targets.is_empty() || args.output.is_some() {
+        if !args.positional_paths.is_empty()
+            || !args.targets.is_empty()
+            || args.output.is_some()
+            || args.metrics
+            || args.json
+            || args.verbose
+        {
             bail!("special docs build cannot be combined with parent docs options");
         }
         return match command {
@@ -96,6 +123,9 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
         );
     }
     let output_requested = args.output.is_some();
+    if args.metrics && output_requested {
+        bail!("special docs --metrics cannot be combined with --output");
+    }
     if args.targets.len() > 1 && output_requested {
         bail!("--output requires exactly one --target path");
     }
@@ -118,14 +148,39 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
             output_path.as_deref(),
         ) {
             (targets, None, None) => {
-                let (document, report) = build_docs_document(
-                    &resolution.root,
-                    &resolution.ignore_patterns,
-                    resolution.version,
-                    targets,
-                )?;
-                let rendered =
-                    (!report.has_errors()).then(|| render_docs_text(&resolution.root, &document));
+                let (report, rendered) = if args.metrics {
+                    let (document, report) = build_docs_metrics_document(
+                        &resolution.root,
+                        &resolution.ignore_patterns,
+                        resolution.version,
+                        targets,
+                        &resolution.docs_outputs,
+                        &resolution.docs_entrypoints,
+                    )?;
+                    let rendered = (!report.has_errors()).then(|| {
+                        if args.json {
+                            render_docs_metrics_json(&document)
+                        } else {
+                            Ok(render_docs_metrics_text(&document, args.verbose))
+                        }
+                    });
+                    (report, rendered.transpose()?)
+                } else {
+                    let (document, report) = build_docs_document(
+                        &resolution.root,
+                        &resolution.ignore_patterns,
+                        resolution.version,
+                        targets,
+                    )?;
+                    let rendered = (!report.has_errors()).then(|| {
+                        if args.json {
+                            render_docs_json(&document)
+                        } else {
+                            Ok(render_docs_text(&resolution.root, &document))
+                        }
+                    });
+                    (report, rendered.transpose()?)
+                };
                 Ok((report, rendered))
             }
             ([input], Some(Some(_)), Some(output)) => {

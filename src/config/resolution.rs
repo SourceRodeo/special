@@ -23,6 +23,7 @@ pub struct RootResolution {
     pub config_path: Option<PathBuf>,
     pub ignore_patterns: Vec<String>,
     pub(crate) docs_outputs: Vec<DocsOutputConfig>,
+    pub(crate) docs_entrypoints: Vec<PathBuf>,
     pub health_ignore_unexplained_patterns: Vec<String>,
     pub(crate) pattern_benchmarks: PatternMetricBenchmarks,
 }

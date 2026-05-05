@@ -84,13 +84,19 @@ unsupported implementation, and traceability from tests to current specs.
 ```sh
 special docs
 special docs --target docs/src
+special docs --metrics
+special docs --metrics --json
 special docs build
 special docs build docs/src/install.md docs/install.md
 ```
 
 By default, docs prints documentation relationships and writes nothing.
-`special docs build` writes configured docs outputs or the explicit source/output
-pair.
+With [`--metrics`](special://spec/SPECIAL.DOCS_COMMAND.METRICS), it reports
+[coverage](special://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE) for specs,
+groups, modules, areas, and patterns, plus public docs
+[interconnectivity](special://spec/SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY)
+from configured docs outputs. `special docs build` writes configured docs
+outputs or the explicit source/output pair.
 
 ## [`special mcp`](special://spec/SPECIAL.MCP_COMMAND)
 
