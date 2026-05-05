@@ -1,5 +1,4 @@
 @filedocuments spec SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
-@filedocuments spec SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME
 # Install and Update
 
 Install `special` with Homebrew when possible:
@@ -8,7 +7,7 @@ Install `special` with Homebrew when possible:
 brew install sourcerodeo/homebrew-tap/special
 ```
 
-Cargo is the secondary route:
+[Cargo is the secondary route](special://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME):
 
 ```sh
 cargo install special-cli

@@ -11,7 +11,7 @@ use std::fs;
 use support::{run_special, temp_repo_dir};
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.OUTPUT
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.DIRECTORY
 fn docs_output_rewrites_special_links_and_removes_document_lines() {
     let root = temp_repo_dir("special-cli-docs-output");
     write_docs_fixture(&root);
@@ -21,7 +21,6 @@ fn docs_output_rewrites_special_links_and_removes_document_lines() {
         concat!(
             "# Guide\n\n",
             "@documents spec EXPORT.CSV.HEADERS\n",
-            "@filedocuments module APP.PARSER\n",
             "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
             "[Parser ownership](special://module/APP.PARSER) is documented.\n",
             "[Cache fill](special://pattern/CACHE.SINGLE_FLIGHT_FILL) is intentional.\n",
@@ -48,12 +47,116 @@ fn docs_output_rewrites_special_links_and_removes_document_lines() {
     assert!(rendered.contains("Cache fill is intentional."));
     assert!(!rendered.contains("special://"));
     assert!(!rendered.contains("@documents"));
-    assert!(!rendered.contains("@filedocuments"));
     assert_eq!(
         fs::read_to_string(root.join("docs/dist/nested/asset.txt"))
             .expect("plain asset should be copied"),
         "plain\n"
     );
+}
+
+#[test]
+// @verifies SPECIAL.DOCS.LINKS.OUTPUT
+fn docs_output_rewrites_special_links_to_plain_text() {
+    let root = temp_repo_dir("special-cli-docs-link-output");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("source.md"),
+        "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("source docs markdown should be written");
+
+    let output = run_special(
+        &root,
+        &["docs", "--target", "source.md", "--output", "public.md"],
+    );
+
+    assert!(
+        output.status.success(),
+        "docs output should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let rendered = fs::read_to_string(root.join("public.md")).expect("output should be written");
+    assert_eq!(rendered, "CSV exports include headers.\n");
+}
+
+#[test]
+// @verifies SPECIAL.DOCS.DOCUMENTS_LINES
+fn docs_lint_rejects_stacked_document_relationship_lines() {
+    let root = temp_repo_dir("special-cli-docs-stacked-document-lines");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("docs.md"),
+        concat!(
+            "@documents spec EXPORT.CSV.HEADERS\n",
+            "@filedocuments module APP.PARSER\n",
+        ),
+    )
+    .expect("docs markdown should be written");
+
+    let output = run_special(&root, &["lint"]);
+
+    assert!(!output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("documentation relationship lines may not be stacked"));
+}
+
+#[test]
+// @verifies SPECIAL.DOCS.LINKS.POLYMORPHIC
+fn docs_links_accept_polymorphic_targets() {
+    let root = temp_repo_dir("special-cli-docs-polymorphic-links");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("docs.md"),
+        concat!(
+            "[Export group](special://group/EXPORT).\n",
+            "[CSV spec](special://spec/EXPORT.CSV.HEADERS).\n",
+            "[App area](special://area/APP).\n",
+            "[Parser module](special://module/APP.PARSER).\n",
+            "[Cache pattern](special://pattern/CACHE.SINGLE_FLIGHT_FILL).\n",
+        ),
+    )
+    .expect("docs markdown should be written");
+
+    let output = run_special(&root, &["docs"]);
+
+    assert!(
+        output.status.success(),
+        "docs validation should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("group EXPORT"));
+    assert!(stdout.contains("spec EXPORT.CSV.HEADERS"));
+    assert!(stdout.contains("area APP"));
+    assert!(stdout.contains("module APP.PARSER"));
+    assert!(stdout.contains("pattern CACHE.SINGLE_FLIGHT_FILL"));
+}
+
+#[test]
+// @verifies SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS
+fn special_toml_accepts_docs_output_mappings() {
+    let root = temp_repo_dir("special-cli-docs-config-docs-paths");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("special.toml"),
+        "version = \"1\"\nroot = \".\"\n\n[[docs.outputs]]\nsource = \"docs/src\"\noutput = \"docs/dist\"\n",
+    )
+    .expect("special.toml should be written");
+    fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
+    fs::write(
+        root.join("docs/src/README.md"),
+        "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("docs source should be written");
+
+    let output = run_special(&root, &["docs", "--output"]);
+
+    assert!(
+        output.status.success(),
+        "configured docs output should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(root.join("docs/dist/README.md").exists());
 }
 
 #[test]

@@ -1,5 +1,4 @@
 @filedocuments module SPECIAL
-@filedocuments spec SPECIAL.DOCS_COMMAND.OUTPUT
 # special
 
 [Repo-native contracts, architecture ownership, adopted patterns, and traceability](special://module/SPECIAL)

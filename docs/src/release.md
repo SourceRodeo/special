@@ -1,7 +1,4 @@
 @filedocuments spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.WORKFLOW
-@filedocuments spec SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE
-@filedocuments spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK
-@filedocuments spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.VALIDATION_EVIDENCE
 # Release and Distribution Notes
 
 Special distributes source through GitHub and binaries through GitHub Releases,
@@ -9,7 +6,8 @@ Homebrew, and Cargo.
 
 ## Source Dependency Layout
 
-The parser crate lives in the `SourceRodeo/crates` monorepo:
+The [parser crate](special://spec/SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE)
+lives in the `SourceRodeo/crates` monorepo:
 
 ```text
 crates/
@@ -32,11 +30,13 @@ python3 scripts/tag-release.py X.Y.Z --validate
 python3 scripts/tag-release.py X.Y.Z --publish
 ```
 
-The validation phase records evidence for the exact version and revision.
+The validation phase records
+[evidence for the exact version and revision](special://spec/SPECIAL.DISTRIBUTION.RELEASE_FLOW.VALIDATION_EVIDENCE).
 
 ## Homebrew
 
-The Homebrew formula lives in `sourcerodeo/homebrew-tap` at
+The [Homebrew formula](special://spec/SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK)
+lives in `sourcerodeo/homebrew-tap` at
 `Formula/special.rb`. Release validation reads the tap formula and checks version,
 release URL, archive selectors, release asset digests, and checksum pairing
 against the GitHub release assets.

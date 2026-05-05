@@ -38,7 +38,7 @@ source = "docs/src/README.md"
 output = "README.md"
 ```
 
-`special docs --output` writes every configured mapping. File mappings write one
+`special docs build` writes every configured mapping. File mappings write one
 file. Directory mappings preserve the tree relative to the source directory.
 
 ## Health Ignore

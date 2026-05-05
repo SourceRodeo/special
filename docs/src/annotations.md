@@ -1,9 +1,4 @@
 @filedocuments spec SPECIAL.PARSE
-@filedocuments spec SPECIAL.PARSE.VERIFIES
-@filedocuments spec SPECIAL.PARSE.ATTESTS
-@filedocuments spec SPECIAL.MODULE_COMMAND
-@filedocuments spec SPECIAL.PATTERNS.DEFINITIONS
-@filedocuments spec SPECIAL.DOCS_COMMAND
 # Annotation Reference
 
 Special annotations are ordinary comment or markdown lines. Declarations can live
@@ -48,8 +43,8 @@ test("export writes headers", () => {
 });
 ```
 
-Use `@fileverifies ID` when the whole file is the proof artifact. One verify
-block targets one spec id.
+Use [`@fileverifies ID`](special://spec/SPECIAL.PARSE.VERIFIES) when the whole
+file is the proof artifact. One verify block targets one spec id.
 
 ## Attestation
 
@@ -61,9 +56,9 @@ last_reviewed: 2026-05-03
 review_interval_days: 90
 ```
 
-Attestations are for manual or external evidence. They should include the
-artifact, owner, review date, and review interval when the claim depends on
-review freshness.
+[Attestations](special://spec/SPECIAL.PARSE.ATTESTS) are for manual or external
+evidence. They should include the artifact, owner, review date, and review
+interval when the claim depends on review freshness.
 
 ## Architecture
 
@@ -83,8 +78,9 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 }
 ```
 
-Use `@area` for structure and `@module` for concrete ownership. Current modules
-need direct implementation ownership unless they are planned.
+Use `@area` for structure and [`@module`](special://spec/SPECIAL.MODULE_COMMAND)
+for concrete ownership. Current modules need direct implementation ownership
+unless they are planned.
 
 ## Patterns
 
@@ -102,12 +98,14 @@ export async function loadOrBuildExportCache(key: string): Promise<ExportCache> 
 }
 ```
 
-Patterns capture intentional implementation approaches. Applications must attach
-to source, not markdown declarations.
+[Patterns](special://spec/SPECIAL.PATTERNS.DEFINITIONS) capture intentional
+implementation approaches. Applications must attach to source, not markdown
+declarations.
 
 ## Documentation
 
-Docs source can attach prose to Special facts:
+[Docs source](special://spec/SPECIAL.DOCS_COMMAND) can attach prose to Special
+facts:
 
 ```markdown
 @filedocuments spec APP.CONFIG
@@ -115,5 +113,5 @@ Docs source can attach prose to Special facts:
 [Configuration is loaded from app.toml](special://spec/APP.CONFIG).
 ```
 
-`special docs --output` removes `@documents` and `@filedocuments` lines and
+`special docs build` removes `@documents` and `@filedocuments` lines and
 rewrites `special://kind/ID` links to normal text.

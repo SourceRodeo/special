@@ -5,7 +5,8 @@ Homebrew, and Cargo.
 
 ## Source Dependency Layout
 
-The parser crate lives in the `SourceRodeo/crates` monorepo:
+The parser crate
+lives in the `SourceRodeo/crates` monorepo:
 
 ```text
 crates/
@@ -28,11 +29,13 @@ python3 scripts/tag-release.py X.Y.Z --validate
 python3 scripts/tag-release.py X.Y.Z --publish
 ```
 
-The validation phase records evidence for the exact version and revision.
+The validation phase records
+evidence for the exact version and revision.
 
 ## Homebrew
 
-The Homebrew formula lives in `sourcerodeo/homebrew-tap` at
+The Homebrew formula
+lives in `sourcerodeo/homebrew-tap` at
 `Formula/special.rb`. Release validation reads the tap formula and checks version,
 release URL, archive selectors, release asset digests, and checksum pairing
 against the GitHub release assets.

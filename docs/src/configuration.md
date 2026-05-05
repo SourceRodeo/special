@@ -1,6 +1,4 @@
 @filedocuments spec SPECIAL.CONFIG.SPECIAL_TOML
-@filedocuments spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS
-@filedocuments spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.IGNORE_UNEXPLAINED
 # Configuration
 
 `special.toml` anchors root discovery and optional project policy.
@@ -29,7 +27,7 @@ ignore = [
 Use `ignore` for generated or intentionally out-of-scope paths that Special
 should not parse as annotation source.
 
-## Docs Outputs
+## [Docs Outputs](special://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS)
 
 ```toml
 [[docs.outputs]]
@@ -41,10 +39,10 @@ source = "docs/src/README.md"
 output = "README.md"
 ```
 
-`special docs --output` writes every configured mapping. File mappings write one
+`special docs build` writes every configured mapping. File mappings write one
 file. Directory mappings preserve the tree relative to the source directory.
 
-## Health Ignore
+## [Health Ignore](special://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY.IGNORE_UNEXPLAINED)
 
 ```toml
 [health]

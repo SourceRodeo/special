@@ -83,12 +83,13 @@ unsupported implementation, and traceability from tests to current specs.
 ```sh
 special docs
 special docs --target docs/src
-special docs --output
-special docs --target docs/src/install.md --output docs/install.md
+special docs build
+special docs build docs/src/install.md docs/install.md
 ```
 
-By default, docs prints documentation relationships and writes nothing. With
-`--output`, it writes configured docs outputs or the explicit target/output pair.
+By default, docs prints documentation relationships and writes nothing.
+`special docs build` writes configured docs outputs or the explicit source/output
+pair.
 
 ## `special mcp`
 

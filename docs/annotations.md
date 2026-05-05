@@ -42,8 +42,8 @@ test("export writes headers", () => {
 });
 ```
 
-Use `@fileverifies ID` when the whole file is the proof artifact. One verify
-block targets one spec id.
+Use `@fileverifies ID` when the whole
+file is the proof artifact. One verify block targets one spec id.
 
 ## Attestation
 
@@ -55,9 +55,9 @@ last_reviewed: 2026-05-03
 review_interval_days: 90
 ```
 
-Attestations are for manual or external evidence. They should include the
-artifact, owner, review date, and review interval when the claim depends on
-review freshness.
+Attestations are for manual or external
+evidence. They should include the artifact, owner, review date, and review
+interval when the claim depends on review freshness.
 
 ## Architecture
 
@@ -77,8 +77,9 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 }
 ```
 
-Use `@area` for structure and `@module` for concrete ownership. Current modules
-need direct implementation ownership unless they are planned.
+Use `@area` for structure and `@module`
+for concrete ownership. Current modules need direct implementation ownership
+unless they are planned.
 
 ## Patterns
 
@@ -96,12 +97,14 @@ export async function loadOrBuildExportCache(key: string): Promise<ExportCache> 
 }
 ```
 
-Patterns capture intentional implementation approaches. Applications must attach
-to source, not markdown declarations.
+Patterns capture intentional
+implementation approaches. Applications must attach to source, not markdown
+declarations.
 
 ## Documentation
 
-Docs source can attach prose to Special facts:
+Docs source can attach prose to Special
+facts:
 
 ```markdown
 @filedocuments spec APP.CONFIG
@@ -109,5 +112,5 @@ Docs source can attach prose to Special facts:
 [Configuration is loaded from app.toml](special://spec/APP.CONFIG).
 ```
 
-`special docs --output` removes `@documents` and `@filedocuments` lines and
+`special docs build` removes `@documents` and `@filedocuments` lines and
 rewrites `special://kind/ID` links to normal text.

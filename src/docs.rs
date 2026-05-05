@@ -15,7 +15,7 @@ Documentation links accept `spec`, `group`, `module`, `area`, and `pattern` targ
 special docs --target PATH --output PATH rewrites markdown `special://KIND/ID` links to their label text in the emitted artifact.
 
 @spec SPECIAL.DOCS.DOCUMENTS_LINES
-Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` can be stacked and are removed from docs output.
+Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` attach one documentation relationship per line, are removed from docs output, and may not appear as adjacent stacked relationship lines.
 
 @spec SPECIAL.DOCS_COMMAND
 special docs validates documentation links and prints a documentation relationship view without writing files.
@@ -346,14 +346,19 @@ fn collect_source_document_refs(
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Result<()> {
     for block in collect_comment_blocks(root, ignore_patterns)? {
+        let mut previous_docs_line = false;
         for entry in &block.lines {
-            parse_documents_annotation_line(
+            let parsed = parse_documents_annotation_line(
                 entry.text.trim(),
                 &block.path,
                 entry.line,
                 refs,
                 diagnostics,
             );
+            if parsed && previous_docs_line {
+                push_stacked_document_line_diagnostic(&block.path, entry.line, diagnostics);
+            }
+            previous_docs_line = parsed;
         }
     }
     Ok(())
@@ -385,16 +390,22 @@ fn collect_markdown_refs(
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     let mut in_code_fence = false;
+    let mut previous_docs_line = false;
     for (index, line) in content.lines().enumerate() {
         let line_number = index + 1;
         if starts_markdown_fence(line) {
             in_code_fence = !in_code_fence;
+            previous_docs_line = false;
             continue;
         }
         if in_code_fence {
             continue;
         }
-        parse_markdown_documents_line(line, path, line_number, refs, diagnostics);
+        let parsed = parse_markdown_documents_line(line, path, line_number, refs, diagnostics);
+        if parsed && previous_docs_line {
+            push_stacked_document_line_diagnostic(path, line_number, diagnostics);
+        }
+        previous_docs_line = parsed;
         collect_special_link_refs(path, line, line_number, refs, diagnostics);
     }
 }
@@ -407,12 +418,14 @@ fn write_markdown_output(
 ) -> String {
     let mut output = String::new();
     let mut in_code_fence = false;
+    let mut previous_docs_line = false;
 
     for (index, line) in content.split_inclusive('\n').enumerate() {
         let line_number = index + 1;
         let raw = line.trim_end_matches('\n').trim_end_matches('\r');
         if starts_markdown_fence(raw) {
             in_code_fence = !in_code_fence;
+            previous_docs_line = false;
             output.push_str(line);
             continue;
         }
@@ -422,8 +435,13 @@ fn write_markdown_output(
         }
 
         if parse_markdown_documents_line(raw, path, line_number, refs, diagnostics) {
+            if previous_docs_line {
+                push_stacked_document_line_diagnostic(path, line_number, diagnostics);
+            }
+            previous_docs_line = true;
             continue;
         }
+        previous_docs_line = false;
 
         output.push_str(&write_special_link_output(
             path,
@@ -451,6 +469,20 @@ fn parse_markdown_documents_line(
         return false;
     };
     parse_documents_annotation_line(trimmed, path, line_number, refs, diagnostics)
+}
+
+fn push_stacked_document_line_diagnostic(
+    path: &Path,
+    line_number: usize,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    diagnostics.push(Diagnostic {
+        severity: DiagnosticSeverity::Error,
+        path: path.to_path_buf(),
+        line: line_number,
+        message: "documentation relationship lines may not be stacked; use local special:// links"
+            .to_string(),
+    });
 }
 
 fn write_special_link_output(

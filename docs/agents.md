@@ -9,8 +9,9 @@ making them scrape arbitrary files first.
 special mcp
 ```
 
-The server speaks stdio MCP. It exposes controlled tools for status, overview,
-specs, architecture, patterns, docs validation, docs output, lint, and health.
+The server speaks stdio MCP. It exposes controlled tools
+for status, overview, specs, architecture, patterns, docs validation,
+docs output, lint, and health.
 
 The first MCP surface is intentionally inspection-heavy. It does not make broad
 source edits or mutate project configuration. Docs output is exposed as a bounded
@@ -34,7 +35,8 @@ The plugin includes:
 
 ## Bundled Skills
 
-For users who do not use plugins, the binary can print or install bundled skills:
+For users who do not use plugins, the binary can
+print or install bundled skills:
 
 ```sh
 special skills
