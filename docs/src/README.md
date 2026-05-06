@@ -1,17 +1,17 @@
 @filedocuments module SPECIAL
 # special
 
-[Repo-native contracts, architecture ownership, adopted patterns, and traceability](special://module/SPECIAL)
+[Repo-native contracts, architecture ownership, adopted patterns, and traceability](documents://module/SPECIAL)
 for codebases maintained by humans and agents.
 
-`special` reads [lightweight annotations from normal source files and markdown](special://spec/SPECIAL.PARSE),
+`special` reads [lightweight annotations from normal source files and markdown](documents://spec/SPECIAL.PARSE),
 then turns them into inspectable CLI views: what the repo claims, what supports
 those claims, which code owns which architecture boundary, which implementation
 patterns are intentional, and which code is still hard to explain.
 
 ## Install
 
-[Homebrew is the primary install path](special://spec/SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL):
+[Homebrew is the primary install path](documents://spec/SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL):
 
 ```sh
 brew install sourcerodeo/homebrew-tap/special
@@ -24,7 +24,7 @@ registry:
 cargo install special-cli
 ```
 
-Both install the [`special` binary](special://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME).
+Both install the [`special` binary](documents://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME).
 
 ## Start Here
 
@@ -90,16 +90,16 @@ index that keeps claims, evidence, and implementation boundaries connected.
 
 | Command | Use it to |
 | --- | --- |
-| `special` | [See a compact repo overview and suggested next commands](special://spec/SPECIAL.HELP.ROOT_OVERVIEW). |
-| `special specs` | [Inspect current, planned, deprecated, and unsupported product claims](special://spec/SPECIAL.SPEC_COMMAND). |
-| `special arch` | [Inspect architecture declarations and implementation ownership](special://spec/SPECIAL.MODULE_COMMAND). |
-| `special patterns` | [Inspect adopted implementation patterns and their source applications](special://spec/SPECIAL.PATTERNS.COMMAND). |
-| `special health` | [Inspect repo-wide quality and traceability signals](special://spec/SPECIAL.HEALTH_COMMAND). |
-| `special docs` | [Validate docs relationships](special://spec/SPECIAL.DOCS_COMMAND), inspect [docs coverage metrics](special://spec/SPECIAL.DOCS_COMMAND.METRICS), or write docs outputs. |
-| `special mcp` | [Run the stdio MCP server for controlled agent access](special://spec/SPECIAL.MCP_COMMAND). |
-| `special lint` | [Check annotation and reference structure](special://spec/SPECIAL.LINT_COMMAND). |
+| `special` | [See a compact repo overview and suggested next commands](documents://spec/SPECIAL.HELP.ROOT_OVERVIEW). |
+| `special specs` | [Inspect current, planned, deprecated, and unsupported product claims](documents://spec/SPECIAL.SPEC_COMMAND). |
+| `special arch` | [Inspect architecture declarations and implementation ownership](documents://spec/SPECIAL.MODULE_COMMAND). |
+| `special patterns` | [Inspect adopted implementation patterns and their source applications](documents://spec/SPECIAL.PATTERNS.COMMAND). |
+| `special health` | [Inspect repo-wide quality and traceability signals](documents://spec/SPECIAL.HEALTH_COMMAND). |
+| `special docs` | [Validate docs relationships](documents://spec/SPECIAL.DOCS_COMMAND), inspect [docs coverage metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS), or write docs outputs. |
+| `special mcp` | [Run the stdio MCP server for controlled agent access](documents://spec/SPECIAL.MCP_COMMAND). |
+| `special lint` | [Check annotation and reference structure](documents://spec/SPECIAL.LINT_COMMAND). |
 | `special init` | Add a starter `special.toml`. |
-| `special skills` | [Print or install bundled workflow skills](special://spec/SPECIAL.SKILLS.COMMAND.HELP). |
+| `special skills` | [Print or install bundled workflow skills](documents://spec/SPECIAL.SKILLS.COMMAND.HELP). |
 
 ## Project Truth
 

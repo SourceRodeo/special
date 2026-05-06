@@ -6,13 +6,13 @@ Validates documentation-to-Special relationships and renders public markdown fro
 Documentation relationship and docs-output behavior.
 
 @spec SPECIAL.DOCS.LINKS
-Markdown links whose destination is `special://KIND/ID` attach the linked label text as documentation evidence for the targeted Special identifier.
+Markdown links whose destination is `documents://KIND/ID` attach the linked label text as documentation evidence for the targeted Special identifier.
 
 @spec SPECIAL.DOCS.LINKS.POLYMORPHIC
 Documentation links accept `spec`, `group`, `module`, `area`, and `pattern` targets.
 
 @spec SPECIAL.DOCS.LINKS.OUTPUT
-special docs build SOURCE OUTPUT rewrites markdown `special://KIND/ID` links to their label text in the emitted artifact.
+special docs build SOURCE OUTPUT rewrites markdown `documents://KIND/ID` links to their label text in the emitted artifact.
 
 @spec SPECIAL.DOCS.DOCUMENTS_LINES
 Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` attach one documentation relationship per line, are removed from docs output, and may not appear as adjacent stacked relationship lines.
@@ -732,6 +732,7 @@ fn collect_local_markdown_links_from_line(
 fn is_local_docs_link_target(target: &str) -> bool {
     !target.is_empty()
         && !target.starts_with('#')
+        && !target.starts_with("documents://")
         && !target.starts_with("special://")
         && !target.starts_with("http://")
         && !target.starts_with("https://")
@@ -907,7 +908,8 @@ fn collect_markdown_refs(
             push_stacked_document_line_diagnostic(path, line_number, diagnostics);
         }
         previous_docs_line = parsed;
-        collect_special_link_refs(path, line, line_number, refs, diagnostics);
+        collect_document_link_refs(path, line, line_number, refs, diagnostics);
+        collect_reserved_special_link_diagnostics(path, line, line_number, diagnostics);
     }
 }
 
@@ -944,7 +946,8 @@ fn write_markdown_output(
         }
         previous_docs_line = false;
 
-        output.push_str(&write_special_link_output(
+        collect_reserved_special_link_diagnostics(path, line, line_number, diagnostics);
+        output.push_str(&write_document_link_output(
             path,
             line,
             line_number,
@@ -981,12 +984,13 @@ fn push_stacked_document_line_diagnostic(
         severity: DiagnosticSeverity::Error,
         path: path.to_path_buf(),
         line: line_number,
-        message: "documentation relationship lines may not be stacked; use local special:// links"
-            .to_string(),
+        message:
+            "documentation relationship lines may not be stacked; use local documents:// links"
+                .to_string(),
     });
 }
 
-fn write_special_link_output(
+fn write_document_link_output(
     path: &Path,
     line: &str,
     line_number: usize,
@@ -996,10 +1000,10 @@ fn write_special_link_output(
     let mut output = String::new();
     let mut cursor = 0;
 
-    for link in parse_source_annotations::special_markdown_link_candidates(line) {
+    for link in document_markdown_link_candidates(line) {
         output.push_str(&line[cursor..link.span.start]);
         output.push_str(link.label);
-        push_special_link_ref(path, line_number, link, refs, diagnostics);
+        push_document_link_ref(path, line_number, link, refs, diagnostics);
         cursor = link.span.end;
     }
 
@@ -1007,22 +1011,41 @@ fn write_special_link_output(
     output
 }
 
-fn collect_special_link_refs(
+fn collect_document_link_refs(
     path: &Path,
     line: &str,
     line_number: usize,
     refs: &mut Vec<DocumentRef>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    for link in parse_source_annotations::special_markdown_link_candidates(line) {
-        push_special_link_ref(path, line_number, link, refs, diagnostics);
+    for link in document_markdown_link_candidates(line) {
+        push_document_link_ref(path, line_number, link, refs, diagnostics);
     }
 }
 
-fn push_special_link_ref(
+fn collect_reserved_special_link_diagnostics(
+    path: &Path,
+    line: &str,
+    line_number: usize,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    for link in parse_source_annotations::special_markdown_link_candidates(line) {
+        diagnostics.push(Diagnostic {
+            severity: DiagnosticSeverity::Error,
+            path: path.to_path_buf(),
+            line: line_number,
+            message: format!(
+                "`special://` is reserved; use `documents://kind/ID` for documentation evidence links, got `{}`",
+                link.uri
+            ),
+        });
+    }
+}
+
+fn push_document_link_ref(
     path: &Path,
     line_number: usize,
-    link: parse_source_annotations::SpecialMarkdownLinkCandidate<'_>,
+    link: DocumentMarkdownLinkCandidate<'_>,
     refs: &mut Vec<DocumentRef>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
@@ -1031,7 +1054,7 @@ fn push_special_link_ref(
             severity: DiagnosticSeverity::Error,
             path: path.to_path_buf(),
             line: line_number,
-            message: format!("malformed Special docs URI `{}`", link.uri),
+            message: format!("malformed documents URI `{}`", link.uri),
         });
         return;
     };
@@ -1051,9 +1074,82 @@ fn push_special_link_ref(
             severity: DiagnosticSeverity::Error,
             path: path.to_path_buf(),
             line: line_number,
-            message: format!("unknown Special docs target kind `{}`", target.kind),
+            message: format!("unknown documents target kind `{}`", target.kind),
         }),
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DocumentMarkdownLinkCandidate<'a> {
+    label: &'a str,
+    uri: &'a str,
+    target: Option<DocumentLinkTarget<'a>>,
+    span: parse_source_annotations::TextSpan,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DocumentLinkTarget<'a> {
+    kind: &'a str,
+    id: &'a str,
+}
+
+fn document_markdown_link_candidates(line: &str) -> Vec<DocumentMarkdownLinkCandidate<'_>> {
+    let mut links = Vec::new();
+    let mut cursor = 0;
+
+    while let Some(open_rel) = line[cursor..].find('[') {
+        let open = cursor + open_rel;
+        if is_inside_inline_code_span(line, open) {
+            cursor = open + 1;
+            continue;
+        }
+        let Some(close_rel) = line[open + 1..].find("](") else {
+            break;
+        };
+        let close = open + 1 + close_rel;
+        let target_start = close + 2;
+        let Some(target_end_rel) = line[target_start..].find(')') else {
+            break;
+        };
+        let target_end = target_start + target_end_rel;
+        let uri = &line[target_start..target_end];
+        if uri.starts_with("documents://") {
+            links.push(DocumentMarkdownLinkCandidate {
+                label: &line[open + 1..close],
+                uri,
+                target: document_link_target(uri),
+                span: parse_source_annotations::TextSpan {
+                    start: open,
+                    end: target_end + 1,
+                },
+            });
+        }
+        cursor = target_end + 1;
+    }
+
+    links
+}
+
+fn document_link_target(uri: &str) -> Option<DocumentLinkTarget<'_>> {
+    let rest = uri.strip_prefix("documents://")?;
+    let (kind, id) = rest.split_once('/')?;
+    if kind.is_empty() || id.trim().is_empty() {
+        return None;
+    }
+    Some(DocumentLinkTarget { kind, id })
+}
+
+fn is_inside_inline_code_span(line: &str, byte_index: usize) -> bool {
+    let mut in_code = false;
+    for (index, character) in line.char_indices() {
+        if index >= byte_index {
+            break;
+        }
+        if character == '`' {
+            in_code = !in_code;
+        }
+    }
+    in_code
 }
 
 fn parse_documents_annotation_line(
@@ -1303,7 +1399,8 @@ fn existing_file_contains_docs_evidence(path: &Path) -> Result<bool> {
             continue;
         }
         let evidence_line = remove_inline_code_spans(line);
-        if evidence_line.contains("special://")
+        if evidence_line.contains("documents://")
+            || evidence_line.contains("special://")
             || evidence_line.contains("@documents")
             || evidence_line.contains("@filedocuments")
         {

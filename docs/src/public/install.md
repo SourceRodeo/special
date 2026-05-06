@@ -7,7 +7,7 @@ Install `special` with Homebrew when possible:
 brew install sourcerodeo/homebrew-tap/special
 ```
 
-[Cargo is the secondary route](special://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME):
+[Cargo is the secondary route](documents://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME):
 
 ```sh
 cargo install special-cli

@@ -29,7 +29,7 @@ ignore = [
 Use `ignore` for generated or intentionally out-of-scope paths that Special
 should not parse as annotation source.
 
-## [Docs Outputs](special://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS)
+## [Docs Outputs](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS)
 
 ```toml
 [docs]
@@ -53,10 +53,10 @@ for public docs trees, with separate file mappings only for outputs that live
 outside those trees, such as a root README. Directory mappings preserve paths
 relative to the source directory. Keep generated output files ignored by exact
 path so the ignore rules do not also hide docs source files.
-[`entrypoints`](special://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_ENTRYPOINTS)
+[`entrypoints`](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_ENTRYPOINTS)
 selects the public docs pages used for docs reachability metrics.
 
-## [Health Ignore](special://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY.IGNORE_UNEXPLAINED)
+## [Health Ignore](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY.IGNORE_UNEXPLAINED)
 
 ```toml
 [health]

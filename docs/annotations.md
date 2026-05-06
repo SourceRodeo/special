@@ -111,8 +111,8 @@ facts:
 ```markdown
 @filedocuments spec APP.CONFIG
 
-[Configuration is loaded from app.toml](special://spec/APP.CONFIG).
+[Configuration is loaded from app.toml](documents://spec/APP.CONFIG).
 ```
 
 `special docs build` removes `@documents` and `@filedocuments` lines and
-rewrites `special://kind/ID` links to normal text.
+rewrites `documents://kind/ID` links to normal text.

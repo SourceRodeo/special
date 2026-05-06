@@ -12,7 +12,7 @@ special
 
 Prints a compact repo overview with counts and suggested next commands.
 
-## [`special specs`](special://spec/SPECIAL.SPEC_COMMAND)
+## [`special specs`](documents://spec/SPECIAL.SPEC_COMMAND)
 
 ```sh
 special specs
@@ -31,7 +31,7 @@ Use specs for product claims. `--verbose` shows attached proof bodies. `--metric
 adds grouped counts. `--unverified` focuses review on current claims that do not
 have direct verification or attestation.
 
-## [`special arch`](special://spec/SPECIAL.MODULE_COMMAND)
+## [`special arch`](documents://spec/SPECIAL.MODULE_COMMAND)
 
 ```sh
 special arch
@@ -47,7 +47,7 @@ special arch --html
 Use arch for module ownership. `--metrics` adds implementation analysis when the
 active language pack can derive it.
 
-## [`special patterns`](special://spec/SPECIAL.PATTERNS.COMMAND)
+## [`special patterns`](documents://spec/SPECIAL.PATTERNS.COMMAND)
 
 ```sh
 special patterns
@@ -63,7 +63,7 @@ Use patterns for implementation approaches the project intentionally repeats.
 Pattern metrics are advisory; they can suggest missing applications or helper
 extraction candidates, but they are not lint failures.
 
-## [`special health`](special://spec/SPECIAL.HEALTH_COMMAND)
+## [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND)
 
 ```sh
 special health
@@ -79,7 +79,7 @@ special health --html
 Use health for repo-wide questions: duplicate items, unowned implementation,
 unsupported implementation, and traceability from tests to current specs.
 
-## [`special docs`](special://spec/SPECIAL.DOCS_COMMAND)
+## [`special docs`](documents://spec/SPECIAL.DOCS_COMMAND)
 
 ```sh
 special docs
@@ -91,14 +91,14 @@ special docs build docs/src/install.md docs/install.md
 ```
 
 By default, docs prints documentation relationships and writes nothing.
-With [`--metrics`](special://spec/SPECIAL.DOCS_COMMAND.METRICS), it reports
-[coverage](special://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE) for specs,
+With [`--metrics`](documents://spec/SPECIAL.DOCS_COMMAND.METRICS), it reports
+[coverage](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE) for specs,
 groups, modules, areas, and patterns, plus public docs
-[interconnectivity](special://spec/SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY)
+[interconnectivity](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY)
 from configured docs outputs. `special docs build` writes configured docs
 outputs or the explicit source/output pair.
 
-## [`special mcp`](special://spec/SPECIAL.MCP_COMMAND)
+## [`special mcp`](documents://spec/SPECIAL.MCP_COMMAND)
 
 ```sh
 special mcp
@@ -107,7 +107,7 @@ special mcp
 Starts the stdio MCP server for controlled agent access to Special inspection and
 validation surfaces.
 
-## [`special lint`](special://spec/SPECIAL.LINT_COMMAND)
+## [`special lint`](documents://spec/SPECIAL.LINT_COMMAND)
 
 ```sh
 special lint

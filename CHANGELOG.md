@@ -17,7 +17,7 @@
 ## 0.9.0 - 2026-05-05
 
 - Added `special docs` and `special docs build` for traceable public docs:
-  markdown can link claims to `special://` specs, modules, areas, groups, and
+  markdown can link claims with `documents://` specs, modules, areas, groups, and
   patterns while generated README/docs output stays free of Special evidence
   markup.
 - Added public docs coverage and interconnectivity metrics, including broken

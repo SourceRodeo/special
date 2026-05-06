@@ -10,10 +10,10 @@ making them scrape arbitrary files first.
 special mcp
 ```
 
-The server speaks stdio MCP. It exposes [controlled tools](special://spec/SPECIAL.MCP_COMMAND.TOOLS)
+The server speaks stdio MCP. It exposes [controlled tools](documents://spec/SPECIAL.MCP_COMMAND.TOOLS)
 for status, overview, specs, architecture, patterns, docs validation,
-[docs metrics](special://spec/SPECIAL.DOCS_COMMAND.METRICS),
-[docs output](special://spec/SPECIAL.MCP_COMMAND.DOCS_OUTPUT), lint, and health.
+[docs metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS),
+[docs output](documents://spec/SPECIAL.MCP_COMMAND.DOCS_OUTPUT), lint, and health.
 
 The first MCP surface is intentionally inspection-heavy. It does not make broad
 source edits or mutate project configuration. Docs output is exposed as a bounded
@@ -38,7 +38,7 @@ The plugin includes:
 ## Bundled Skills
 
 For users who do not use plugins, the binary can
-[print or install bundled skills](special://spec/SPECIAL.SKILLS.COMMAND.HELP):
+[print or install bundled skills](documents://spec/SPECIAL.SKILLS.COMMAND.HELP):
 
 ```sh
 special skills

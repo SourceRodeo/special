@@ -43,7 +43,7 @@ test("export writes headers", () => {
 });
 ```
 
-Use [`@fileverifies ID`](special://spec/SPECIAL.PARSE.VERIFIES) when the whole
+Use [`@fileverifies ID`](documents://spec/SPECIAL.PARSE.VERIFIES) when the whole
 file is the proof artifact. One verify block targets one spec id.
 
 ## Attestation
@@ -56,7 +56,7 @@ last_reviewed: 2026-05-03
 review_interval_days: 90
 ```
 
-[Attestations](special://spec/SPECIAL.PARSE.ATTESTS) are for manual or external
+[Attestations](documents://spec/SPECIAL.PARSE.ATTESTS) are for manual or external
 evidence. They should include the artifact, owner, review date, and review
 interval when the claim depends on review freshness.
 
@@ -78,7 +78,7 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 }
 ```
 
-Use `@area` for structure and [`@module`](special://spec/SPECIAL.MODULE_COMMAND)
+Use `@area` for structure and [`@module`](documents://spec/SPECIAL.MODULE_COMMAND)
 for ownership. An area may be pure structure. A planned module may be
 markdown-only architecture intent. A current module means real code ownership:
 attach it from source with `@implements` or `@fileimplements`, or `special arch
@@ -100,20 +100,20 @@ export async function loadOrBuildExportCache(key: string): Promise<ExportCache> 
 }
 ```
 
-[Patterns](special://spec/SPECIAL.PATTERNS.DEFINITIONS) capture intentional
+[Patterns](documents://spec/SPECIAL.PATTERNS.DEFINITIONS) capture intentional
 implementation approaches. Applications must attach to source, not markdown
 declarations.
 
 ## Documentation
 
-[Docs source](special://spec/SPECIAL.DOCS_COMMAND) can attach prose to Special
+[Docs source](documents://spec/SPECIAL.DOCS_COMMAND) can attach prose to Special
 facts:
 
 ```markdown
 @filedocuments spec APP.CONFIG
 
-[Configuration is loaded from app.toml](special://spec/APP.CONFIG).
+[Configuration is loaded from app.toml](documents://spec/APP.CONFIG).
 ```
 
 `special docs build` removes `@documents` and `@filedocuments` lines and
-rewrites `special://kind/ID` links to normal text.
+rewrites `documents://kind/ID` links to normal text.

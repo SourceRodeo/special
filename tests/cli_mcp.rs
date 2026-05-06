@@ -133,7 +133,7 @@ fn mcp_docs_tool_returns_docs_metrics() {
         root.join("docs/src/README.md"),
         concat!(
             "# Guide\n\n",
-            "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
+            "[CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).\n",
             "[More](guide.md).\n",
         ),
     )
@@ -182,7 +182,7 @@ fn mcp_docs_output_tool_scrubs_docs_output() {
     fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
     fs::write(
         root.join("docs/src/README.md"),
-        "[CSV exports include headers](special://spec/EXPORT.CSV.HEADERS).\n",
+        "[CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).\n",
     )
     .expect("docs source should be written");
 
@@ -216,7 +216,7 @@ fn mcp_docs_output_tool_scrubs_docs_output() {
     let rendered =
         fs::read_to_string(root.join("docs/dist/README.md")).expect("rendered docs should exist");
     assert!(rendered.contains("CSV exports include headers."));
-    assert!(!rendered.contains("special://"));
+    assert!(!rendered.contains("documents://"));
 }
 
 fn write_mcp_fixture(root: &Path) {
