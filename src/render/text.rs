@@ -235,6 +235,20 @@ pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
     let mut output = String::from("special health metrics\n");
     output.push_str(&format!("  duplicate items: {}\n", metrics.duplicate_items));
     output.push_str(&format!("  unowned items: {}\n", metrics.unowned_items));
+    if let Some(documentation) = &metrics.documentation {
+        output.push_str("  documentation coverage\n");
+        for kind in &documentation.target_kinds {
+            output.push_str(&format!(
+                "    {}s: {} total, {} documented, {} generated, {} internal-only, {} undocumented\n",
+                kind.kind,
+                kind.total,
+                kind.documented,
+                kind.generated,
+                kind.internal_only,
+                kind.undocumented
+            ));
+        }
+    }
     append_grouped_counts_text(
         &mut output,
         "duplicate items by file",

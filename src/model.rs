@@ -30,9 +30,10 @@ pub use core::{
     SourceLocation,
 };
 pub use overview::{
-    ArchitectureMetricsSummary, GroupedCount, LintReport, ModuleDocument, OverviewArchSummary,
-    OverviewDocument, OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary,
-    RepoDocument, RepoMetricsSummary, RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary,
+    ArchitectureMetricsSummary, DocumentationCoverageSummary, DocumentationTargetCoverage,
+    GroupedCount, LintReport, ModuleDocument, OverviewArchSummary, OverviewDocument,
+    OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary, RepoDocument,
+    RepoMetricsSummary, RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary,
 };
 pub use spec::{
     AttestRef, AttestScope, Diagnostic, ParsedRepo, SpecDecl, SpecFilter, SpecNode, VerifyRef,

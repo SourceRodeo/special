@@ -94,8 +94,8 @@ index that keeps claims, evidence, and implementation boundaries connected.
 | `special specs` | [Inspect current, planned, deprecated, and unsupported product claims](documents://spec/SPECIAL.SPEC_COMMAND). |
 | `special arch` | [Inspect architecture declarations and implementation ownership](documents://spec/SPECIAL.MODULE_COMMAND). |
 | `special patterns` | [Inspect adopted implementation patterns and their applications](documents://spec/SPECIAL.PATTERNS.COMMAND). |
-| `special health` | [Inspect repo-wide quality and traceability signals](documents://spec/SPECIAL.HEALTH_COMMAND). |
-| `special docs` | [Validate docs relationships](documents://spec/SPECIAL.DOCS_COMMAND), inspect [docs coverage metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS), or write docs outputs. |
+| `special health` | [Inspect repo-wide quality, traceability, and documentation coverage signals](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE). |
+| `special docs` | [Validate docs relationships](documents://spec/SPECIAL.DOCS_COMMAND), inspect [docs relationship metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS), or write docs outputs. |
 | `special mcp` | [Run the stdio MCP server for controlled agent access](documents://spec/SPECIAL.MCP_COMMAND). |
 | `special lint` | [Check annotation and reference structure](documents://spec/SPECIAL.LINT_COMMAND). |
 | `special init` | Add a starter `special.toml`. |

@@ -166,6 +166,7 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
                     metrics: args.metrics,
                     health_ignore_unexplained_patterns: &resolution
                         .health_ignore_unexplained_patterns,
+                    docs_outputs: &resolution.docs_outputs,
                     target_scope_paths: (!target_paths.is_empty())
                         .then_some(target_paths.as_slice()),
                     within_scope_paths: (!within_paths.is_empty())

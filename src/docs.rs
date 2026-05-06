@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.DOCS
-Validates documentation-to-Special relationships and renders public markdown from docs sources.
+Validates documentation-to-Special relationships and renders generated markdown from docs sources.
 
 @group SPECIAL.DOCS
 Documentation relationship and docs-output behavior.
@@ -30,7 +30,7 @@ special docs --target PATH validates and prints only documentation relationships
 special docs rejects hidden positional path scopes and requires path scopes to use --target PATH.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT
-special docs build validates documentation links and writes public docs.
+special docs build validates documentation links and writes generated docs outputs.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT.DIRECTORY
 special docs build SOURCE OUTPUT accepts an input directory and output directory, then mirrors the input tree relative to the source root while writing markdown output files.
@@ -39,16 +39,16 @@ special docs build SOURCE OUTPUT accepts an input directory and output directory
 special docs build SOURCE OUTPUT refuses to write docs output over the input path, into an input directory, or over an existing file that still contains docs evidence.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG
-special docs build uses `[[docs.outputs]]` mappings from special.toml to write configured public docs without repeating paths on the command line.
+special docs build uses `[[docs.outputs]]` mappings from special.toml to write configured generated docs outputs without repeating paths on the command line.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS
-special docs --metrics reports documentation coverage and public docs graph metrics without writing files.
+special docs --metrics reports documentation relationship inventory and generated docs graph metrics without writing files.
 
-@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
-special docs --metrics classifies specs, groups, modules, areas, and patterns as publicly documented, internally documented only, or undocumented.
+@spec SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS
+special docs --metrics counts documentation relationships by target kind, source shape, and generated/internal source placement.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
-special docs --metrics reports configured public docs pages, markdown links among those pages, broken local docs links, orphan pages, and configured-entrypoint reachability.
+special docs --metrics reports configured generated docs pages, markdown links among those pages, broken local docs links, orphan pages, and configured-entrypoint reachability.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -68,7 +68,8 @@ use crate::config::{DocsOutputConfig, SpecialVersion};
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::extractor::collect_comment_blocks;
 use crate::model::{
-    ArchitectureKind, Diagnostic, DiagnosticSeverity, LintReport, NodeKind, SourceLocation,
+    ArchitectureKind, Diagnostic, DiagnosticSeverity, DocumentationCoverageSummary,
+    DocumentationTargetCoverage, LintReport, NodeKind, SourceLocation,
 };
 use crate::parser::starts_markdown_fence;
 
@@ -159,7 +160,7 @@ pub(crate) struct DocsMetricsSummary {
     pub link_references: usize,
     pub documents_line_references: usize,
     pub file_documents_line_references: usize,
-    pub public_pages: usize,
+    pub generated_pages: usize,
     pub local_doc_links: usize,
     pub broken_local_doc_links: usize,
     pub orphan_pages: usize,
@@ -175,12 +176,13 @@ pub(crate) struct DocsMetricsSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct DocsTargetKindMetrics {
     pub kind: DocumentTargetKind,
-    pub total: usize,
-    pub documented: usize,
-    pub public: usize,
+    pub references: usize,
+    pub link_references: usize,
+    pub documents_line_references: usize,
+    pub file_documents_line_references: usize,
+    pub documented_targets: usize,
+    pub generated: usize,
     pub internal_only: usize,
-    pub undocumented: usize,
-    pub undocumented_ids: Vec<String>,
 }
 
 impl DocsTargetKindMetrics {
@@ -242,11 +244,26 @@ pub(crate) fn build_docs_metrics_document(
     entrypoints: &[PathBuf],
 ) -> Result<(DocsMetricsDocument, LintReport)> {
     let (document, report) = build_docs_document(root, ignore_patterns, version, scope_paths)?;
-    let targets = DocumentTargets::load(root, ignore_patterns, version)?;
-    let public_sources = configured_output_sources(root, outputs);
-    let public_graph = build_public_docs_graph(root, outputs, entrypoints)?;
-    let metrics = docs_metrics_summary(root, &document, &targets, &public_sources, public_graph);
+    let generated_sources = configured_output_sources(root, outputs);
+    let generated_graph = build_generated_docs_graph(root, outputs, entrypoints)?;
+    let metrics = docs_metrics_summary(root, &document, &generated_sources, generated_graph);
     Ok((DocsMetricsDocument { metrics }, report))
+}
+
+pub(crate) fn build_documentation_coverage_summary(
+    root: &Path,
+    ignore_patterns: &[String],
+    version: SpecialVersion,
+    outputs: &[DocsOutputConfig],
+) -> Result<DocumentationCoverageSummary> {
+    let (document, _) = build_docs_document(root, ignore_patterns, version, &[])?;
+    let targets = DocumentTargets::load(root, ignore_patterns, version)?;
+    let generated_sources = configured_output_sources(root, outputs);
+    Ok(documentation_coverage_summary(
+        &document,
+        &targets,
+        &generated_sources,
+    ))
 }
 
 pub(crate) fn write_docs_path(
@@ -419,23 +436,23 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
     ));
     for kind in &metrics.target_kinds {
         output.push_str(&format!(
-            "  {}: {} total, {} documented, {} public, {} internal-only, {} undocumented\n",
+            "  {}: {} reference(s), {} documented target(s), {} generated, {} internal-only\n",
             kind.plural_label(),
-            kind.total,
-            kind.documented,
-            kind.public,
-            kind.internal_only,
-            kind.undocumented
+            kind.references,
+            kind.documented_targets,
+            kind.generated,
+            kind.internal_only
         ));
-        if verbose && !kind.undocumented_ids.is_empty() {
+        if verbose {
             output.push_str(&format!(
-                "    undocumented {}: {}\n",
-                kind.plural_label(),
-                kind.undocumented_ids.join(", ")
+                "    sources: {} link, {} @documents, {} @filedocuments\n",
+                kind.link_references,
+                kind.documents_line_references,
+                kind.file_documents_line_references
             ));
         }
     }
-    output.push_str(&format!("  public pages: {}\n", metrics.public_pages));
+    output.push_str(&format!("  generated pages: {}\n", metrics.generated_pages));
     output.push_str(&format!("  local doc links: {}\n", metrics.local_doc_links));
     output.push_str(&format!(
         "  broken local doc links: {}\n",
@@ -465,7 +482,7 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
     ) {
         (Some(reachable), Some(entrypoints)) => output.push_str(&format!(
             "  reachable from entrypoints: {}/{} page(s), {} entrypoint(s)\n",
-            reachable, metrics.public_pages, entrypoints
+            reachable, metrics.generated_pages, entrypoints
         )),
         _ => output.push_str("  reachable from entrypoints: not configured\n"),
     }
@@ -476,16 +493,16 @@ pub(crate) fn render_docs_metrics_json(document: &DocsMetricsDocument) -> Result
     Ok(serde_json::to_string_pretty(document)?)
 }
 
-struct PublicDocsGraph {
+struct GeneratedDocsGraph {
     pages: BTreeSet<PathBuf>,
-    local_links: Vec<PublicDocsLink>,
+    local_links: Vec<GeneratedDocsLink>,
     broken_links: Vec<DocsLocalLinkIssue>,
     orphan_pages: Vec<String>,
     reachable_pages_from_entrypoints: Option<usize>,
     entrypoint_pages: Option<usize>,
 }
 
-struct PublicDocsLink {
+struct GeneratedDocsLink {
     source: PathBuf,
     target: PathBuf,
 }
@@ -493,9 +510,8 @@ struct PublicDocsLink {
 fn docs_metrics_summary(
     _root: &Path,
     document: &DocsDocument,
-    targets: &DocumentTargets,
-    public_sources: &[PathBuf],
-    public_graph: PublicDocsGraph,
+    generated_sources: &[PathBuf],
+    generated_graph: GeneratedDocsGraph,
 ) -> DocsMetricsSummary {
     DocsMetricsSummary {
         total_references: document.references.len(),
@@ -514,30 +530,91 @@ fn docs_metrics_summary(
             .iter()
             .filter(|reference| reference.source == DocumentRefSource::FileDocumentsLine)
             .count(),
-        public_pages: public_graph.pages.len(),
-        local_doc_links: public_graph.local_links.len(),
-        broken_local_doc_links: public_graph.broken_links.len(),
-        orphan_pages: public_graph.orphan_pages.len(),
-        reachable_pages_from_entrypoints: public_graph.reachable_pages_from_entrypoints,
-        entrypoint_pages: public_graph.entrypoint_pages,
+        generated_pages: generated_graph.pages.len(),
+        local_doc_links: generated_graph.local_links.len(),
+        broken_local_doc_links: generated_graph.broken_links.len(),
+        orphan_pages: generated_graph.orphan_pages.len(),
+        reachable_pages_from_entrypoints: generated_graph.reachable_pages_from_entrypoints,
+        entrypoint_pages: generated_graph.entrypoint_pages,
         target_kinds: DocumentTargetKind::all()
             .into_iter()
-            .map(|kind| target_kind_metrics(kind, document, targets, public_sources))
+            .map(|kind| target_kind_metrics(kind, document, generated_sources))
             .collect(),
-        broken_local_doc_link_details: public_graph.broken_links,
-        orphan_page_paths: public_graph.orphan_pages,
+        broken_local_doc_link_details: generated_graph.broken_links,
+        orphan_page_paths: generated_graph.orphan_pages,
     }
 }
 
 fn target_kind_metrics(
     kind: DocumentTargetKind,
     document: &DocsDocument,
-    targets: &DocumentTargets,
-    public_sources: &[PathBuf],
+    generated_sources: &[PathBuf],
 ) -> DocsTargetKindMetrics {
+    let mut documented = BTreeSet::new();
+    let mut generated = BTreeSet::new();
+    let mut internal = BTreeSet::new();
+    let mut references = 0;
+    let mut link_references = 0;
+    let mut documents_line_references = 0;
+    let mut file_documents_line_references = 0;
+
+    for reference in &document.references {
+        if reference.target_kind != kind {
+            continue;
+        }
+        references += 1;
+        match reference.source {
+            DocumentRefSource::Link => link_references += 1,
+            DocumentRefSource::DocumentsLine => documents_line_references += 1,
+            DocumentRefSource::FileDocumentsLine => file_documents_line_references += 1,
+        }
+        documented.insert(reference.target_id.clone());
+        if is_generated_doc_source(&reference.location.path, generated_sources) {
+            generated.insert(reference.target_id.clone());
+        } else {
+            internal.insert(reference.target_id.clone());
+        }
+    }
+
+    let internal_only = documented
+        .iter()
+        .filter(|id| internal.contains(*id) && !generated.contains(*id))
+        .count();
+
+    DocsTargetKindMetrics {
+        kind,
+        references,
+        link_references,
+        documents_line_references,
+        file_documents_line_references,
+        documented_targets: documented.len(),
+        generated: generated.len(),
+        internal_only,
+    }
+}
+
+fn documentation_coverage_summary(
+    document: &DocsDocument,
+    targets: &DocumentTargets,
+    generated_sources: &[PathBuf],
+) -> DocumentationCoverageSummary {
+    DocumentationCoverageSummary {
+        target_kinds: DocumentTargetKind::all()
+            .into_iter()
+            .map(|kind| documentation_target_coverage(kind, document, targets, generated_sources))
+            .collect(),
+    }
+}
+
+fn documentation_target_coverage(
+    kind: DocumentTargetKind,
+    document: &DocsDocument,
+    targets: &DocumentTargets,
+    generated_sources: &[PathBuf],
+) -> DocumentationTargetCoverage {
     let target_ids = targets.ids(kind);
     let mut documented = BTreeSet::new();
-    let mut public = BTreeSet::new();
+    let mut generated = BTreeSet::new();
     let mut internal = BTreeSet::new();
 
     for reference in &document.references {
@@ -545,8 +622,8 @@ fn target_kind_metrics(
             continue;
         }
         documented.insert(reference.target_id.clone());
-        if is_public_doc_source(&reference.location.path, public_sources) {
-            public.insert(reference.target_id.clone());
+        if is_generated_doc_source(&reference.location.path, generated_sources) {
+            generated.insert(reference.target_id.clone());
         } else {
             internal.insert(reference.target_id.clone());
         }
@@ -559,17 +636,20 @@ fn target_kind_metrics(
         .collect::<Vec<_>>();
     let internal_only = target_ids
         .iter()
-        .filter(|id| internal.contains(*id) && !public.contains(*id))
+        .filter(|id| internal.contains(*id) && !generated.contains(*id))
         .count();
 
-    DocsTargetKindMetrics {
-        kind,
+    DocumentationTargetCoverage {
+        kind: kind.as_str().to_string(),
         total: target_ids.len(),
         documented: target_ids
             .iter()
             .filter(|id| documented.contains(*id))
             .count(),
-        public: target_ids.iter().filter(|id| public.contains(*id)).count(),
+        generated: target_ids
+            .iter()
+            .filter(|id| generated.contains(*id))
+            .count(),
         internal_only,
         undocumented: undocumented_ids.len(),
         undocumented_ids,
@@ -591,8 +671,8 @@ fn configured_docs_path(root: &Path, path: &Path) -> PathBuf {
     }
 }
 
-fn is_public_doc_source(path: &Path, public_sources: &[PathBuf]) -> bool {
-    public_sources.iter().any(|source| {
+fn is_generated_doc_source(path: &Path, generated_sources: &[PathBuf]) -> bool {
+    generated_sources.iter().any(|source| {
         if source.is_file() || is_markdown_path(source) {
             path == source
         } else {
@@ -601,11 +681,11 @@ fn is_public_doc_source(path: &Path, public_sources: &[PathBuf]) -> bool {
     })
 }
 
-fn build_public_docs_graph(
+fn build_generated_docs_graph(
     root: &Path,
     outputs: &[DocsOutputConfig],
     entrypoints: &[PathBuf],
-) -> Result<PublicDocsGraph> {
+) -> Result<GeneratedDocsGraph> {
     let mut plan = Vec::new();
     for output in outputs {
         expand_output_mapping(
@@ -633,7 +713,7 @@ fn build_public_docs_graph(
             let target = resolve_local_doc_link(output, &link.target);
             let display_target = display_path(root, &target);
             if page_lookup.contains(&target) {
-                local_links.push(PublicDocsLink {
+                local_links.push(GeneratedDocsLink {
                     source: output.clone(),
                     target,
                 });
@@ -663,7 +743,7 @@ fn build_public_docs_graph(
         (!entrypoints.is_empty()).then(|| reachable_pages(&entrypoint_pages, &local_links).len());
     let entrypoint_pages_count = (!entrypoints.is_empty()).then_some(entrypoint_pages.len());
 
-    Ok(PublicDocsGraph {
+    Ok(GeneratedDocsGraph {
         pages,
         local_links,
         broken_links,
@@ -772,7 +852,7 @@ fn normalize_lexical_path(path: &Path) -> PathBuf {
 
 fn incoming_link_counts(
     pages: &BTreeSet<PathBuf>,
-    links: &[PublicDocsLink],
+    links: &[GeneratedDocsLink],
 ) -> BTreeMap<PathBuf, usize> {
     let mut incoming = pages
         .iter()
@@ -786,7 +866,10 @@ fn incoming_link_counts(
     incoming
 }
 
-fn reachable_pages(entrypoints: &BTreeSet<PathBuf>, links: &[PublicDocsLink]) -> BTreeSet<PathBuf> {
+fn reachable_pages(
+    entrypoints: &BTreeSet<PathBuf>,
+    links: &[GeneratedDocsLink],
+) -> BTreeSet<PathBuf> {
     let mut adjacency: BTreeMap<PathBuf, Vec<PathBuf>> = BTreeMap::new();
     for link in links {
         adjacency

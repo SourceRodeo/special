@@ -48,12 +48,12 @@ output = "README.md"
 ```
 
 `special docs build` writes every configured mapping. Prefer directory mappings
-for public docs trees, with separate file mappings only for outputs that live
+for generated docs trees, with separate file mappings only for outputs that live
 outside those trees, such as a root README. Directory mappings preserve paths
 relative to the source directory. Keep generated output files ignored by exact
 path so the ignore rules do not also hide docs source files.
 `entrypoints`
-selects the public docs pages used for docs reachability metrics.
+selects the generated docs pages used for docs reachability metrics.
 
 ## Health Ignore
 

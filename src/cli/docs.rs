@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.CLI.DOCS
-Documentation command behavior for validating docs relationships and writing public docs output.
+Documentation command behavior for validating docs relationships and writing generated docs output.
 */
 // @fileimplements SPECIAL.CLI.DOCS
 use std::path::{Path, PathBuf};
@@ -46,7 +46,7 @@ pub(super) struct DocsArgs {
     #[arg(
         short = 'm',
         long = "metrics",
-        help = "Show documentation coverage and public docs graph metrics"
+        help = "Show documentation relationship and generated docs graph metrics"
     )]
     metrics: bool,
 
@@ -57,7 +57,7 @@ pub(super) struct DocsArgs {
         short = 'v',
         long = "verbose",
         requires = "metrics",
-        help = "Show undocumented target ids and full docs graph detail"
+        help = "Show relationship source counts and full docs graph detail"
     )]
     verbose: bool,
 }

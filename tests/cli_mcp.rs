@@ -170,7 +170,7 @@ fn mcp_docs_tool_returns_docs_metrics() {
     assert_eq!(responses[0]["result"]["isError"], false);
     let metrics: Value = serde_json::from_str(tool_text(&responses[0]))
         .expect("mcp docs metrics text should be json");
-    assert_eq!(metrics["metrics"]["public_pages"], 2);
+    assert_eq!(metrics["metrics"]["generated_pages"], 2);
     assert_eq!(metrics["metrics"]["local_doc_links"], 1);
 }
 

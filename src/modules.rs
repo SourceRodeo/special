@@ -13,7 +13,8 @@ use crate::cache::{
     load_or_build_repo_analysis_summary, load_or_build_scoped_repo_analysis_summary,
     load_or_parse_architecture, load_or_parse_repo,
 };
-use crate::config::SpecialVersion;
+use crate::config::{DocsOutputConfig, SpecialVersion};
+use crate::docs::build_documentation_coverage_summary;
 use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureKind, ArchitectureMetricsSummary, GroupedCount,
     LintReport, ModuleAnalysisOptions, ModuleDocument, ModuleFilter, ModuleNode,
@@ -30,6 +31,7 @@ mod parse_markdown;
 pub struct RepoDocumentOptions<'a> {
     pub metrics: bool,
     pub health_ignore_unexplained_patterns: &'a [String],
+    pub docs_outputs: &'a [DocsOutputConfig],
     pub target_scope_paths: Option<&'a [PathBuf]>,
     pub within_scope_paths: Option<&'a [PathBuf]>,
     pub symbol: Option<&'a str>,
@@ -127,7 +129,18 @@ pub fn build_repo_document(
 
     Ok((
         RepoDocument {
-            metrics: options.metrics.then(|| build_repo_metrics(&summary)),
+            metrics: options
+                .metrics
+                .then(|| {
+                    build_repo_metrics(
+                        root,
+                        ignore_patterns,
+                        version,
+                        &summary,
+                        options.docs_outputs,
+                    )
+                })
+                .transpose()?,
             analysis: Some(summary),
         },
         lint,
@@ -183,7 +196,18 @@ pub(crate) fn build_repo_document_from_parsed(
     )?;
 
     Ok(RepoDocument {
-        metrics: options.metrics.then(|| build_repo_metrics(&summary)),
+        metrics: options
+            .metrics
+            .then(|| {
+                build_repo_metrics(
+                    root,
+                    ignore_patterns,
+                    version,
+                    &summary,
+                    options.docs_outputs,
+                )
+            })
+            .transpose()?,
         analysis: Some(summary),
     })
 }
@@ -210,7 +234,13 @@ fn apply_health_ignore_unexplained(
     Ok(())
 }
 
-fn build_repo_metrics(summary: &crate::model::ArchitectureAnalysisSummary) -> RepoMetricsSummary {
+fn build_repo_metrics(
+    root: &Path,
+    ignore_patterns: &[String],
+    version: SpecialVersion,
+    summary: &crate::model::ArchitectureAnalysisSummary,
+    docs_outputs: &[DocsOutputConfig],
+) -> Result<RepoMetricsSummary> {
     let duplicate_items_by_file = summary
         .repo_signals
         .as_ref()
@@ -265,7 +295,7 @@ fn build_repo_metrics(summary: &crate::model::ArchitectureAnalysisSummary) -> Re
             ),
         });
 
-    RepoMetricsSummary {
+    Ok(RepoMetricsSummary {
         duplicate_items: summary
             .repo_signals
             .as_ref()
@@ -276,10 +306,16 @@ fn build_repo_metrics(summary: &crate::model::ArchitectureAnalysisSummary) -> Re
             .as_ref()
             .map(|signals| signals.unowned_items)
             .unwrap_or_default(),
+        documentation: Some(build_documentation_coverage_summary(
+            root,
+            ignore_patterns,
+            version,
+            docs_outputs,
+        )?),
         duplicate_items_by_file,
         unowned_items_by_file,
         traceability,
-    }
+    })
 }
 
 fn build_architecture_metrics(nodes: &[ModuleNode]) -> ArchitectureMetricsSummary {

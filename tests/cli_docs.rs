@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.TESTS.CLI_DOCS
-CLI integration tests for documentation relationship validation and public docs output.
+CLI integration tests for documentation relationship validation and generated docs output.
 */
 // @fileimplements SPECIAL.TESTS.CLI_DOCS
 #[path = "support/cli.rs"]
@@ -233,8 +233,8 @@ fn docs_output_uses_configured_source_and_output_paths() {
 }
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
-fn docs_metrics_reports_documentation_coverage() {
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS
+fn docs_metrics_reports_documentation_relationship_inventory() {
     let root = temp_repo_dir("special-cli-docs-metrics-coverage");
     write_docs_metrics_fixture(&root);
 
@@ -247,21 +247,24 @@ fn docs_metrics_reports_documentation_coverage() {
     );
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("special docs metrics"));
-    assert!(stdout.contains("specs: 2 total, 2 documented, 1 public, 1 internal-only"));
-    assert!(stdout.contains("modules: 1 total, 1 documented, 1 public"));
-    assert!(stdout.contains("patterns: 1 total, 1 documented, 1 public"));
-    assert!(stdout.contains("groups: 1 total, 0 documented"));
-    assert!(!stdout.contains("undocumented groups: EXPORT"));
+    assert!(stdout.contains("specs: 2 reference(s)"));
+    assert!(stdout.contains("2 documented target(s)"));
+    assert!(stdout.contains("1 internal-only"));
+    assert!(stdout.contains("modules: 1 reference(s)"));
+    assert!(stdout.contains("patterns: 1 reference(s)"));
+    assert!(stdout.contains("groups: 0 reference(s)"));
+    assert!(!stdout.contains("undocumented groups"));
 
     let verbose = run_special(&root, &["docs", "--metrics", "--verbose"]);
     assert!(verbose.status.success());
     let verbose_stdout = String::from_utf8(verbose.stdout).expect("stdout should be utf-8");
-    assert!(verbose_stdout.contains("undocumented groups: EXPORT"));
+    assert!(verbose_stdout.contains("sources: 1 link"));
+    assert!(verbose_stdout.contains("1 @documents"));
 }
 
 #[test]
 // @verifies SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
-fn docs_metrics_reports_public_docs_graph() {
+fn docs_metrics_reports_generated_docs_graph() {
     let root = temp_repo_dir("special-cli-docs-metrics-graph");
     write_docs_metrics_fixture(&root);
 
@@ -273,7 +276,7 @@ fn docs_metrics_reports_public_docs_graph() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("public pages: 2"));
+    assert!(stdout.contains("generated pages: 2"));
     assert!(stdout.contains("local doc links: 1"));
     assert!(stdout.contains("broken local doc links: 0"));
     assert!(stdout.contains("orphan pages: 0"));
@@ -294,7 +297,7 @@ fn docs_metrics_json_exposes_structured_counts() {
         String::from_utf8_lossy(&output.stderr)
     );
     let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
-    assert_eq!(json["metrics"]["public_pages"], 2);
+    assert_eq!(json["metrics"]["generated_pages"], 2);
     assert_eq!(json["metrics"]["reachable_pages_from_entrypoints"], 2);
     let specs = json["metrics"]["target_kinds"]
         .as_array()
@@ -302,9 +305,11 @@ fn docs_metrics_json_exposes_structured_counts() {
         .iter()
         .find(|kind| kind["kind"] == "spec")
         .expect("spec metrics should exist");
-    assert_eq!(specs["total"], 2);
-    assert_eq!(specs["public"], 1);
+    assert_eq!(specs["references"], 2);
+    assert_eq!(specs["documented_targets"], 2);
+    assert_eq!(specs["generated"], 1);
     assert_eq!(specs["internal_only"], 1);
+    assert!(specs["undocumented"].is_null());
 }
 
 #[test]

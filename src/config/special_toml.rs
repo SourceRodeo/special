@@ -6,7 +6,7 @@ Parses and loads `special.toml` root, version, and shared discovery ignore setti
 special.toml accepts `[[docs.outputs]]` entries with `source = "PATH"` and `output = "PATH"` as configured docs output mappings.
 
 @spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_ENTRYPOINTS
-special.toml accepts `[docs] entrypoints = ["PATH"]` as public docs entrypoints for docs reachability metrics.
+special.toml accepts `[docs] entrypoints = ["PATH"]` as generated docs entrypoints for docs reachability metrics.
 */
 // @fileimplements SPECIAL.CONFIG.SPECIAL_TOML
 use std::fs;

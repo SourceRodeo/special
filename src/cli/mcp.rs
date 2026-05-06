@@ -243,11 +243,11 @@ fn tool_definitions() -> Vec<Value> {
                 string_array_property("target", "Optional docs file or subtree paths to validate."),
                 bool_property(
                     "metrics",
-                    "Include docs coverage and public docs graph metrics.",
+                    "Include docs relationship and generated docs graph metrics.",
                 ),
                 bool_property(
                     "verbose",
-                    "Show undocumented target ids and full graph detail.",
+                    "Show relationship source counts and full graph detail.",
                 ),
                 text_or_json_property(),
             ]),
@@ -647,6 +647,7 @@ fn health_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
         RepoDocumentOptions {
             metrics: bool_arg(arguments, "metrics")?,
             health_ignore_unexplained_patterns: &resolution.health_ignore_unexplained_patterns,
+            docs_outputs: &resolution.docs_outputs,
             target_scope_paths: (!target_paths.is_empty()).then_some(target_paths.as_slice()),
             within_scope_paths: (!within_paths.is_empty()).then_some(within_paths.as_slice()),
             symbol: optional_string_arg(arguments, "symbol")?.as_deref(),

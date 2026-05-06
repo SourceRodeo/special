@@ -76,7 +76,9 @@ special health --html
 ```
 
 Use health for repo-wide questions: duplicate items, unowned implementation,
-unsupported implementation, and traceability from tests to current specs.
+unsupported implementation, traceability from tests to current specs, and
+documentation coverage
+for the declared product surface.
 
 ## `special docs`
 
@@ -91,8 +93,8 @@ special docs build docs/src/install.md docs/install.md
 
 By default, docs prints documentation relationships and writes nothing.
 With `--metrics`, it reports
-coverage for specs,
-groups, modules, areas, and patterns, plus public docs
+relationship inventory
+for specs, groups, modules, areas, and patterns, plus generated docs
 interconnectivity
 from configured docs outputs. `special docs build` writes configured docs
 outputs or the explicit source/output pair.

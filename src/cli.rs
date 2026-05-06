@@ -91,7 +91,7 @@ enum Command {
     Health(HealthArgs),
     #[command(
         name = "docs",
-        about = "Validate docs relationships or build public docs outputs"
+        about = "Validate docs relationships or build generated docs outputs"
     )]
     Docs(DocsArgs),
     #[command(about = "Run the Special MCP server over stdio")]

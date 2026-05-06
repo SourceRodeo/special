@@ -102,6 +102,8 @@ pub struct SpecMetricsSummary {
 pub struct RepoMetricsSummary {
     pub duplicate_items: usize,
     pub unowned_items: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub documentation: Option<DocumentationCoverageSummary>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub duplicate_items_by_file: Vec<GroupedCount>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -114,6 +116,22 @@ pub struct RepoMetricsSummary {
 pub struct GroupedCount {
     pub value: String,
     pub count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentationCoverageSummary {
+    pub target_kinds: Vec<DocumentationTargetCoverage>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentationTargetCoverage {
+    pub kind: String,
+    pub total: usize,
+    pub documented: usize,
+    pub generated: usize,
+    pub internal_only: usize,
+    pub undocumented: usize,
+    pub undocumented_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
