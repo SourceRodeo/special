@@ -31,8 +31,8 @@ revision.
 
 The [Homebrew formula](documents://spec/SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK)
 lives in `sourcerodeo/homebrew-tap` at `Formula/special.rb`. Release validation
-checks version, release URL, archive selectors, release asset digests, and
-checksum pairing against the GitHub release assets.
+checks version, platform archive branches, release asset digests, and checksum
+pairing against the GitHub release assets.
 
 ## Plugin Marketplace
 

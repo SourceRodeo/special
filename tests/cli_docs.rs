@@ -260,6 +260,41 @@ fn docs_metrics_reports_documentation_relationship_inventory() {
     let verbose_stdout = String::from_utf8(verbose.stdout).expect("stdout should be utf-8");
     assert!(verbose_stdout.contains("sources: 1 link"));
     assert!(verbose_stdout.contains("1 @documents"));
+    assert!(verbose_stdout.contains("relationship audit"));
+    assert!(verbose_stdout.contains("EXPORT.CSV.HEADERS"));
+    assert!(verbose_stdout.contains("current_spec_without_support"));
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.TARGET_AUDIT
+fn docs_metrics_audits_documented_target_support() {
+    let root = temp_repo_dir("special-cli-docs-target-audit");
+    write_docs_metrics_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics", "--json"]);
+
+    assert!(
+        output.status.success(),
+        "docs metrics json should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    let audit = json["metrics"]["target_audit"]
+        .as_array()
+        .expect("target audit should be an array");
+    let headers = audit
+        .iter()
+        .find(|target| target["id"] == "EXPORT.CSV.HEADERS")
+        .expect("headers audit should exist");
+
+    assert_eq!(headers["support"]["verifies"], 0);
+    assert!(
+        headers["issues"]
+            .as_array()
+            .expect("issues should be an array")
+            .iter()
+            .any(|issue| issue == "current_spec_without_support")
+    );
 }
 
 #[test]
@@ -310,6 +345,21 @@ fn docs_metrics_json_exposes_structured_counts() {
     assert_eq!(specs["generated"], 1);
     assert_eq!(specs["internal_only"], 1);
     assert!(specs["undocumented"].is_null());
+    let audit = json["metrics"]["target_audit"]
+        .as_array()
+        .expect("target audit should be an array");
+    let headers = audit
+        .iter()
+        .find(|target| target["id"] == "EXPORT.CSV.HEADERS")
+        .expect("headers target audit should exist");
+    assert_eq!(headers["support"]["verifies"], 0);
+    assert!(
+        headers["issues"]
+            .as_array()
+            .expect("issues should be an array")
+            .iter()
+            .any(|issue| issue == "current_spec_without_support")
+    );
 }
 
 #[test]

@@ -91,27 +91,19 @@ class Special < Formula
   homepage "{FORMULA_HOMEPAGE}"
   version "{version}"
 
-  archive = on_system_conditional(
-    macos: on_arch_conditional(
-      arm: "special-cli-aarch64-apple-darwin.tar.xz",
-      intel: "special-cli-x86_64-apple-darwin.tar.xz",
-    ),
-    linux: on_arch_conditional(
-      arm: "special-cli-aarch64-unknown-linux-gnu.tar.xz",
-      intel: "special-cli-x86_64-unknown-linux-gnu.tar.xz",
-    ),
-  )
-  url "https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}"
-  sha256 on_system_conditional(
-    macos: on_arch_conditional(
-      arm: "{archive_sha('special-cli-aarch64-apple-darwin.tar.xz')}",
-      intel: "{archive_sha('special-cli-x86_64-apple-darwin.tar.xz')}",
-    ),
-    linux: on_arch_conditional(
-      arm: "{archive_sha('special-cli-aarch64-unknown-linux-gnu.tar.xz')}",
-      intel: "{archive_sha('special-cli-x86_64-unknown-linux-gnu.tar.xz')}",
-    ),
-  )
+  if OS.mac? && Hardware::CPU.arm?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-aarch64-apple-darwin.tar.xz"
+    sha256 "{archive_sha('special-cli-aarch64-apple-darwin.tar.xz')}"
+  elsif OS.mac?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-x86_64-apple-darwin.tar.xz"
+    sha256 "{archive_sha('special-cli-x86_64-apple-darwin.tar.xz')}"
+  elsif OS.linux? && Hardware::CPU.arm?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-aarch64-unknown-linux-gnu.tar.xz"
+    sha256 "{archive_sha('special-cli-aarch64-unknown-linux-gnu.tar.xz')}"
+  elsif OS.linux?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-x86_64-unknown-linux-gnu.tar.xz"
+    sha256 "{archive_sha('special-cli-x86_64-unknown-linux-gnu.tar.xz')}"
+  end
 
   def install
     bin.install "special"

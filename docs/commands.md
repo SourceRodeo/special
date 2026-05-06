@@ -93,8 +93,16 @@ special docs metrics
   reachable from entrypoints: ...
 ```
 
+Verbose metrics include the
+documented target support audit:
+
+```sh
+special docs --metrics --verbose
+```
+
 Decision supported: whether docs links resolve, whether generated docs pages are
-connected, and whether docs output can be built safely.
+connected, whether documented targets have support, and whether docs output can
+be built safely.
 
 ## `special health`
 

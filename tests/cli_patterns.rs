@@ -441,6 +441,89 @@ fn patterns_metrics_reports_strictness_and_similarity_estimates() {
 }
 
 #[test]
+// @verifies SPECIAL.PATTERNS.METRICS.SIMILARITY
+fn patterns_metrics_scores_document_applications_as_structured_features() {
+    let root = temp_repo_dir("special-cli-pattern-document-metrics");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("patterns.md"),
+        concat!(
+            "@pattern DOCS.COMMAND_REFERENCE\n",
+            "@strictness medium\n",
+            "Command reference sections pair a command example with the output shape.\n",
+        ),
+    )
+    .expect("patterns should be written");
+    fs::write(
+        root.join("architecture.md"),
+        concat!(
+            "@area DOCS\n",
+            "Docs.\n\n",
+            "@module DOCS.SPECS_COMMAND\n",
+            "Specs command docs.\n\n",
+            "@module DOCS.HEALTH_COMMAND\n",
+            "Health command docs.\n",
+        ),
+    )
+    .expect("architecture should be written");
+    fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
+    fs::write(
+        root.join("docs/src/specs.md"),
+        concat!(
+            "# Specs command\n",
+            "@implements DOCS.SPECS_COMMAND\n",
+            "@applies DOCS.COMMAND_REFERENCE\n",
+            "Use the specs command to inspect contracts.\n\n",
+            "```sh\n",
+            "special specs --metrics\n",
+            "```\n\n",
+            "```text\n",
+            "special specs metrics\n",
+            "```\n",
+        ),
+    )
+    .expect("specs docs should be written");
+    fs::write(
+        root.join("docs/src/health.md"),
+        concat!(
+            "# Health command\n",
+            "@implements DOCS.HEALTH_COMMAND\n",
+            "@applies DOCS.COMMAND_REFERENCE\n",
+            "Use the health command to inspect traceability.\n\n",
+            "```sh\n",
+            "special health --metrics\n",
+            "```\n\n",
+            "```text\n",
+            "special health metrics\n",
+            "```\n",
+        ),
+    )
+    .expect("health docs should be written");
+
+    let output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    assert!(
+        output.status.success(),
+        "patterns metrics should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let pattern = &json["patterns"][0];
+    assert_eq!(pattern["id"], "DOCS.COMMAND_REFERENCE");
+    assert_eq!(pattern["metrics"]["scored_applications"], 2);
+    assert_eq!(pattern["metrics"]["pair_count"], 1);
+    assert!(
+        pattern["metrics"]["mean_similarity"]
+            .as_f64()
+            .is_some_and(|value| value > 0.0)
+    );
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.PATTERNS.METRICS.CONFIGURED_BENCHMARKS
 fn patterns_metrics_use_special_toml_benchmarks() {
     let root = temp_repo_dir("special-cli-pattern-configured-metrics");

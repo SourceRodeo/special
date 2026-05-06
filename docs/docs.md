@@ -29,6 +29,12 @@ Check the relationship inventory and generated-docs graph:
 special docs --metrics
 ```
 
+Use `--verbose` when you need the relationship audit. It shows each documented
+target, where docs refer to it, and whether the target has support such as
+verifies, attests, implementations, or pattern applications. The audit reports
+planned specs and unsupported current specs
+directly in the docs metrics output.
+
 Use `special health --metrics`
 when the question is cross-surface coverage: which specs, modules, areas, and
 patterns are documented by generated docs, internal docs, or not at all?

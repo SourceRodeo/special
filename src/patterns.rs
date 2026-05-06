@@ -313,15 +313,17 @@ fn pattern_metric_candidates(
     let comparison_files = discovered
         .source_files
         .iter()
+        .chain(discovered.markdown_files.iter())
         .filter(|path| path_matches_scope(path, &filter.comparison_paths))
-        .cloned()
+        .map(|path| (*path).clone())
         .collect::<Vec<_>>();
     let target_files = comparison_files
         .iter()
         .filter(|path| path_matches_scope(path, &filter.target_paths))
         .cloned()
         .collect::<Vec<_>>();
-    let comparison_items = collect_source_feature_items(root, &comparison_files)?;
+    let mut comparison_items = collect_source_feature_items(root, &comparison_files)?;
+    comparison_items.extend(collect_document_feature_items(parsed, &comparison_files));
     let target_paths = target_files.iter().collect::<BTreeSet<_>>();
     let target_items = comparison_items
         .iter()
@@ -389,6 +391,32 @@ fn collect_source_feature_items(root: &Path, files: &[PathBuf]) -> Result<Vec<So
         }
     }
     Ok(items)
+}
+
+fn collect_document_feature_items(
+    parsed: &ParsedArchitecture,
+    files: &[PathBuf],
+) -> Vec<SourceFeatureItem> {
+    let file_lookup = files.iter().collect::<BTreeSet<_>>();
+    parsed
+        .implements
+        .iter()
+        .filter_map(|implementation| {
+            let body = implementation.body.as_ref()?;
+            let location = implementation
+                .body_location
+                .clone()
+                .unwrap_or_else(|| implementation.location.clone());
+            if !file_lookup.contains(&location.path) {
+                return None;
+            }
+            Some(SourceFeatureItem {
+                item_name: implementation.module_id.clone(),
+                location,
+                features: document_body_features(&implementation.module_id, body),
+            })
+        })
+        .collect()
 }
 
 #[derive(Debug, Default)]
@@ -856,12 +884,14 @@ fn pattern_application_features(
         .as_ref()
         .map(|location| location.path.as_path())
         .unwrap_or_else(|| application.location.path.as_path());
-    let graph = parse_source_graph(path, body)?;
-    let item = graph
-        .items
-        .iter()
-        .max_by_key(|item| item.shape_node_count)?;
-    Some(source_item_features(item))
+    if let Some(graph) = parse_source_graph(path, body) {
+        let item = graph
+            .items
+            .iter()
+            .max_by_key(|item| item.shape_node_count)?;
+        return Some(source_item_features(item));
+    }
+    Some(document_body_features(&application.pattern_id, body))
 }
 
 fn source_item_features(item: &SourceItem) -> PatternApplicationFeatures {
@@ -887,6 +917,262 @@ fn source_item_features(item: &SourceItem) -> PatternApplicationFeatures {
             })
             .collect(),
         size: item.shape_node_count,
+    }
+}
+
+#[derive(Debug)]
+struct DocumentFeatureGraph {
+    nodes: Vec<DocumentFeatureNode>,
+    edges: BTreeSet<String>,
+    annotations: BTreeSet<String>,
+    commands: BTreeSet<String>,
+    links: BTreeSet<String>,
+    marker_terms: BTreeSet<String>,
+    word_count: usize,
+}
+
+#[derive(Debug)]
+struct DocumentFeatureNode {
+    kind: &'static str,
+    detail: Option<String>,
+}
+
+fn document_body_features(name: &str, body: &str) -> PatternApplicationFeatures {
+    let graph = parse_document_feature_graph(body);
+    let shape_terms = document_shape_terms(&graph);
+    let mut calls = BTreeSet::new();
+    calls.extend(graph.annotations.iter().cloned());
+    calls.extend(graph.commands.iter().cloned());
+    calls.extend(graph.links.iter().cloned());
+
+    PatternApplicationFeatures {
+        shape_terms,
+        marker_terms: graph.marker_terms,
+        name_terms: name_terms(name),
+        calls,
+        invocations: BTreeSet::new(),
+        size: graph.nodes.len().max(graph.word_count),
+    }
+}
+
+fn parse_document_feature_graph(body: &str) -> DocumentFeatureGraph {
+    let mut nodes = Vec::new();
+    let mut edges = BTreeSet::new();
+    let mut annotations = BTreeSet::new();
+    let mut commands = BTreeSet::new();
+    let mut links = BTreeSet::new();
+    let mut marker_terms = BTreeSet::new();
+    let mut word_count = 0usize;
+    let mut in_fence = false;
+    let mut fence_language = String::new();
+
+    for line in body.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            in_fence = !in_fence;
+            if in_fence {
+                fence_language = trimmed
+                    .trim_start_matches('`')
+                    .trim_start_matches('~')
+                    .trim()
+                    .to_ascii_lowercase();
+                nodes.push(DocumentFeatureNode {
+                    kind: "code_fence",
+                    detail: (!fence_language.is_empty()).then(|| fence_language.clone()),
+                });
+                marker_terms.insert("doc:code".to_string());
+                if !fence_language.is_empty() {
+                    marker_terms.insert(format!("doc:code:{fence_language}"));
+                }
+            }
+            continue;
+        }
+        if in_fence {
+            collect_document_command_terms(trimmed, &fence_language, &mut commands);
+            continue;
+        }
+        if trimmed.is_empty() {
+            continue;
+        }
+        word_count += trimmed.split_whitespace().count();
+        if trimmed.starts_with('#') {
+            let level = trimmed
+                .chars()
+                .take_while(|character| *character == '#')
+                .count();
+            nodes.push(DocumentFeatureNode {
+                kind: "heading",
+                detail: Some(format!("level:{level}")),
+            });
+            marker_terms.insert("doc:heading".to_string());
+            for token in name_terms(trimmed.trim_start_matches('#').trim()) {
+                commands.insert(format!("heading:{token}"));
+            }
+        } else if trimmed.starts_with("- ")
+            || trimmed.starts_with("* ")
+            || trimmed
+                .chars()
+                .next()
+                .is_some_and(|character| character.is_ascii_digit())
+                && trimmed.contains(". ")
+        {
+            nodes.push(DocumentFeatureNode {
+                kind: "list_item",
+                detail: None,
+            });
+            marker_terms.insert("doc:list".to_string());
+        } else if trimmed.contains('|') {
+            nodes.push(DocumentFeatureNode {
+                kind: "table",
+                detail: None,
+            });
+            marker_terms.insert("doc:table".to_string());
+        } else {
+            nodes.push(DocumentFeatureNode {
+                kind: "paragraph",
+                detail: None,
+            });
+            marker_terms.insert("doc:paragraph".to_string());
+        }
+        collect_document_inline_terms(
+            trimmed,
+            &mut marker_terms,
+            &mut annotations,
+            &mut commands,
+            &mut links,
+        );
+    }
+
+    for pair in nodes.windows(2) {
+        edges.insert(format!(
+            "{}>{}",
+            pair[0].shape_label(),
+            pair[1].shape_label()
+        ));
+    }
+
+    marker_terms.insert(format!("size:{}", document_size_bucket(nodes.len())));
+
+    DocumentFeatureGraph {
+        nodes,
+        edges,
+        annotations,
+        commands,
+        links,
+        marker_terms,
+        word_count,
+    }
+}
+
+impl DocumentFeatureNode {
+    fn shape_label(&self) -> String {
+        match self.detail.as_deref() {
+            Some(detail) => format!("document_{}:{detail}", self.kind),
+            None => format!("document_{}", self.kind),
+        }
+    }
+}
+
+fn document_shape_terms(graph: &DocumentFeatureGraph) -> BTreeSet<String> {
+    let mut terms = graph
+        .nodes
+        .iter()
+        .map(|node| format!("node:{}", node.shape_label()))
+        .collect::<BTreeSet<_>>();
+    terms.extend(graph.edges.iter().map(|edge| format!("edge:{edge}")));
+    terms
+}
+
+fn document_size_bucket(block_count: usize) -> &'static str {
+    match block_count {
+        0..=3 => "small",
+        4..=12 => "medium",
+        _ => "large",
+    }
+}
+
+fn collect_document_inline_terms(
+    line: &str,
+    marker_terms: &mut BTreeSet<String>,
+    annotations: &mut BTreeSet<String>,
+    commands: &mut BTreeSet<String>,
+    links: &mut BTreeSet<String>,
+) {
+    if line.contains("documents://") {
+        marker_terms.insert("doc:documents-link".to_string());
+        collect_url_scheme_terms(line, "documents://", links);
+    }
+    if line.contains("http://") || line.contains("https://") {
+        marker_terms.insert("doc:external-link".to_string());
+    }
+    if line.contains('`') {
+        marker_terms.insert("doc:inline-code".to_string());
+    }
+    for annotation in [
+        "@area",
+        "@module",
+        "@implements",
+        "@fileimplements",
+        "@pattern",
+        "@applies",
+        "@documents",
+        "@filedocuments",
+    ] {
+        if line.contains(annotation) {
+            annotations.insert(format!("annotation:{annotation}"));
+        }
+    }
+    if line.contains("special ") {
+        commands.insert("command:special".to_string());
+    }
+}
+
+fn collect_document_command_terms(line: &str, language: &str, commands: &mut BTreeSet<String>) {
+    if matches!(language, "sh" | "shell" | "bash" | "console" | "text" | "") {
+        let command = line.trim_start_matches('$').trim();
+        if let Some(rest) = command.strip_prefix("special ") {
+            let subcommand = rest.split_whitespace().next().unwrap_or_default();
+            if subcommand.is_empty() {
+                commands.insert("command:special".to_string());
+            } else {
+                commands.insert(format!("command:special:{subcommand}"));
+            }
+        }
+    }
+    if matches!(language, "toml" | "ini") {
+        for key in [
+            "docs",
+            "outputs",
+            "entrypoints",
+            "ignore",
+            "health",
+            "patterns",
+        ] {
+            if line.contains(key) {
+                commands.insert(format!("config:{key}"));
+            }
+        }
+    }
+}
+
+fn collect_url_scheme_terms(line: &str, scheme: &str, calls: &mut BTreeSet<String>) {
+    let mut cursor = 0usize;
+    while let Some(offset) = line[cursor..].find(scheme) {
+        let start = cursor + offset + scheme.len();
+        let tail = &line[start..];
+        let target = tail
+            .split(|character: char| {
+                character == ')'
+                    || character.is_whitespace()
+                    || character == '"'
+                    || character == '\''
+            })
+            .next()
+            .unwrap_or_default();
+        if let Some((kind, _)) = target.split_once('/') {
+            calls.insert(format!("documents-target:{kind}"));
+        }
+        cursor = start;
     }
 }
 

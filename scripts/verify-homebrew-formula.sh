@@ -75,12 +75,13 @@ if f'version "{version}"' not in formula:
     fail("formula version mismatch", version)
 if 'bin.install "special"' not in formula:
     fail("formula no longer installs special", formula)
-for helper in ('on_system_conditional(', 'on_arch_conditional('):
-    if helper not in formula:
-        fail("formula is missing platform selection helper", helper)
-expected_url = f'https://github.com/sourcerodeo/special/releases/download/{release_tag}/#{{archive}}'
-if f'url "{expected_url}"' not in formula:
-    fail("formula is missing templated release asset url", expected_url)
+
+branch_guards = {
+    ("macos", "arm"): r"if\s+OS\.mac\?\s*&&\s*Hardware::CPU\.arm\?",
+    ("macos", "intel"): r"elsif\s+OS\.mac\?",
+    ("linux", "arm"): r"elsif\s+OS\.linux\?\s*&&\s*Hardware::CPU\.arm\?",
+    ("linux", "intel"): r"elsif\s+OS\.linux\?",
+}
 
 for name in sorted(required):
     asset = assets[name]
@@ -89,19 +90,17 @@ for name in sorted(required):
     if selector is None:
         fail("required release asset has no Homebrew selector mapping", name)
     os_name, arch = selector
-    archive_pattern = re.compile(
-        rf'archive\s*=\s*on_system_conditional\(\s*.*?{os_name}\s*:\s*on_arch_conditional\(\s*.*?{arch}\s*:\s*"{re.escape(name)}"',
+    expected_url = (
+        f"https://github.com/sourcerodeo/special/releases/download/{release_tag}/{name}"
+    )
+    branch_guard = branch_guards[(os_name, arch)]
+    branch_pattern = re.compile(
+        rf'{branch_guard}\s*url\s+"{re.escape(expected_url)}"\s*sha256\s+"{re.escape(sha256)}"',
         re.S,
     )
-    if not archive_pattern.search(formula):
-        fail("formula is missing archive selector entry", name)
-    checksum_pattern = re.compile(
-        rf'{os_name}\s*:\s*on_arch_conditional\(\s*.*?{arch}\s*:\s*"{re.escape(sha256)}"',
-        re.S,
-    )
-    if not checksum_pattern.search(formula):
+    if not branch_pattern.search(formula):
         fail(
-            "formula checksum selector entry does not contain expected checksum",
+            "formula is missing archive branch",
             {"archive": name, "os": os_name, "arch": arch, "sha256": sha256},
         )
 PY

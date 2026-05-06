@@ -57,14 +57,18 @@ special ships a Homebrew formula in sourcerodeo/homebrew-tap.
 special keeps its Homebrew formula at `Formula/special.rb` in sourcerodeo/homebrew-tap.
 
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.PLATFORM_SELECTION
-special selects its platform-specific Homebrew archive URL and checksum with Homebrew's standard `on_system_conditional` and `on_arch_conditional` helpers.
+special selects its platform-specific Homebrew archive URL and checksum in explicit Homebrew platform branches.
 
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK
-special release validation reads the published Homebrew tap formula and verifies its version, templated release URL, platform archive selectors, release asset digests, and selector checksum pairing against the GitHub release assets.
+special release validation reads the published Homebrew tap formula and verifies its version, platform archive branches, release asset digests, and checksum pairing against the GitHub release assets.
 
 @spec SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
-@planned org-transfer
 special installs the `special` binary from sourcerodeo/homebrew-tap.
+
+@attests SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
+artifact: `brew list --versions special` reported `special 0.9.1`; `/opt/homebrew/bin/special` resolved to `/opt/homebrew/Cellar/special/0.9.1/bin/special`; `special --version` reported `special 0.9.1`; `brew info special` loaded `sourcerodeo/tap/special` at stable `0.9.1`; and the local tap checkout was at `91df4efd7b6018e4ace1e11fac993424adea9e04`.
+owner: gk
+last_reviewed: 2026-05-06
 
 @spec SPECIAL.DISTRIBUTION.CODEX_PLUGIN.SOURCE_LAYOUT
 special keeps a marketplace-installable Codex plugin source tree under `codex-plugin/special/` with manifest, MCP config, and skills.
@@ -241,10 +245,6 @@ fn valid_release_assets_json(mut mutate: impl FnMut(&mut Vec<Value>)) -> String 
 }
 
 fn valid_formula_for_release(version: &str, sha_override: Option<(&str, String)>) -> String {
-    let mut macos_arm = String::new();
-    let mut macos_intel = String::new();
-    let mut linux_arm = String::new();
-    let mut linux_intel = String::new();
     let mut sha_macos_arm = String::new();
     let mut sha_macos_intel = String::new();
     let mut sha_linux_arm = String::new();
@@ -261,22 +261,10 @@ fn valid_formula_for_release(version: &str, sha_override: Option<(&str, String)>
             expected_release_sha_for_archive(archive)
         };
         match (os_name, arch) {
-            ("macos", "arm") => {
-                macos_arm = archive.to_string();
-                sha_macos_arm = sha;
-            }
-            ("macos", "intel") => {
-                macos_intel = archive.to_string();
-                sha_macos_intel = sha;
-            }
-            ("linux", "arm") => {
-                linux_arm = archive.to_string();
-                sha_linux_arm = sha;
-            }
-            ("linux", "intel") => {
-                linux_intel = archive.to_string();
-                sha_linux_intel = sha;
-            }
+            ("macos", "arm") => sha_macos_arm = sha,
+            ("macos", "intel") => sha_macos_intel = sha,
+            ("linux", "arm") => sha_linux_arm = sha,
+            ("linux", "intel") => sha_linux_intel = sha,
             _ => unreachable!("unexpected selector arm"),
         }
     }
@@ -284,27 +272,19 @@ fn valid_formula_for_release(version: &str, sha_override: Option<(&str, String)>
     format!(
         r#"class Special < Formula
   version "{version}"
-  archive = on_system_conditional(
-    macos: on_arch_conditional(
-      arm: "{macos_arm}",
-      intel: "{macos_intel}"
-    ),
-    linux: on_arch_conditional(
-      arm: "{linux_arm}",
-      intel: "{linux_intel}"
-    )
-  )
-  sha256 on_system_conditional(
-    macos: on_arch_conditional(
-      arm: "{sha_macos_arm}",
-      intel: "{sha_macos_intel}"
-    ),
-    linux: on_arch_conditional(
-      arm: "{sha_linux_arm}",
-      intel: "{sha_linux_intel}"
-    )
-  )
-  url "https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}"
+  if OS.mac? && Hardware::CPU.arm?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-aarch64-apple-darwin.tar.xz"
+    sha256 "{sha_macos_arm}"
+  elsif OS.mac?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-x86_64-apple-darwin.tar.xz"
+    sha256 "{sha_macos_intel}"
+  elsif OS.linux? && Hardware::CPU.arm?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-aarch64-unknown-linux-gnu.tar.xz"
+    sha256 "{sha_linux_arm}"
+  elsif OS.linux?
+    url "https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-x86_64-unknown-linux-gnu.tar.xz"
+    sha256 "{sha_linux_intel}"
+  end
 
   def install
     bin.install "special"
@@ -657,22 +637,22 @@ fn homebrew_formula_uses_standard_platform_selection_helpers() {
     let updater = read_repo_file("scripts/update-homebrew-formula.py");
 
     assert!(
-        updater.contains("archive = on_system_conditional("),
-        "Homebrew updater should select the archive with on_system_conditional"
+        updater.contains("if OS.mac? && Hardware::CPU.arm?"),
+        "Homebrew updater should branch on mac arm"
     );
     assert!(
-        updater.contains("sha256 on_system_conditional("),
-        "Homebrew updater should select sha256 with on_system_conditional"
+        updater.contains("elsif OS.linux? && Hardware::CPU.arm?"),
+        "Homebrew updater should branch on linux arm"
     );
     assert!(
-        updater.contains("on_arch_conditional("),
-        "Homebrew updater should use on_arch_conditional for architecture-specific values"
+        updater.contains("sha256 \"{archive_sha("),
+        "Homebrew updater should keep checksum selection inside platform branches"
     );
     assert!(
         updater.contains(
-            "url \"https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}\""
+            "url \"https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-aarch64-apple-darwin.tar.xz\""
         ),
-        "Homebrew updater should emit a single active url from the selected archive"
+        "Homebrew updater should emit concrete release asset urls"
     );
 
     let version = current_package_version();
@@ -690,15 +670,14 @@ fn homebrew_formula_uses_standard_platform_selection_helpers() {
         &release_json,
         &formula.replace(
             &format!(
-                "url \"https://github.com/sourcerodeo/special/releases/download/v{version}/#{{archive}}\""
+                "url \"https://github.com/sourcerodeo/special/releases/download/v{version}/special-cli-aarch64-apple-darwin.tar.xz\""
             ),
             "",
         ),
     );
     assert!(!missing_url.status.success());
     assert!(
-        String::from_utf8_lossy(&missing_url.stderr)
-            .contains("formula is missing templated release asset url"),
+        String::from_utf8_lossy(&missing_url.stderr).contains("formula is missing archive branch"),
         "stderr:\n{}",
         String::from_utf8_lossy(&missing_url.stderr)
     );
@@ -706,14 +685,14 @@ fn homebrew_formula_uses_standard_platform_selection_helpers() {
     let missing_selector = run_homebrew_formula_verifier(
         &release_json,
         &formula.replace(
-            "arm: \"special-cli-aarch64-apple-darwin.tar.xz\"",
-            "arm: \"wrong-archive.tar.xz\"",
+            "special-cli-aarch64-apple-darwin.tar.xz",
+            "wrong-archive.tar.xz",
         ),
     );
     assert!(!missing_selector.status.success());
     assert!(
         String::from_utf8_lossy(&missing_selector.stderr)
-            .contains("formula is missing archive selector entry"),
+            .contains("formula is missing archive branch"),
         "stderr:\n{}",
         String::from_utf8_lossy(&missing_selector.stderr)
     );
@@ -756,8 +735,7 @@ fn homebrew_formula_verifier_checks_selector_checksum_pairing() {
 
     assert!(!output.status.success());
     assert!(
-        String::from_utf8_lossy(&output.stderr)
-            .contains("formula checksum selector entry does not contain expected checksum"),
+        String::from_utf8_lossy(&output.stderr).contains("formula is missing archive branch"),
         "stderr:\n{}",
         String::from_utf8_lossy(&output.stderr)
     );
