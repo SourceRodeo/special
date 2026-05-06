@@ -1,53 +1,54 @@
-@filedocuments module SPECIAL
 # special
 
-[Repo-native contracts, architecture ownership, adopted patterns, and traceability](documents://module/SPECIAL)
-for codebases maintained by humans and agents.
+@implements SPECIAL.DOCUMENTATION.PUBLIC.README.POSITIONING
+@applies DOCS.SURFACE_OVERVIEW_PAGE
+## What Special Is
 
-`special` reads [lightweight annotations from normal source files and markdown](documents://spec/SPECIAL.PARSE),
-then turns them into inspectable CLI views: what the repo claims, what supports
-those claims, which code owns which architecture boundary, which implementation
-patterns are intentional, and which code is still hard to explain.
+[Special](documents://module/SPECIAL) keeps repo knowledge close to the code that
+depends on it. It is for teams and agents who need to know what a repository
+claims, what proves those claims, where the implementation belongs, which
+implementation structures are intentional, and whether generated docs still
+cover the product surface.
 
-## Install
+The first-class surfaces are:
 
-[Homebrew is the primary install path](documents://spec/SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL):
+- Specs: product claims and proof attachments.
+- Arch: areas, modules, and implementation ownership.
+- Patterns: named repeated implementation structures.
+- Docs: generated reader docs tied back to repo truth.
+- Health: cross-surface analysis that shows what is still hard to explain.
+
+@implements SPECIAL.DOCUMENTATION.PUBLIC.README.INSTALL
+## Install It
+
+[Homebrew installs the `special` binary](documents://spec/SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL):
 
 ```sh
 brew install sourcerodeo/homebrew-tap/special
+special --version
 ```
 
-Cargo is the secondary install path when you want to build from the Rust package
-registry:
+Cargo can install the same binary from the
+[`special-cli` package](documents://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME):
 
 ```sh
 cargo install special-cli
 ```
 
-Both install the [`special` binary](documents://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME).
+@implements SPECIAL.DOCUMENTATION.PUBLIC.README.QUICKSTART
+@applies DOCS.GETTING_STARTED_SEQUENCE
+## Quick Start
 
-## Start Here
+Initialize a repo, add one claim, attach one proof, and inspect the result:
 
-New users should read:
-
-- [Install and update](docs/install.md)
-- [Tutorial](docs/tutorial.md)
-- [Command reference](docs/commands.md)
-- [Annotation reference](docs/annotations.md)
-- [Configuration](docs/configuration.md)
-- [Agent and MCP setup](docs/agents.md)
-- [Release and distribution notes](docs/contributor/release.md)
-
-## Quick Example
-
-Declare a product claim:
-
-```text
-@spec EXPORT.CSV.HEADERS
-CSV exports include a header row with the selected column names.
+```sh
+special init
+special specs EXPORT.CSV.HEADERS --verbose
+special lint
 ```
 
-Attach support from a test:
+The quickstart uses TypeScript examples, but the same annotation model works
+across supported source languages and markdown:
 
 ```ts
 // @verifies EXPORT.CSV.HEADERS
@@ -56,56 +57,36 @@ test("export writes headers", () => {
 });
 ```
 
-Inspect it:
+Representative output shape:
 
-```sh
-special specs EXPORT.CSV.HEADERS --verbose
-special lint
+```text
+EXPORT.CSV.HEADERS
+  CSV exports include a header row with the selected column names.
+  verifies: 1
 ```
 
-For a repo overview, run:
+Use that output to decide whether a claim has direct support. Continue with the
+[quickstart](docs/quickstart.md) when adopting Special for the first time.
 
-```sh
-special
-```
+@implements SPECIAL.DOCUMENTATION.PUBLIC.README.SURFACE_MAP
+## Surface Map
 
-## What Special Checks
+| Surface | Primary command | Use it when |
+| --- | --- | --- |
+| Specs | [`special specs`](documents://spec/SPECIAL.SPEC_COMMAND) | You need to inspect product claims, lifecycle state, and proof attachments. |
+| Arch | [`special arch`](documents://spec/SPECIAL.MODULE_COMMAND) | You need to see module ownership and implementation boundaries. |
+| Patterns | [`special patterns`](documents://spec/SPECIAL.PATTERNS.COMMAND) | You need to review intentional repeated implementation structures. |
+| Docs | [`special docs`](documents://spec/SPECIAL.DOCS_COMMAND) | You need to validate docs links or build generated docs output. |
+| Health | [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) | You need repo-wide traceability, ownership, duplication, and documentation coverage signals. |
 
-`special` helps answer questions that are hard to answer with grep alone:
+@implements SPECIAL.DOCUMENTATION.PUBLIC.README.NEXT_STEPS
+## Read Next
 
-- Which product claims are current, planned, deprecated, unsupported, or backed
-  only by weak-looking evidence?
-- Which tests, source items, or reviewed artifacts are attached to each claim?
-- Which files and source items implement each architecture module?
-- Which repeated implementation approaches are intentional project patterns?
-- Which code is duplicated, unowned, hard to trace to a current spec, or outside
-  the declared architecture?
-- Which annotation references are malformed, duplicated, or pointing at missing
-  declarations?
-
-The result is not a replacement for tests, docs, or review. It is a repo-local
-index that keeps claims, evidence, and implementation boundaries connected.
-
-## Command Map
-
-| Command | Use it to |
-| --- | --- |
-| `special` | [See a compact repo overview and suggested next commands](documents://spec/SPECIAL.HELP.ROOT_OVERVIEW). |
-| `special specs` | [Inspect current, planned, deprecated, and unsupported product claims](documents://spec/SPECIAL.SPEC_COMMAND). |
-| `special arch` | [Inspect architecture declarations and implementation ownership](documents://spec/SPECIAL.MODULE_COMMAND). |
-| `special patterns` | [Inspect adopted implementation patterns and their applications](documents://spec/SPECIAL.PATTERNS.COMMAND). |
-| `special health` | [Inspect repo-wide quality, traceability, and documentation coverage signals](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE). |
-| `special docs` | [Validate docs relationships](documents://spec/SPECIAL.DOCS_COMMAND), inspect [docs relationship metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS), or write docs outputs. |
-| `special mcp` | [Run the stdio MCP server for controlled agent access](documents://spec/SPECIAL.MCP_COMMAND). |
-| `special lint` | [Check annotation and reference structure](documents://spec/SPECIAL.LINT_COMMAND). |
-| `special init` | Add a starter `special.toml`. |
-| `special skills` | [Print or install bundled workflow skills](documents://spec/SPECIAL.SKILLS.COMMAND.HELP). |
-
-## Project Truth
-
-Special is self-hosting: the canonical product truth for this repo lives in its
-own `special` declarations, primarily colocated with the owning source and test
-boundaries. Central markdown remains only for structural and planned contract
-scaffolding.
-
-If this README and the spec output disagree, the spec wins.
+- [Concepts](docs/concepts.md): the mental model behind specs, arch, patterns, docs, and health.
+- [Quickstart](docs/quickstart.md): one end-to-end adoption path.
+- [Specs](docs/specs.md), [Arch](docs/architecture.md), [Patterns](docs/patterns.md), and [Docs](docs/docs.md): first-class surface guides.
+- [Health](docs/health.md): how to read cross-surface signals.
+- [How-to](docs/how-to.md): task recipes for adoption, health investigation, traceable docs, and patterns.
+- [Command reference](docs/commands.md), [Annotation reference](docs/annotations.md), and [Configuration](docs/configuration.md): lookup material.
+- [Agents](docs/agents.md): MCP, plugin, and skill setup.
+- [Contributor release notes](docs/contributor/release.md): release and distribution workflow.

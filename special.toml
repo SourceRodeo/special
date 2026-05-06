@@ -5,11 +5,17 @@ ignore = [
   "README.md",
   "docs/agents.md",
   "docs/annotations.md",
+  "docs/architecture.md",
   "docs/commands.md",
+  "docs/concepts.md",
   "docs/configuration.md",
   "docs/contributor/release.md",
-  "docs/install.md",
-  "docs/tutorial.md",
+  "docs/docs.md",
+  "docs/health.md",
+  "docs/how-to.md",
+  "docs/patterns.md",
+  "docs/quickstart.md",
+  "docs/specs.md",
 ]
 
 [docs]

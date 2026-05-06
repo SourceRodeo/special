@@ -1,11 +1,13 @@
-@filedocuments spec SPECIAL.PARSE
 # Annotation Reference
 
-Special annotations are ordinary comment or markdown lines. Declarations can live
-in markdown or supported source comments. Attachments usually live next to the
-test, source item, or file they describe.
+Annotations are ordinary source comments or markdown lines. Put them where the
+claim, proof, ownership, pattern, or docs relationship naturally belongs.
 
-## Product Claims
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.ANNOTATIONS.SPECS
+@applies DOCS.ANNOTATION_REFERENCE_ENTRY
+## Specs and Groups
+
+Purpose: declare product claims and structural groups.
 
 ```text
 @group EXPORT
@@ -15,26 +17,20 @@ Export behavior.
 CSV exports include a header row with the selected column names.
 ```
 
-Use `@group` for structure and `@spec` for claims. Child claims do not prove a
-parent claim.
+Validate with:
 
-## Lifecycle
-
-```text
-@spec EXPORT.METADATA
-@planned 1.4.0
-Exports include provenance metadata.
+```sh
+special specs
+special lint
 ```
 
-```text
-@spec EXPORT.LEGACY_FORMAT
-@deprecated 2.0.0
-Legacy exports keep the old field names until the retirement release.
-```
+Groups organize. Specs make claims. Child specs do not prove parent specs.
 
-`@planned` and `@deprecated` attach to the owning spec. A spec cannot be both.
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.ANNOTATIONS.EVIDENCE
+@applies DOCS.ANNOTATION_REFERENCE_ENTRY
+## Verifies and Attests
 
-## Verification
+Purpose: attach direct evidence to specs.
 
 ```ts
 // @verifies EXPORT.CSV.HEADERS
@@ -43,24 +39,23 @@ test("export writes headers", () => {
 });
 ```
 
-Use [`@fileverifies ID`](documents://spec/SPECIAL.PARSE.VERIFIES) when the whole
-file is the proof artifact. One verify block targets one spec id.
+Use [`@fileverifies`](documents://spec/SPECIAL.PARSE.VERIFIES) when the whole
+file is the proof artifact. Use
+[`@attests`](documents://spec/SPECIAL.PARSE.ATTESTS) for manual or external
+evidence with review metadata.
 
-## Attestation
+Validate with:
 
-```text
-@attests EXPORT.SECURITY_REVIEW
-artifact: docs/security-review.md
-owner: security
-last_reviewed: 2026-05-03
-review_interval_days: 90
+```sh
+special specs EXPORT.CSV.HEADERS --verbose
+special lint
 ```
 
-[Attestations](documents://spec/SPECIAL.PARSE.ATTESTS) are for manual or external
-evidence. They should include the artifact, owner, review date, and review
-interval when the claim depends on review freshness.
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.ANNOTATIONS.ARCH
+@applies DOCS.ANNOTATION_REFERENCE_ENTRY
+## Areas, Modules, and Implements
 
-## Architecture
+Purpose: declare architecture ownership and attach implementation.
 
 ```text
 @area APP
@@ -72,65 +67,65 @@ Owns export formatting and file writing.
 
 ```ts
 // @fileimplements APP.EXPORT
-
 export function exportCsv(rows: Array<Record<string, string>>): string {
-  // ...
+  return rows.map(row => row.name).join("\n");
 }
 ```
 
-Use `@area` for structure and [`@module`](documents://spec/SPECIAL.MODULE_COMMAND)
-for ownership. An area may be pure structure. A planned module may be
-unattached architecture intent. A current module needs ownership: attach code
-from source, or attach markdown docs with `@implements` or `@fileimplements`.
-Without that attachment, `special arch --unimplemented` will keep reporting it.
+An area can stay structural. A current module needs implementation ownership
+unless it is explicitly planned.
 
-Markdown docs can own modules too. Use a file-level attachment when the whole
-page owns the module, or a section-level attachment when only the next heading
-section does:
+Validate with:
 
-```markdown
-@implements APP.DOCS.SETUP
-@applies DOCS.COMMAND_EXAMPLE
-## Setup
-
-Run `app setup`, then check the generated config.
+```sh
+special arch --unimplemented
+special lint
 ```
 
-When you publish docs through
-[`special docs build`](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES),
-Special removes those authoring lines from the generated markdown while keeping
-literal examples inside code fences or inline code.
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.ANNOTATIONS.PATTERNS
+@applies DOCS.ANNOTATION_REFERENCE_ENTRY
+## Patterns and Applies
 
-## Patterns
+Purpose: declare a repeated implementation structure and attach concrete
+applications.
 
 ```text
 @pattern CACHE.SINGLE_FLIGHT_FILL
-@strictness high
-Use single-flight cache fills when concurrent callers may request the same
-expensive cache entry and only one caller should rebuild it.
+Use one in-flight fill per cache key.
 ```
 
 ```ts
 // @applies CACHE.SINGLE_FLIGHT_FILL
-export async function loadOrBuildExportCache(key: string): Promise<ExportCache> {
-  // ...
+async function loadOrFillCache(key: string): Promise<Value> {
+  return fills.getOrCreate(key, () => rebuildValue(key));
 }
 ```
 
-[Patterns](documents://spec/SPECIAL.PATTERNS.DEFINITIONS) capture intentional
-implementation approaches. Applications may attach to source items, source
-files, markdown sections, or markdown files.
+Validate with:
 
-## Documentation
-
-[Docs source](documents://spec/SPECIAL.DOCS_COMMAND) can attach prose to Special
-facts:
-
-```markdown
-@filedocuments spec APP.CONFIG
-
-[Configuration is loaded from app.toml](documents://spec/APP.CONFIG).
+```sh
+special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
+special patterns --metrics
+special lint
 ```
 
-`special docs build` removes `@documents` and `@filedocuments` lines and
-rewrites `documents://kind/ID` links to normal text.
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.ANNOTATIONS.DOCS
+@applies DOCS.ANNOTATION_REFERENCE_ENTRY
+## Docs Relationships
+
+Purpose: connect docs prose to the smallest relevant Special id.
+
+```markdown
+[CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).
+```
+
+`special docs build` rewrites that link to normal reader text in generated
+output. Use `@documents` only when a natural block really documents one target
+and an inline link would be awkward.
+
+Validate with:
+
+```sh
+special docs --metrics
+special health --metrics
+```

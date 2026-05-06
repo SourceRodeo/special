@@ -1,139 +1,174 @@
 # Command Reference
 
-Use `special --help` for the exact local help text. This page explains when to
-use each command and which shapes matter most.
-
-## `special`
-
-```sh
-special
-```
-
-Prints a compact repo overview with counts and suggested next commands.
+Use `special --help` for exact local help. This reference explains the common
+command shapes and the decision each output supports.
 
 ## `special specs`
 
+Use `special specs` to inspect product
+claims and proof attachments.
+
 ```sh
 special specs
-special specs --current
-special specs --planned
-special specs --deprecated
-special specs --unsupported
 special specs --unverified
-special specs --metrics
 special specs EXPORT.CSV.HEADERS --verbose
-special specs --json
-special specs --html
+special specs --metrics
 ```
 
-Use specs for product claims. `--verbose` shows attached proof bodies. `--metrics`
-adds grouped counts. `--unverified` focuses review on current claims that do not
-have direct verification or attestation.
+Representative output:
+
+```text
+EXPORT.CSV.HEADERS
+  verifies: 1
+  attests: 0
+```
+
+Decision supported: whether a claim exists, whether it is current or planned,
+and whether direct support is attached.
 
 ## `special arch`
 
+Use `special arch` to inspect declared
+areas, modules, and implementation ownership.
+
 ```sh
 special arch
-special arch --current
-special arch --planned
 special arch --unimplemented
 special arch APP.EXPORT --verbose
 special arch APP.EXPORT --metrics
-special arch --json --metrics
-special arch --html
 ```
 
-Use arch for module ownership. `--metrics` adds implementation analysis when the
-active language pack can derive it.
+Representative output:
+
+```text
+APP.EXPORT
+  implements: src/export.ts
+```
+
+Decision supported: whether code has an explicit architecture owner and whether
+declared modules are still only aspirational.
 
 ## `special patterns`
 
+Use `special patterns` to inspect
+named repeated implementation structures.
+
 ```sh
 special patterns
-special patterns CACHE.SINGLE_FLIGHT_FILL
 special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
 special patterns --metrics
 special patterns --metrics --target src/cache.ts
-special patterns --metrics --target src/cache.ts --symbol loadExport
-special patterns --json
 ```
 
-Use patterns for implementation approaches the project intentionally repeats.
-Pattern metrics are advisory; they can suggest missing applications or helper
-extraction candidates, but they are not lint failures.
+Representative output:
+
+```text
+CACHE.SINGLE_FLIGHT_FILL
+  applications: 3
+  modules: APP.CACHE
+```
+
+Decision supported: whether a repeated structure is intentionally named,
+where it is applied, and whether metrics suggest similar unannotated shapes.
+
+## `special docs`
+
+Use `special docs` to validate docs
+relationships and build generated docs output.
+
+```sh
+special docs
+special docs --metrics
+special docs --target docs/src
+special docs build
+special docs build docs/src/public docs
+```
+
+Representative output:
+
+```text
+special docs metrics
+  total references: ...
+  generated pages: ...
+  reachable from entrypoints: ...
+```
+
+Decision supported: whether docs links resolve, whether generated docs pages are
+connected, and whether docs output can be built safely.
 
 ## `special health`
 
+Use `special health` for repo-wide
+signals that connect specs, arch, patterns, and docs.
+
 ```sh
 special health
-special health --target src/export.ts
-special health --target src/export.ts --symbol exportCsv
-special health --within crates/app
 special health --metrics
 special health --metrics --verbose
+special health --target src/export.ts --symbol exportCsv
 special health --json
 special health --html
 ```
 
-Use health for repo-wide questions: duplicate items, unowned implementation,
-unsupported implementation, traceability from tests to current specs, and
+Representative output:
+
+```text
 documentation coverage
-for the declared product surface.
-
-## `special docs`
-
-```sh
-special docs
-special docs --target docs/src
-special docs --metrics
-special docs --metrics --json
-special docs build
-special docs build docs/src/install.md docs/install.md
+  specs: ...
+traceability
+  unsupported items: ...
 ```
 
-By default, docs prints documentation relationships and writes nothing.
-With `--metrics`, it reports
-relationship inventory
-for specs, groups, modules, areas, and patterns, plus generated docs
-interconnectivity
-from configured docs outputs. `special docs build` writes configured docs
-outputs or the explicit source/output pair.
+Decision supported: what remains unowned, unsupported, duplicated, or
+undocumented.
 
 ## `special mcp`
+
+Use `special mcp` to run the stdio MCP
+server for controlled agent access.
 
 ```sh
 special mcp
 ```
 
-Starts the stdio MCP server for controlled agent access to Special inspection and
-validation surfaces.
+Decision supported: whether an agent should access Special through bounded tools
+instead of scraping arbitrary repo files first.
 
 ## `special lint`
+
+Use `special lint` before committing
+annotation changes.
 
 ```sh
 special lint
 ```
 
-Checks malformed annotations, duplicate ids, unknown references, invalid
-planned/deprecated state, and docs relationships.
+Decision supported: whether ids, references, lifecycle markers, and docs links
+are structurally valid.
 
 ## `special init`
+
+Use `special init` to create a starter
+`special.toml` in a repo without
+an active config.
 
 ```sh
 special init
 ```
 
-Creates a starter `special.toml` without overwriting an existing active config.
+Decision supported: whether the repo has an explicit Special root and generated
+starter policy.
 
 ## `special skills`
 
+Use `special skills` to print or
+install bundled workflow skills when a plugin path is not available.
+
 ```sh
 special skills
-special skills ship-product-change
 special skills install
-special skills install ship-product-change
-special skills install --destination project
-special skills install --destination global --force
+special skills install ship-product-change --destination project
 ```
 
-Prints or installs bundled Codex-style workflow skills.
+Decision supported: which local skill surface an agent should use for a
+Special-aware workflow.

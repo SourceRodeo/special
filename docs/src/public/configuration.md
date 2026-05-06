@@ -1,8 +1,9 @@
-@filedocuments spec SPECIAL.CONFIG.SPECIAL_TOML
 # Configuration
 
 `special.toml` anchors root discovery and optional project policy.
 
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.MINIMAL
+@applies DOCS.CONFIG_REFERENCE_BLOCK
 ## Minimal Config
 
 ```toml
@@ -10,26 +11,35 @@ version = "1"
 root = "."
 ```
 
-When present, the config anchors the project root. Without it, Special falls back
-to VCS root discovery or the current directory and warns about implicit root
-selection.
+Behavior enabled: Special uses this file as an explicit project anchor instead
+of relying on implicit VCS discovery.
 
+Observe with:
+
+```sh
+special lint
+```
+
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.IGNORE
+@applies DOCS.CONFIG_REFERENCE_BLOCK
 ## Ignore Paths
 
 ```toml
 ignore = [
-  "CHANGELOG.md",
   "README.md",
-  "docs/install.md",
-  "docs/tutorial.md",
-  "docs/contributor/release.md",
+  "docs/commands.md",
 ]
 ```
 
-Use `ignore` for generated or intentionally out-of-scope paths that Special
-should not parse as annotation source.
+Behavior enabled: matching paths are excluded from shared annotation discovery.
+Use exact generated docs output paths so source docs remain visible.
 
-## [Docs Outputs](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS)
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.DOCS_OUTPUTS
+@applies DOCS.CONFIG_REFERENCE_BLOCK
+## Docs Outputs
+
+[`[[docs.outputs]]`](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_PATHS)
+maps docs source to generated docs output:
 
 ```toml
 [docs]
@@ -38,25 +48,22 @@ entrypoints = ["README.md"]
 [[docs.outputs]]
 source = "docs/src/public"
 output = "docs"
-
-[[docs.outputs]]
-source = "docs/src/contributor"
-output = "docs/contributor"
-
-[[docs.outputs]]
-source = "docs/src/README.md"
-output = "README.md"
 ```
 
-`special docs build` writes every configured mapping. Prefer directory mappings
-for generated docs trees, with separate file mappings only for outputs that live
-outside those trees, such as a root README. Directory mappings preserve paths
-relative to the source directory. Keep generated output files ignored by exact
-path so the ignore rules do not also hide docs source files.
-[`entrypoints`](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.DOCS_ENTRYPOINTS)
-selects the generated docs pages used for docs reachability metrics.
+Behavior enabled: `special docs build` writes the configured output tree and
+preserves paths below the source directory. Entrypoints feed generated-docs graph
+reachability metrics.
 
-## [Health Ignore](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY.IGNORE_UNEXPLAINED)
+Observe with:
+
+```sh
+special docs build
+special docs --metrics
+```
+
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.HEALTH_IGNORE
+@applies DOCS.CONFIG_REFERENCE_BLOCK
+## Health Ignore
 
 ```toml
 [health]
@@ -65,17 +72,11 @@ ignore-unexplained = [
 ]
 ```
 
-This keeps matching paths out of the unsupported-implementation review bucket
-without hiding them from all parsing or architecture analysis.
+Behavior enabled: matching paths stay out of the unsupported-implementation
+review bucket without hiding them from all parsing or architecture analysis.
 
-## Toolchain Contract
+Observe with:
 
-Special can use the project tool manager when language-pack analysis needs local
-tools:
-
-```toml
-[toolchain]
-manager = "mise"
+```sh
+special health --metrics
 ```
-
-Supported project contracts include `mise.toml` and `.tool-versions`.

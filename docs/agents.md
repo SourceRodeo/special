@@ -1,47 +1,46 @@
-# Agents and MCP
+# Agents
 
-Special is designed to give coding agents controlled access to repo truth without
-making them scrape arbitrary files first.
+## MCP
 
-## MCP Server
+Agents should use Special through controlled tools when possible and the native
+binary directly when necessary.
+
+Start the MCP server:
 
 ```sh
 special mcp
 ```
 
-The server speaks stdio MCP. It exposes controlled tools
-for status, overview, specs, architecture, patterns, docs validation,
-docs metrics,
-docs output, lint, and health.
+The server exposes bounded tools
+for status, overview, specs, architecture, patterns, docs, lint, and health.
 
-The first MCP surface is intentionally inspection-heavy. It does not make broad
-source edits or mutate project configuration. Docs output is exposed as a bounded
-write path because it follows the same explicit output safety policy as the CLI.
+Verify the native binary first:
+
+```sh
+special --version
+special lint
+```
 
 ## Codex Plugin
 
-Codex users should install the SourceRodeo marketplace and then install the
-Special plugin:
+Install the SourceRodeo marketplace, then install the Special plugin from that
+marketplace:
 
 ```sh
 codex plugin marketplace add SourceRodeo/codex-marketplace
 ```
 
-The plugin includes:
-
-- a Special workflow skill
-- install/update guidance for the native binary
-- setup/configuration guidance
-- MCP configuration for `special mcp`
+The plugin supplies workflow skills and MCP configuration. It does not replace
+the native binary; plugin setup should still guide users to Homebrew or Cargo
+when `special` is missing.
 
 ## Bundled Skills
 
-For users who do not use plugins, the binary can
-print or install bundled skills:
+When the plugin path is unavailable, use the bundled skills surface:
 
 ```sh
 special skills
-special skills install
+special skills install --destination project
 ```
 
 Repo-local installs write `.agents/skills/<skill-id>/SKILL.md`. Global installs

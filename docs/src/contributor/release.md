@@ -1,28 +1,19 @@
-@filedocuments spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.WORKFLOW
-# Release and Distribution Notes
+@implements SPECIAL.DOCUMENTATION.CONTRIBUTOR.RELEASE
+# Release and Distribution
 
 Special distributes source through GitHub and binaries through GitHub Releases,
 Homebrew, and Cargo.
 
-## Source Dependency Layout
+## Source Dependencies
 
 The [parser crate](documents://spec/SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.PARSER_CRATE)
-lives in the `SourceRodeo/crates` monorepo:
-
-```text
-crates/
-  parse-source-annotations/
-```
-
-The `special-cli` crate depends on the `parse-source-annotations` package from
-`https://github.com/SourceRodeo/crates`. Cargo resolves that package from the
-monorepo workspace during local development and release builds; Special no
-longer requires a local sibling parser checkout.
+lives in the `SourceRodeo/crates` monorepo at `parse-source-annotations`.
+Special resolves that package through Cargo's Git dependency support during
+local development and release builds.
 
 ## Release Workflow
 
-Release automation uses the committed GitHub Actions workflow plus local release
-scripts. The local release wrapper has three phases:
+The local release script has explicit phases:
 
 ```sh
 python3 scripts/tag-release.py X.Y.Z --prepare
@@ -34,18 +25,16 @@ The validation phase records
 [evidence for the exact version and revision](documents://spec/SPECIAL.DISTRIBUTION.RELEASE_FLOW.VALIDATION_EVIDENCE).
 The [publish phase](documents://spec/SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_RELEASE_BOOKMARK_AND_TAG)
 pushes `main`, a `release/vX.Y.Z` bookmark, and the Git tag for the same
-revision; the bookmark gives JJ users a stable release handle, and the tag
-remains the GitHub release trigger.
+revision.
 
 ## Homebrew
 
 The [Homebrew formula](documents://spec/SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA.TAP_METADATA_CHECK)
-lives in `sourcerodeo/homebrew-tap` at
-`Formula/special.rb`. Release validation reads the tap formula and checks version,
-release URL, archive selectors, release asset digests, and checksum pairing
-against the GitHub release assets.
+lives in `sourcerodeo/homebrew-tap` at `Formula/special.rb`. Release validation
+checks version, release URL, archive selectors, release asset digests, and
+checksum pairing against the GitHub release assets.
 
 ## Plugin Marketplace
 
 The Special Codex plugin source lives under `codex-plugin/special/` in this
-repository. The shared marketplace entry points at that subdirectory.
+repository. The shared SourceRodeo marketplace entry points at that subdirectory.
