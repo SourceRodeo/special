@@ -2,17 +2,39 @@
 
 ## Adopt Special in an Existing Repo
 
-Start with one narrow slice. Do not try to model the whole repository at once.
+Start by reading the repository before adding annotations. Special can inspect a
+plain source tree and give useful signals from `health` and `patterns`; deeper
+traceability improves once the repo declares its toolchain and starts adding
+durable Special ids.
 
 ```sh
 special init
-special specs --unverified
-special arch --unimplemented
 special health --metrics
+special patterns --metrics
 ```
 
-Add one spec and one proof. Add one module and one ownership attachment. Run
-health again. Repeat around real work.
+Use the first reports to choose one narrow slice:
+
+| Signal | First durable move |
+| --- | --- |
+| repeated source shapes | decide whether to extract a helper or declare an adopted pattern |
+| unowned implementation | declare a module and attach the code it owns |
+| unsupported behavior | add a spec only when the behavior is a real product claim, then attach proof |
+| undocumented public surface | add a docs link to the smallest relevant spec, module, area, or pattern |
+
+Then run the loop around that slice:
+
+```sh
+special specs --unverified
+special arch --unimplemented
+special docs --metrics
+special health --metrics
+special lint
+```
+
+Do not model the whole repo on day one. Let the first `health` and `patterns`
+reports tell you where the repo is already asking for a clearer boundary, proof,
+pattern, or docs claim.
 
 ## Investigate Health Output
 
@@ -24,6 +46,11 @@ Use the signal to choose the next command:
 | unsupported implementation | `special specs --verbose` | Move behavior behind a tested module or add direct proof. |
 | duplicate items | `special patterns --metrics` | Extract a helper or name a real repeated pattern. |
 | undocumented targets | `special health --metrics` | Add generated docs links or confirm the target is internal. |
+
+Health is the broad investigation command. Once it identifies a concrete
+question, move to the surface command that owns the fix: `specs` for claims and
+proof, `arch` for ownership, `patterns` for repeated structures, and `docs` for
+reader-facing claims.
 
 ## Write Traceable Docs
 

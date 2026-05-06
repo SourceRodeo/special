@@ -1,9 +1,9 @@
-# Quickstart
+# Start a Fresh Project With Special
 
 ## Install and Initialize
 
-Start in an existing repository. Install the binary, initialize config, then add
-one small contract that Special can inspect.
+Start in the repository where the code will live. Install the binary, initialize
+config, then add one small contract that Special can inspect.
 
 ```sh
 brew install sourcerodeo/homebrew-tap/special
@@ -14,7 +14,7 @@ special init
 when no active config already exists. Commit it after reviewing the root and
 ignore settings.
 
-## Add One Spec
+## Write the First Behavior Claim
 
 Create a small product claim:
 
@@ -48,7 +48,11 @@ special specs EXPORT.CSV.HEADERS --verbose
 special lint
 ```
 
-## Add One Module
+Use `special specs` to check whether the claim has direct proof. Use
+`special lint` to catch broken ids,
+misplaced attachments, and graph errors before the claim spreads.
+
+## Name the First Implementation Boundary
 
 Declare one architecture boundary:
 
@@ -75,7 +79,11 @@ Inspect it:
 special arch APP.EXPORT --verbose
 ```
 
-## Add One Pattern
+Use `special arch` when the question is ownership: where the implementation
+belongs, whether the declared module has code, and whether a planned boundary is
+still only intent.
+
+## Name a Pattern Only After It Repeats
 
 Name a repeated implementation structure only when the structure is real enough
 to recognize in multiple places:
@@ -100,6 +108,10 @@ Inspect pattern usage:
 special patterns EXPORT.ROW_NORMALIZER --verbose
 special patterns --metrics
 ```
+
+Use `special patterns --metrics` even before a project has many adopted
+patterns. In a new project, it keeps repeated structures visible before they
+turn into copy-paste architecture.
 
 ## Add One Docs Link
 
@@ -127,7 +139,10 @@ Check docs relationships:
 special docs --metrics
 ```
 
-## Run Health
+Use docs links for claims a reader relies on. The source markdown stays dense
+and traceable; the generated markdown stays readable.
+
+## Close the Loop With Health
 
 Use health after the first spec, module, pattern, and docs link exist:
 
@@ -149,3 +164,7 @@ special health metrics
 Use this output to choose the next cleanup: add missing ownership, move behavior
 behind a clearer implementation module, add proof to a current spec, document an
 exposed surface, or name a repeated implementation structure as a pattern.
+
+That loop is the point of the fresh-project path: write the claim, attach proof,
+own the implementation, name repeated structures, document reader-facing facts,
+then let health show what is still weak.

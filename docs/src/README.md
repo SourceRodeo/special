@@ -38,9 +38,10 @@ cargo install special-cli
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.README.QUICKSTART
 @applies DOCS.GETTING_STARTED_SEQUENCE
-## Quick Start
+## Choose a Starting Point
 
-Initialize a repo, add one claim, attach one proof, and inspect the result:
+For a new project, start by writing the first durable claim and boundary as the
+code appears:
 
 ```sh
 special init
@@ -67,7 +68,22 @@ EXPORT.CSV.HEADERS
 ```
 
 Use that output to decide whether a claim has direct support. Continue with the
-[quickstart](docs/quickstart.md) when adopting Special for the first time.
+[fresh-project tutorial](docs/quickstart.md) when you want to build with Special
+from the start.
+
+For an existing project, start by asking Special what it can see before adding
+annotations:
+
+```sh
+special init
+special health --metrics
+special patterns --metrics
+```
+
+Use those reports to choose the first behavior, module, repeated structure, or
+docs claim worth making durable. Continue with the
+[existing-project tutorial](docs/how-to.md#adopt-special-in-an-existing-repo)
+when the repository already has code, tests, and docs.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.README.SURFACE_MAP
 ## Surface Map
@@ -80,15 +96,20 @@ Use that output to decide whether a claim has direct support. Continue with the
 | Docs | [`special docs`](documents://spec/SPECIAL.DOCS_COMMAND) | You need to validate docs links or build generated docs output. |
 | Health | [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) | You need repo-wide traceability, ownership, duplication, and documentation coverage signals. |
 
+The commands are meant to be used together. `health` shows the missing
+connections, `patterns` finds repeated source shapes, `specs` records behavior
+and proof, `arch` records ownership, `docs` makes reader-facing claims
+traceable, and `lint` checks that the graph still holds together.
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.README.NEXT_STEPS
 ## Read Next
 
 - [Concepts](docs/concepts.md): the mental model behind specs, arch, patterns, docs, and health.
-- [Quickstart](docs/quickstart.md): one end-to-end adoption path.
+- [Quickstart](docs/quickstart.md): start a fresh project with specs, arch, patterns, docs, and health.
+- [How-to](docs/how-to.md#adopt-special-in-an-existing-repo): bring Special into an existing project by reading health and pattern signals first.
 - [Specs](docs/specs.md), [Arch](docs/architecture.md), [Patterns](docs/patterns.md), and [Docs](docs/docs.md): first-class surface guides.
 - [Patternizing code and docs](docs/patternizing.md): how to decide whether a repeated structure deserves a pattern.
 - [Health](docs/health.md): how to read cross-surface signals.
-- [How-to](docs/how-to.md): task recipes for adoption, health investigation, traceable docs, and patterns.
 - [Command reference](docs/commands.md), [Annotation reference](docs/annotations.md), and [Configuration](docs/configuration.md): lookup material.
 - [Agents](docs/agents.md): MCP, plugin, and skill setup.
 - [Contributor release notes](docs/contributor/release.md): release and distribution workflow.

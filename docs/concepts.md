@@ -9,6 +9,11 @@ implementation structures, and docs, but nobody can quickly connect them.
 Special does not replace tests, docs, or review. It adds a repo-native graph over
 them so the important connections can be inspected.
 
+The adoption path depends on what kind of repo you have. In a new project, write
+specs and architecture as the behavior appears, then use docs and health to keep
+the explanation connected. In an existing project, run health and pattern metrics
+first, then annotate the small parts that are worth making durable.
+
 ## Specs
 
 Specs are
@@ -55,3 +60,6 @@ unsupported implementation, traceability, duplication, and documentation
 coverage.
 
 Question answered: what part of the repo is still hard to explain?
+
+Health is not a replacement for the other commands. It is the command that tells
+you which surface to use next.

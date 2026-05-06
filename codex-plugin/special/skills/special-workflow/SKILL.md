@@ -1,23 +1,28 @@
 ---
 name: special-workflow
-description: 'Use this skill when working in a repository that uses Special. Prefer Special MCP tools for specs, architecture, patterns, docs, lint, and health before falling back to shell commands.'
+description: 'Use this skill when working in a repository that uses Special. Prefer Special MCP tools to inspect repo claims, proof, ownership, patterns, docs, lint, and health before falling back to shell commands.'
 ---
 
 # Special Workflow
 
 Use Special as the repo-local contract surface for durable product behavior,
 architecture ownership, adopted patterns, documentation relationships, and
-traceability.
+traceability. Use the surfaces as one workflow, not as independent checkboxes.
 
 ## Workflow
 
 1. Check project status with `special_status`.
-2. Inspect product claims with `special_specs`.
-3. Inspect architecture ownership with `special_arch`.
-4. Inspect adopted implementation patterns with `special_patterns`.
-5. Validate docs relationships with `special_docs`.
-6. Run structural checks with `special_lint`.
-7. Use `special_health` for code-health and traceability questions.
+2. If the repo is existing or unfamiliar, start with `special_health` and
+   `special_patterns` metrics to find unexplained code, ownership gaps,
+   repeated source shapes, and docs coverage gaps before adding annotations.
+3. If the task is creating a new behavior or new repo slice, start with
+   `special_specs` for the product claim and `special_arch` for ownership.
+4. Use `special_patterns` when a repeated implementation shape appears; do not
+   turn broad style advice into a pattern.
+5. Use `special_docs` when public or contributor docs make claims about specs,
+   modules, areas, or patterns.
+6. Run `special_lint` after edits to catch broken ids, misplaced annotations,
+   and graph errors.
 
 Use `special_docs_output` only when the task explicitly needs public docs output
 written. Keep the same safety expectations as the CLI: explicit configured
@@ -36,5 +41,10 @@ the input tree, and no overwrite of files that still contain docs evidence.
   `@implements`.
 - When changing recurring implementation shape, update `@pattern` and
   `@applies`.
+- When changing reader-facing or contributor docs, prefer dense `documents://`
+  links in docs source, then check docs metrics. Use `@documents` only when an
+  entire natural block documents one target.
+- For existing repos, do not model the whole project on day one. Let health and
+  pattern metrics identify one narrow slice worth making durable.
 - After source or docs edits, run the narrow relevant Special check and then
   `special_lint` before calling the work done.

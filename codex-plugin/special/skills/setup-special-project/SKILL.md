@@ -1,6 +1,6 @@
 ---
 name: setup-special-project
-description: 'Use this skill when configuring, validating, or updating Special in a project where the `special` binary is available. Initialize config, inspect specs, wire docs outputs, and run checks.'
+description: 'Use this skill when configuring or validating Special in a project where the `special` binary is available. Choose a fresh-project or existing-project setup path, wire docs outputs, and run checks.'
 ---
 
 # Setup Special Project
@@ -29,21 +29,30 @@ needs repo setup, configuration review, or validation.
    special init
    ```
 
-4. Inspect the current contract state:
+4. Choose the first inspection path:
+
+   For an existing project, start with signals that work before heavy
+   annotation:
+
+   ```sh
+   special health --metrics
+   special patterns --metrics
+   ```
+
+   For a fresh project or new slice, start with the first claim and ownership
+   boundary:
 
    ```sh
    special specs
    special arch
-   special patterns
-   special docs
-   special health
    ```
 
 5. If public docs output is configured, check `special.toml` for
    `[[docs.outputs]]` entries and use:
 
    ```sh
-   special docs --output
+   special docs build
+   special docs --metrics
    ```
 
 6. If Codex MCP integration is needed, verify the server through the plugin or
@@ -57,7 +66,7 @@ needs repo setup, configuration review, or validation.
 
    ```sh
    special lint
-   special docs
+   special docs --metrics
    ```
 
 ## Configuration Notes

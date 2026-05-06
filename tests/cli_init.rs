@@ -6,11 +6,10 @@
 #[path = "support/cli.rs"]
 mod support;
 
+use std::collections::BTreeMap;
 use std::fs;
 
-use support::{
-    run_special, temp_repo_dir, top_level_help_command_names, top_level_help_command_summaries,
-};
+use support::{run_special, temp_repo_dir, top_level_help_command_names, top_level_help_commands};
 
 /**
 @spec SPECIAL.INIT.SURFACES_DISCOVERY_ERRORS
@@ -131,9 +130,35 @@ fn top_level_help_lists_command_summaries() {
             "specs", "arch", "patterns", "health", "docs", "mcp", "lint", "init", "skills"
         ]
     );
-    let summaries = top_level_help_command_summaries(&stdout);
-    assert_eq!(summaries.len(), command_names.len());
-    assert!(summaries.iter().all(|summary| !summary.is_empty()));
+
+    let summaries: BTreeMap<_, _> = top_level_help_commands(&stdout).into_iter().collect();
+    let expectations: [(&str, &[&str]); 9] = [
+        ("specs", &["claims", "proof"]),
+        ("arch", &["ownership", "boundaries"]),
+        ("patterns", &["patterns", "candidates"]),
+        ("health", &["gaps", "traceability"]),
+        ("docs", &["links", "metrics"]),
+        ("mcp", &["agents"]),
+        ("lint", &["broken", "errors"]),
+        ("init", &["special.toml"]),
+        ("skills", &["agent", "skills"]),
+    ];
+    for (command, expected_terms) in expectations {
+        let summary = summaries
+            .get(command)
+            .unwrap_or_else(|| panic!("missing summary for {command}"))
+            .to_ascii_lowercase();
+        assert!(
+            !summary.starts_with("inspect "),
+            "{command} summary should describe the decision surface"
+        );
+        for term in expected_terms {
+            assert!(
+                summary.contains(term),
+                "{command} summary should mention {term}: {summary}"
+            );
+        }
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -149,6 +174,44 @@ fn top_level_help_explains_bare_special_overview() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("no subcommand"));
     assert!(stdout.contains("compact health overview"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HELP.TASK_ORIENTED_EXAMPLES
+fn top_level_help_groups_examples_by_user_task() {
+    let root = temp_repo_dir("special-cli-help-task-examples");
+
+    let output = run_special(&root, &["--help"]);
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    let examples = stdout
+        .split_once("Examples:")
+        .map(|(_, examples)| examples)
+        .expect("help should include examples");
+
+    for heading in [
+        "Start a fresh project:",
+        "Understand an existing project:",
+        "Work one surface:",
+        "Use with agents and skills:",
+    ] {
+        assert!(examples.contains(heading), "missing heading {heading}");
+    }
+
+    for command in [
+        "special init",
+        "special health --metrics",
+        "special patterns --metrics",
+        "special specs --unverified",
+        "special arch --unimplemented",
+        "special docs --metrics",
+        "special mcp",
+    ] {
+        assert!(examples.contains(command), "missing command {command}");
+    }
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

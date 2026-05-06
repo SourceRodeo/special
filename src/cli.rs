@@ -29,6 +29,9 @@ special help text explains that bare `special` prints a compact health overview.
 @spec SPECIAL.HELP.SKILLS_COMMAND_SHAPES
 special help text explains the `skills`, `skills SKILL_ID`, and `skills install [SKILL_ID]` command shapes.
 
+@spec SPECIAL.HELP.TASK_ORIENTED_EXAMPLES
+special help text groups examples by user task instead of listing every command shape flatly.
+
 @spec SPECIAL.VERSION.FLAGS
 special `-v` and `--version` print the current CLI version and exit successfully.
 */
@@ -66,8 +69,8 @@ use self::spec::{SpecArgs, execute_lint, execute_spec};
 #[command(
     name = "special",
     bin_name = "special",
-    about = "Repo-native spec and skill tool. Run with no subcommand for a compact health overview.",
-    after_help = "Examples:\n  special\n  special specs\n  special specs --metrics\n  special specs APP.CONFIG --verbose\n  special arch\n  special arch --metrics\n  special arch APP.PARSER --verbose\n  special patterns\n  special patterns APP.CACHE_FILL\n  special patterns --metrics\n  special patterns --metrics --target src/foo.ts\n  special health\n  special health --target src/foo.ts\n  special health --target src/foo.ts --symbol bar\n  special health --metrics\n  special docs\n  special docs --metrics\n  special docs build\n  special docs build docs/src/install.md docs/install.md\n  special mcp\n  special lint\n  special init\n  special skills\n  special skills ship-product-change\n  special skills install\n  special skills install define-product-specs",
+    about = "Connect repo claims, proof, ownership, patterns, docs, and health signals. Run with no subcommand for a compact health overview.",
+    after_help = "Examples:\n  Start a fresh project:\n    special init\n    special specs APP.EXPORT --verbose\n    special arch APP.EXPORT --verbose\n    special docs build\n    special lint\n\n  Understand an existing project:\n    special init\n    special health --metrics\n    special patterns --metrics\n    special health --target src/export.ts --symbol exportCsv\n\n  Work one surface:\n    special specs --unverified\n    special arch --unimplemented\n    special patterns APP.ROW_NORMALIZER --verbose\n    special docs --metrics\n\n  Use with agents and skills:\n    special mcp\n    special skills\n    special skills install define-product-specs",
     args_conflicts_with_subcommands = true,
     disable_help_subcommand = true
 )]
@@ -81,27 +84,39 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    #[command(name = "specs", about = "Inspect specs")]
+    #[command(
+        name = "specs",
+        about = "Show product claims, lifecycle state, and proof attachments"
+    )]
     Specs(SpecArgs),
-    #[command(name = "arch", about = "Inspect architecture")]
+    #[command(
+        name = "arch",
+        about = "Show module ownership, implementation boundaries, and gaps"
+    )]
     Modules(ModulesArgs),
-    #[command(name = "patterns", about = "Inspect adopted patterns")]
+    #[command(
+        name = "patterns",
+        about = "Show adopted patterns and repeated-source candidates"
+    )]
     Patterns(PatternsArgs),
-    #[command(name = "health", about = "Inspect code health and traceability")]
+    #[command(
+        name = "health",
+        about = "Show repo gaps across ownership, proof, docs, patterns, and traceability"
+    )]
     Health(HealthArgs),
     #[command(
         name = "docs",
-        about = "Validate docs relationships or build generated docs outputs"
+        about = "Check docs links, report docs metrics, or build generated docs"
     )]
     Docs(DocsArgs),
-    #[command(about = "Run the Special MCP server over stdio")]
+    #[command(about = "Serve bounded Special tools for agents over stdio")]
     Mcp(McpArgs),
-    #[command(about = "Check annotations and references for structural problems")]
+    #[command(about = "Fail on broken ids, misplaced annotations, and graph errors")]
     Lint,
-    #[command(about = "Create a starter special.toml in the current directory")]
+    #[command(about = "Create starter special.toml repo configuration")]
     Init,
     #[command(
-        about = "List bundled skills, print one skill, or install skills",
+        about = "List, print, or install bundled agent workflow skills",
         long_about = "Use `special skills` to see available bundled skills and command shapes.\n\nCommand shapes:\n  special skills\n  special skills SKILL_ID\n  special skills install [SKILL_ID]\n  special skills install [SKILL_ID] --destination DESTINATION\n  special skills install [SKILL_ID] --destination DESTINATION --force"
     )]
     Skills(SkillsArgs),

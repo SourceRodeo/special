@@ -180,17 +180,17 @@ fn tool_definitions() -> Vec<Value> {
     vec![
         tool(
             "special_status",
-            "Resolve the active Special project root and configuration source.",
+            "Resolve the active Special project root and configuration source before choosing the next repo-contract tool.",
             object_schema(vec![]),
         ),
         tool(
             "special_overview",
-            "Render the compact Special repo overview.",
+            "Summarize lint, specs, architecture, and health so an agent can orient before editing.",
             output_schema(),
         ),
         tool(
             "special_specs",
-            "Render Special spec claims, with optional id scope and filters.",
+            "Show product claims, lifecycle state, and proof attachments for behavior-focused work.",
             object_schema(vec![
                 string_property("id", "Optional spec or group id to scope the view."),
                 bool_property("current", "Show only current specs."),
@@ -206,7 +206,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_arch",
-            "Render Special architecture declarations, ownership, and optional metrics.",
+            "Show module ownership, implementation boundaries, and unimplemented architecture gaps.",
             object_schema(vec![
                 string_property("id", "Optional module or area id to scope the view."),
                 bool_property("current", "Show only current architecture nodes."),
@@ -222,7 +222,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_patterns",
-            "Render adopted patterns and optional pattern metrics.",
+            "Show adopted patterns plus advisory repeated-source candidates for refactoring or patternization.",
             object_schema(vec![
                 string_property("id", "Optional pattern id to scope the view."),
                 bool_property("metrics", "Include pattern metrics."),
@@ -238,7 +238,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_docs",
-            "Validate documentation links and render the docs relationship dump or docs metrics.",
+            "Check traceable docs links, docs graph reachability, and public documentation coverage metrics.",
             object_schema(vec![
                 string_array_property("target", "Optional docs file or subtree paths to validate."),
                 bool_property(
@@ -254,7 +254,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_docs_output",
-            "Write configured docs outputs, or one explicit target/output pair, using CLI safety checks.",
+            "Build generated reader docs from configured docs source or one explicit source/output pair.",
             object_schema(vec![
                 string_property(
                     "target",
@@ -268,12 +268,12 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_lint",
-            "Run Special structural lint across specs, architecture, patterns, and docs.",
+            "Fail on broken ids, misplaced annotations, and graph errors across Special surfaces.",
             object_schema(vec![]),
         ),
         tool(
             "special_health",
-            "Render code-health and traceability signals.",
+            "Show repo gaps across ownership, proof, docs, patterns, and traceability; start here for existing repos.",
             object_schema(vec![
                 string_array_property(
                     "target",
