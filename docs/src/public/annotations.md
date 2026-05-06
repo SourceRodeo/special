@@ -101,8 +101,8 @@ export async function loadOrBuildExportCache(key: string): Promise<ExportCache> 
 ```
 
 [Patterns](documents://spec/SPECIAL.PATTERNS.DEFINITIONS) capture intentional
-implementation approaches. Applications must attach to source, not markdown
-declarations.
+implementation approaches. Applications may attach to source items, source
+files, markdown sections, or markdown files.
 
 ## Documentation
 

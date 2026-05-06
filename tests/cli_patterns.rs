@@ -20,26 +20,26 @@ when `@applies ID` is attached to a supported source item, special records the i
 @spec SPECIAL.PATTERNS.FILE_APPLICATIONS
 when `@fileapplies ID` appears in a source file, special records a file-scoped application of that pattern.
 
-@spec SPECIAL.PATTERNS.MODULE_JOIN
-special derives pattern modules by joining source `@applies` applications to existing `@implements` or `@fileimplements` ownership.
+@spec SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS
+markdown `@applies` attaches a heading-bounded section, and markdown `@fileapplies` attaches the whole file.
 
-@spec SPECIAL.PATTERNS.NO_MARKDOWN_APPLICATIONS
-special rejects `@applies` and `@fileapplies` in markdown declarations because pattern applications must attach to source code.
+@spec SPECIAL.PATTERNS.MODULE_JOIN
+special derives pattern modules by joining `@applies` applications to existing `@implements` or `@fileimplements` ownership.
 
 @spec SPECIAL.PATTERNS.LINT
 special lint reports `@applies` references whose target pattern has no matching `@pattern` definition.
 
 @spec SPECIAL.PATTERNS.COMMAND
-special patterns lists known pattern ids with definition and source-application counts.
+special patterns lists known pattern ids with definition and application counts.
 
 @spec SPECIAL.PATTERNS.ID_SCOPE
-special patterns PATTERN.ID shows that pattern's definition, source applications, and modules whose owned implementation contains applications.
+special patterns PATTERN.ID shows that pattern's definition, applications, and modules whose owned implementation contains applications.
 
 @spec SPECIAL.PATTERNS.VERBOSE
-special patterns --verbose includes pattern definition text and source application bodies.
+special patterns --verbose includes pattern definition text and application bodies.
 
 @spec SPECIAL.PATTERNS.METRICS
-special patterns --metrics reports total patterns, total pattern definitions, total source applications, and modules with applications.
+special patterns --metrics reports total patterns, total pattern definitions, total applications, and modules with applications.
 
 @spec SPECIAL.PATTERNS.STRICTNESS
 pattern definitions may declare optional `@strictness high`, `@strictness medium`, or `@strictness low` metadata; omitted strictness defaults to medium.
@@ -248,28 +248,53 @@ fn lint_reports_duplicate_pattern_definitions() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.NO_MARKDOWN_APPLICATIONS
-fn lint_rejects_markdown_pattern_applications() {
+// @verifies SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS
+fn markdown_pattern_applications_attach_heading_sections() {
     let root = temp_repo_dir("special-cli-pattern-markdown-applies");
     write_special_toml(&root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CACHE`\nCache module.\n\n@applies APP.SINGLE_FLIGHT_CACHE_FILL\n",
+        "### `@area DOCS`\nDocs area.\n\n### `@module DOCS.QUICK`\nQuick docs.\n\n### `@pattern DOCS.CALLOUT`\nUse callouts sparingly.\n\n@implements DOCS.QUICK\n@applies DOCS.CALLOUT\n## Quick start\nUse a short note.\n\n## Reference\nOptions.\n",
     )
     .expect("architecture should be written");
+
+    let output = run_special(&root, &["patterns", "DOCS.CALLOUT", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    assert_eq!(
+        json["patterns"][0]["applications"][0]["module_id"],
+        "DOCS.QUICK"
+    );
+    let body = json["patterns"][0]["applications"][0]["body"]
+        .as_str()
+        .expect("markdown application body should be text");
+    assert!(body.contains("## Quick start"));
+    assert!(!body.contains("## Reference"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS
+fn markdown_file_pattern_applications_attach_owned_docs_files() {
+    let root = temp_repo_dir("special-cli-pattern-markdown-fileapplies");
+    write_special_toml(&root);
     fs::write(
-        root.join("patterns.md"),
-        "### `@pattern APP.SINGLE_FLIGHT_CACHE_FILL`\nUse a cache fill pattern.\n",
+        root.join("docs.md"),
+        "### `@module DOCS`\nDocs module.\n\n### `@pattern DOCS.TONE`\nUse direct prose.\n\n@fileimplements DOCS\n@fileapplies DOCS.TONE\n",
     )
-    .expect("patterns should be written");
-    fs::write(root.join("cache.rs"), "// @fileimplements APP.CACHE\n")
-        .expect("source should be written");
+    .expect("docs should be written");
 
-    let output = run_special(&root, &["lint"]);
-    assert!(!output.status.success());
+    let output = run_special(&root, &["patterns", "DOCS.TONE", "--json", "--verbose"]);
+    assert!(output.status.success());
 
-    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("@applies and @fileapplies must attach to source code"));
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    assert_eq!(json["patterns"][0]["applications"][0]["module_id"], "DOCS");
+    assert!(json["patterns"][0]["applications"][0]["body"].is_null());
+    assert_eq!(json["patterns"][0]["modules"][0]["id"], "DOCS");
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

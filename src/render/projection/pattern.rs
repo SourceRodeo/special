@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.RENDER.PROJECTION.PATTERN
-Projects pattern documents into verbose or non-verbose shapes by hiding source application bodies unless explicitly requested.
+Projects pattern documents into verbose or non-verbose shapes by hiding application bodies unless explicitly requested.
 */
 // @fileimplements SPECIAL.RENDER.PROJECTION.PATTERN
 use crate::model::{PatternDocument, PatternNode};

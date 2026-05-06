@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.PATTERNS
-Builds pattern-centered views from pattern definitions and source-attached pattern applications.
+Builds pattern-centered views from pattern definitions and explicit pattern applications.
 */
 // @fileimplements SPECIAL.PATTERNS
 use std::collections::{BTreeMap, BTreeSet};

@@ -25,7 +25,7 @@ pub(super) struct PatternsArgs {
     #[arg(
         short = 'm',
         long = "metrics",
-        help = "Show pattern definition and source-application metrics"
+        help = "Show pattern definition and application metrics"
     )]
     metrics: bool,
 

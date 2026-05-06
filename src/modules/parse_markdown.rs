@@ -12,7 +12,7 @@ use crate::annotation_syntax::{ReservedSpecialAnnotation, reserved_special_annot
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::model::{
     ArchitectureKind, Diagnostic, DiagnosticSeverity, ImplementRef, ModuleDecl, ParsedArchitecture,
-    PatternDefinition, PlanState, SourceLocation,
+    PatternApplication, PatternDefinition, PlanState, SourceLocation,
 };
 
 use super::parse::declarations::{
@@ -96,6 +96,51 @@ pub(super) fn parse_markdown_architecture_decls(
                 continue;
             }
 
+            if let Some((rest, file_scoped, annotation)) =
+                normalized_markdown_pattern_application(raw)
+            {
+                let line_number = index + 1;
+                let Some(pattern_id) =
+                    parse_pattern_id(rest, annotation, parsed, &path, line_number)
+                else {
+                    index += 1;
+                    continue;
+                };
+
+                let (body_location, body) = if file_scoped {
+                    (None, None)
+                } else if let Some(section) = markdown_implementation_section(&lines, index) {
+                    (
+                        Some(SourceLocation {
+                            path: path.to_path_buf(),
+                            line: section.start + 1,
+                        }),
+                        Some(markdown_section_body(&lines, &section, index)),
+                    )
+                } else {
+                    parsed.diagnostics.push(Diagnostic {
+                        severity: DiagnosticSeverity::Error,
+                        path: path.to_path_buf(),
+                        line: line_number,
+                        message: "@applies must attach to a markdown heading section".to_string(),
+                    });
+                    index += 1;
+                    continue;
+                };
+
+                parsed.pattern_applications.push(PatternApplication {
+                    pattern_id,
+                    location: SourceLocation {
+                        path: path.to_path_buf(),
+                        line: line_number,
+                    },
+                    body_location,
+                    body,
+                });
+                index += 1;
+                continue;
+            }
+
             if let Some(raw_pattern) = normalized_pattern_heading(raw) {
                 let line_number = index + 1;
                 let Some(pattern_id) =
@@ -131,25 +176,6 @@ pub(super) fn parse_markdown_architecture_decls(
             }
 
             let Some((kind, raw_decl)) = normalized_architecture_heading(raw) else {
-                if let Some(annotation) = normalized_annotation_line(Some(raw))
-                    && (reserved_special_annotation_rest(
-                        annotation,
-                        ReservedSpecialAnnotation::Applies,
-                    )
-                    .is_some()
-                        || reserved_special_annotation_rest(
-                            annotation,
-                            ReservedSpecialAnnotation::FileApplies,
-                        )
-                        .is_some())
-                {
-                    parsed.diagnostics.push(Diagnostic {
-                        severity: DiagnosticSeverity::Error,
-                        path: path.to_path_buf(),
-                        line: index + 1,
-                        message: "@applies and @fileapplies must attach to source code, not markdown declarations".to_string(),
-                    });
-                }
                 index += 1;
                 continue;
             };
@@ -233,6 +259,18 @@ fn normalized_markdown_implements_annotation(line: &str) -> Option<(&str, bool, 
     }
 }
 
+fn normalized_markdown_pattern_application(line: &str) -> Option<(&str, bool, &'static str)> {
+    let annotation = normalized_annotation_line(Some(line))?;
+    if let Some(rest) =
+        reserved_special_annotation_rest(annotation, ReservedSpecialAnnotation::Applies)
+    {
+        Some((rest, false, "@applies"))
+    } else {
+        reserved_special_annotation_rest(annotation, ReservedSpecialAnnotation::FileApplies)
+            .map(|rest| (rest, true, "@fileapplies"))
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 struct MarkdownSection {
     start: usize,
@@ -243,13 +281,20 @@ fn markdown_implementation_section(
     lines: &[&str],
     annotation_index: usize,
 ) -> Option<MarkdownSection> {
-    let next_content = skip_blank_doc_lines(lines, annotation_index + 1);
-    if next_content < lines.len() && markdown_heading_level(lines[next_content]).is_some() {
-        return markdown_section_at(lines, next_content);
+    if let Some(next_heading) = next_heading_after_attachment_lines(lines, annotation_index + 1) {
+        return markdown_section_at(lines, next_heading);
     }
 
     let heading_index = containing_markdown_heading(lines, annotation_index)?;
     markdown_section_at(lines, heading_index)
+}
+
+fn next_heading_after_attachment_lines(lines: &[&str], cursor: usize) -> Option<usize> {
+    let mut cursor = skip_blank_doc_lines(lines, cursor);
+    while cursor < lines.len() && is_markdown_architecture_attachment_line(lines[cursor]) {
+        cursor = skip_blank_doc_lines(lines, cursor + 1);
+    }
+    (cursor < lines.len() && markdown_heading_level(lines[cursor]).is_some()).then_some(cursor)
 }
 
 fn containing_markdown_heading(lines: &[&str], annotation_index: usize) -> Option<usize> {
@@ -297,10 +342,16 @@ fn markdown_section_body(
         .enumerate()
         .filter_map(|(offset, line)| {
             let index = section.start + offset;
-            (index != annotation_index).then_some(*line)
+            (index != annotation_index && !is_markdown_architecture_attachment_line(line))
+                .then_some(*line)
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+fn is_markdown_architecture_attachment_line(line: &str) -> bool {
+    normalized_markdown_implements_annotation(line).is_some()
+        || normalized_markdown_pattern_application(line).is_some()
 }
 
 fn markdown_heading_level(line: &str) -> Option<usize> {

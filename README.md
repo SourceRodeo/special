@@ -92,7 +92,7 @@ index that keeps claims, evidence, and implementation boundaries connected.
 | `special` | See a compact repo overview and suggested next commands. |
 | `special specs` | Inspect current, planned, deprecated, and unsupported product claims. |
 | `special arch` | Inspect architecture declarations and implementation ownership. |
-| `special patterns` | Inspect adopted implementation patterns and their source applications. |
+| `special patterns` | Inspect adopted implementation patterns and their applications. |
 | `special health` | Inspect repo-wide quality and traceability signals. |
 | `special docs` | Validate docs relationships, inspect docs coverage metrics, or write docs outputs. |
 | `special mcp` | Run the stdio MCP server for controlled agent access. |
