@@ -75,6 +75,12 @@ lines. For a whole page, place `@applies` immediately before the H1:
 # Investigate a Failing Export
 ```
 
+Use `@fileapplies`
+only when the entire markdown file is the natural pattern application. Special
+uses the file body for verbose pattern output and metrics, but an H1-bounded
+`@applies` is usually easier to review because it names the reader-facing unit
+directly.
+
 Use `documents://` links for factual claims inside the prose. Pattern
 applications say which documentation shape a section follows; document links
 say which product fact the prose is explaining.

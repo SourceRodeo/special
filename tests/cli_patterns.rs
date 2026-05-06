@@ -23,6 +23,12 @@ when `@fileapplies ID` appears in a source file, special records a file-scoped a
 @spec SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS
 markdown `@applies` attaches a heading-bounded section, and markdown `@fileapplies` attaches the whole file.
 
+@spec SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS.FENCED_ANNOTATIONS
+markdown pattern application bodies preserve fenced code lines that look like Special annotations.
+
+@spec SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS.FILE_SCOPE_BODY
+markdown `@fileapplies` provides the whole markdown file body for verbose output and pattern metrics.
+
 @spec SPECIAL.PATTERNS.MODULE_JOIN
 special derives pattern modules by joining `@applies` applications to existing `@implements` or `@fileimplements` ownership.
 
@@ -277,23 +283,87 @@ fn markdown_pattern_applications_attach_heading_sections() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS
+// @verifies SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS.FENCED_ANNOTATIONS
+fn markdown_pattern_applications_preserve_fenced_annotation_examples() {
+    let root = temp_repo_dir("special-cli-pattern-markdown-fenced-applies");
+    write_special_toml(&root);
+    fs::write(
+        root.join("docs.md"),
+        concat!(
+            "### `@area DOCS`\n",
+            "Docs area.\n\n",
+            "### `@module DOCS.GUIDE`\n",
+            "Docs guide.\n\n",
+            "### `@pattern DOCS.EXAMPLE`\n",
+            "Show annotation examples.\n\n",
+            "@implements DOCS.GUIDE\n",
+            "@applies DOCS.EXAMPLE\n",
+            "## Guide\n",
+            "Use a literal annotation example:\n\n",
+            "```markdown\n",
+            "@applies APP.EXAMPLE\n",
+            "# Example\n",
+            "```\n",
+        ),
+    )
+    .expect("docs should be written");
+
+    let output = run_special(&root, &["patterns", "DOCS.EXAMPLE", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let body = json["patterns"][0]["applications"][0]["body"]
+        .as_str()
+        .expect("markdown application body should be text");
+    assert!(body.contains("@applies APP.EXAMPLE"));
+    assert!(body.contains("# Example"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS.FILE_SCOPE_BODY
 fn markdown_file_pattern_applications_attach_owned_docs_files() {
     let root = temp_repo_dir("special-cli-pattern-markdown-fileapplies");
     write_special_toml(&root);
     fs::write(
         root.join("docs.md"),
-        "### `@module DOCS`\nDocs module.\n\n### `@pattern DOCS.TONE`\nUse direct prose.\n\n@fileimplements DOCS\n@fileapplies DOCS.TONE\n",
+        concat!(
+            "### `@module DOCS`\n",
+            "Docs module.\n\n",
+            "### `@pattern DOCS.TONE`\n",
+            "Use direct prose.\n\n",
+            "@fileimplements DOCS\n",
+            "@fileapplies DOCS.TONE\n",
+            "# Guide\n",
+            "Use direct prose.\n\n",
+            "```markdown\n",
+            "@applies APP.EXAMPLE\n",
+            "```\n",
+        ),
     )
     .expect("docs should be written");
 
-    let output = run_special(&root, &["patterns", "DOCS.TONE", "--json", "--verbose"]);
+    let output = run_special(
+        &root,
+        &["patterns", "DOCS.TONE", "--json", "--verbose", "--metrics"],
+    );
     assert!(output.status.success());
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
     assert_eq!(json["patterns"][0]["applications"][0]["module_id"], "DOCS");
-    assert!(json["patterns"][0]["applications"][0]["body"].is_null());
+    let body = json["patterns"][0]["applications"][0]["body"]
+        .as_str()
+        .expect("markdown file application body should be text");
+    assert!(body.contains("# Guide"));
+    assert!(body.contains("@applies APP.EXAMPLE"));
+    assert!(!body.contains("@fileapplies DOCS.TONE"));
+    assert_eq!(
+        json["patterns"][0]["metrics"]["scored_applications"],
+        serde_json::json!(1)
+    );
     assert_eq!(json["patterns"][0]["modules"][0]["id"], "DOCS");
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");

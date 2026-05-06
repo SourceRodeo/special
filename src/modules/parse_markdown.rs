@@ -108,7 +108,7 @@ pub(super) fn parse_markdown_architecture_decls(
                 };
 
                 let (body_location, body) = if file_scoped {
-                    (None, None)
+                    (None, Some(markdown_file_body(&lines)))
                 } else if let Some(section) = markdown_implementation_section(&lines, index) {
                     (
                         Some(SourceLocation {
@@ -337,13 +337,34 @@ fn markdown_section_body(
     section: &MarkdownSection,
     annotation_index: usize,
 ) -> String {
+    let mut in_code_fence = false;
     lines[section.start..section.end]
         .iter()
         .enumerate()
         .filter_map(|(offset, line)| {
             let index = section.start + offset;
-            (index != annotation_index && !is_markdown_architecture_attachment_line(line))
-                .then_some(*line)
+            if starts_markdown_fence(line) {
+                in_code_fence = !in_code_fence;
+                return Some(*line);
+            }
+            (in_code_fence
+                || (index != annotation_index && !is_markdown_architecture_attachment_line(line)))
+            .then_some(*line)
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn markdown_file_body(lines: &[&str]) -> String {
+    let mut in_code_fence = false;
+    lines
+        .iter()
+        .filter_map(|line| {
+            if starts_markdown_fence(line) {
+                in_code_fence = !in_code_fence;
+                return Some(*line);
+            }
+            (in_code_fence || !is_markdown_architecture_attachment_line(line)).then_some(*line)
         })
         .collect::<Vec<_>>()
         .join("\n")
