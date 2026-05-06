@@ -204,6 +204,114 @@ fn modules_attach_owned_item_bodies_for_item_scoped_implements() {
 }
 
 #[test]
+// @verifies SPECIAL.MODULE_PARSE.IMPLEMENTS.MARKDOWN_SCOPE
+fn modules_record_markdown_file_scoped_implements() {
+    let root = temp_repo_dir("special-cli-modules-markdown-file-implements");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("docs.md"),
+        "### `@module DOCS`\nDocs module.\n\n@fileimplements DOCS\n",
+    )
+    .expect("markdown fixture should be written");
+
+    let output = run_special(&root, &["arch", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let docs = json["nodes"]
+        .as_array()
+        .and_then(|nodes| nodes.iter().find_map(|node| find_node_by_id(node, "DOCS")))
+        .expect("DOCS module should be present");
+    let implementation = expect_single_implementation(
+        docs,
+        "markdown file-scoped implementation should be recorded",
+    );
+    assert!(implementation["body"].is_null());
+    assert!(implementation["body_location"].is_null());
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.MODULE_PARSE.IMPLEMENTS.MARKDOWN_SCOPE
+fn modules_attach_markdown_implements_to_heading_sections() {
+    let root = temp_repo_dir("special-cli-modules-markdown-section-implements");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("docs.md"),
+        "### `@area DOCS`\nDocs area.\n\n### `@module DOCS.QUICK`\nQuick module.\n\n@implements DOCS.QUICK\n## Quick start\nRun setup.\n\n### Details\nKeep it short.\n\n## Reference\nOptions.\n",
+    )
+    .expect("markdown fixture should be written");
+
+    let output = run_special(&root, &["arch", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let quick = json["nodes"]
+        .as_array()
+        .and_then(|nodes| {
+            nodes
+                .iter()
+                .find_map(|node| find_node_by_id(node, "DOCS.QUICK"))
+        })
+        .expect("DOCS.QUICK module should be present");
+    let implementation =
+        expect_single_implementation(quick, "markdown section implementation should be recorded");
+    let body = implementation["body"]
+        .as_str()
+        .expect("markdown implementation body should be text");
+    assert!(body.contains("## Quick start"));
+    assert!(body.contains("### Details"));
+    assert!(!body.contains("## Reference"));
+    assert!(implementation["body_location"].is_object());
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.MODULE_PARSE.IMPLEMENTS.MARKDOWN_SCOPE
+fn modules_attach_inline_markdown_implements_to_containing_section() {
+    let root = temp_repo_dir("special-cli-modules-markdown-contained-implements");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("docs.md"),
+        "### `@area DOCS`\nDocs area.\n\n### `@module DOCS.INSTALL`\nInstall module.\n\n## Install\n@implements DOCS.INSTALL\nUse setup.\n",
+    )
+    .expect("markdown fixture should be written");
+
+    let output = run_special(&root, &["arch", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let install = json["nodes"]
+        .as_array()
+        .and_then(|nodes| {
+            nodes
+                .iter()
+                .find_map(|node| find_node_by_id(node, "DOCS.INSTALL"))
+        })
+        .expect("DOCS.INSTALL module should be present");
+    let implementation = expect_single_implementation(
+        install,
+        "contained markdown implementation should be recorded",
+    );
+    let body = implementation["body"]
+        .as_str()
+        .expect("markdown implementation body should be text");
+    assert!(body.contains("## Install"));
+    assert!(body.contains("Use setup."));
+    assert!(!body.contains("@implements"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.LINT_COMMAND.UNKNOWN_IMPLEMENTS_REFS
 fn lint_reports_unknown_implements_references() {
     let root = temp_repo_dir("special-cli-modules-lint-unknown");
@@ -394,11 +502,8 @@ fn lint_rejects_current_modules_without_direct_implements() {
     assert!(!output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(
-        stdout.contains(
-            "current module `DEMO` has no source ownership; add @implements/@fileimplements in source or mark the module @planned while it is architecture intent"
-        )
-    );
+    assert!(stdout.contains("current module `DEMO` has no ownership"));
+    assert!(stdout.contains("mark the module @planned"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

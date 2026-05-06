@@ -157,7 +157,7 @@ pub(super) fn build_module_lint_report(parsed: &ParsedArchitecture) -> LintRepor
                 path: module.location.path.clone(),
                 line: module.location.line,
                 message: format!(
-                    "current module `{}` has no source ownership; add @implements/@fileimplements in source or mark the module @planned while it is architecture intent",
+                    "current module `{}` has no ownership; add @implements/@fileimplements or mark the module @planned while it is architecture intent",
                     module.id
                 ),
             });

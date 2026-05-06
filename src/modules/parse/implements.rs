@@ -13,6 +13,8 @@ use crate::model::{
     Diagnostic, DiagnosticSeverity, ImplementRef, ParsedArchitecture, SourceLocation,
 };
 
+use super::declarations::parse_implements_module_id;
+
 pub(super) fn parse_implements_refs(
     root: &Path,
     ignore_patterns: &[String],
@@ -68,35 +70,4 @@ pub(super) fn parse_implements_refs(
     }
 
     Ok(())
-}
-
-fn parse_implements_module_id(
-    rest: &str,
-    annotation: &str,
-    parsed: &mut ParsedArchitecture,
-    path: &Path,
-    line: usize,
-) -> Option<String> {
-    let mut parts = rest.split_whitespace();
-    let Some(module_id) = parts.next() else {
-        parsed.diagnostics.push(Diagnostic {
-            severity: DiagnosticSeverity::Error,
-            path: path.to_path_buf(),
-            line,
-            message: format!("missing module id after {annotation}"),
-        });
-        return None;
-    };
-
-    if parts.next().is_some() {
-        parsed.diagnostics.push(Diagnostic {
-            severity: DiagnosticSeverity::Error,
-            path: path.to_path_buf(),
-            line,
-            message: format!("unexpected trailing content after {annotation} module id"),
-        });
-        return None;
-    }
-
-    Some(module_id.to_string())
 }

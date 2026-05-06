@@ -284,6 +284,9 @@ special parses explicit item-scoped and file-scoped module attachments from supp
 @spec SPECIAL.MODULE_PARSE.IMPLEMENTS.ITEM_SCOPE
 `@implements` attaches the next supported owned item body to the module attachment.
 
+@spec SPECIAL.MODULE_PARSE.IMPLEMENTS.MARKDOWN_SCOPE
+markdown `@implements` attaches a heading-bounded section, and markdown `@fileimplements` attaches the whole file.
+
 @spec SPECIAL.MODULE_PARSE.IMPLEMENTS.EXACT_DIRECTIVE_SHAPE
 `@implements` and `@fileimplements` accept exactly one module id and reject trailing content.
 
@@ -297,7 +300,7 @@ when a file declares more than one `@fileimplements`, special lint reports an er
 when more than one `@implements` attaches to the same owned code item, special lint reports an error.
 
 @spec SPECIAL.MODULE_PARSE.CURRENT_MODULES_REQUIRE_IMPLEMENTATION
-current `@module` nodes mean source-backed code ownership and require a direct `@implements` or `@fileimplements` attachment; planned modules may remain markdown-only architecture intent.
+current `@module` nodes require a direct `@implements` or `@fileimplements` attachment; planned modules may remain unattached architecture intent.
 
 @spec SPECIAL.MODULE_PARSE.AREAS_ARE_STRUCTURAL_ONLY
 `@area` nodes are structural architecture nodes and do not require direct `@implements` attachments.
@@ -506,9 +509,7 @@ fn modules_unimplemented_filters_current_modules_without_implements() {
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
     let node_ids = rendered_spec_node_ids(&stdout);
     assert!(node_ids.contains(&"DEMO.UNIMPLEMENTED".to_string()));
-    assert!(stderr.contains(
-        "current module `DEMO.UNIMPLEMENTED` has no source ownership; add @implements/@fileimplements in source or mark the module @planned while it is architecture intent"
-    ));
+    assert!(stderr.contains("current module `DEMO.UNIMPLEMENTED` has no ownership"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -525,9 +526,7 @@ fn modules_short_u_still_filters_unimplemented_current_modules() {
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
     let node_ids = rendered_spec_node_ids(&stdout);
     assert!(node_ids.contains(&"DEMO.UNIMPLEMENTED".to_string()));
-    assert!(stderr.contains(
-        "current module `DEMO.UNIMPLEMENTED` has no source ownership; add @implements/@fileimplements in source or mark the module @planned while it is architecture intent"
-    ));
+    assert!(stderr.contains("current module `DEMO.UNIMPLEMENTED` has no ownership"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -559,11 +558,7 @@ fn modules_fails_when_module_diagnostics_are_present() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
     assert!(rendered_spec_node_ids(&stdout).contains(&"DEMO".to_string()));
-    assert!(
-        stderr.contains(
-            "current module `DEMO` has no source ownership; add @implements/@fileimplements in source or mark the module @planned while it is architecture intent"
-        )
-    );
+    assert!(stderr.contains("current module `DEMO` has no ownership"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

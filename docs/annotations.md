@@ -79,9 +79,9 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 
 Use `@area` for structure and `@module`
 for ownership. An area may be pure structure. A planned module may be
-markdown-only architecture intent. A current module means real code ownership:
-attach it from source with `@implements` or `@fileimplements`, or `special arch
---unimplemented` will keep reporting it.
+unattached architecture intent. A current module needs ownership: attach code
+from source, or attach markdown docs with `@implements` or `@fileimplements`.
+Without that attachment, `special arch --unimplemented` will keep reporting it.
 
 ## Patterns
 

@@ -73,10 +73,10 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 }
 ```
 
-The `@area` declaration can stay structural. A planned `@module` can stay as
-markdown-only architecture intent. A current `@module` means real code
-ownership, so attach it from source with `@implements` or `@fileimplements`;
-otherwise `special arch --unimplemented` will report it.
+The `@area` declaration can stay structural. A planned `@module` can stay
+unattached. A current `@module` needs ownership: attach code from source, or
+attach markdown docs with `@implements` or `@fileimplements`; otherwise
+`special arch --unimplemented` will report it.
 
 Inspect it:
 
