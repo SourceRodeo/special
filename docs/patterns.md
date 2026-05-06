@@ -36,3 +36,5 @@ special patterns --metrics
 Pattern metrics are advisory. They can suggest repeated source shapes or missing
 applications, but they are not lint failures. A good pattern is identifiable by
 structure; a principle like "write clear docs" is not a Special pattern.
+
+For the opinionated admission bar, see [Patternizing Code and Docs](patternizing.md).

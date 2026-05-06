@@ -1,3 +1,4 @@
+@applies DOCS.REFERENCE_CATALOG_PAGE
 # Annotation Reference
 
 Annotations are ordinary source comments or markdown lines. Put them where the

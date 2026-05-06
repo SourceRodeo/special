@@ -1,3 +1,4 @@
+@applies DOCS.REFERENCE_CATALOG_PAGE
 # Command Reference
 
 Use `special --help` for exact local help. This reference explains the common

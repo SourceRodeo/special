@@ -1,3 +1,4 @@
+@applies DOCS.REFERENCE_CATALOG_PAGE
 # Configuration
 
 `special.toml` anchors root discovery and optional project policy.

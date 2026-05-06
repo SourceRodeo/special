@@ -1,3 +1,4 @@
+@applies DOCS.PRODUCT_ENTRYPOINT_PAGE
 # special
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.README.POSITIONING
@@ -85,6 +86,7 @@ Use that output to decide whether a claim has direct support. Continue with the
 - [Concepts](docs/concepts.md): the mental model behind specs, arch, patterns, docs, and health.
 - [Quickstart](docs/quickstart.md): one end-to-end adoption path.
 - [Specs](docs/specs.md), [Arch](docs/architecture.md), [Patterns](docs/patterns.md), and [Docs](docs/docs.md): first-class surface guides.
+- [Patternizing code and docs](docs/patternizing.md): how to decide whether a repeated structure deserves a pattern.
 - [Health](docs/health.md): how to read cross-surface signals.
 - [How-to](docs/how-to.md): task recipes for adoption, health investigation, traceable docs, and patterns.
 - [Command reference](docs/commands.md), [Annotation reference](docs/annotations.md), and [Configuration](docs/configuration.md): lookup material.

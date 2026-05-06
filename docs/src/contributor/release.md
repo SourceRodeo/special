@@ -1,3 +1,4 @@
+@applies DOCS.CONTRIBUTOR_RUNBOOK_PAGE
 @implements SPECIAL.DOCUMENTATION.CONTRIBUTOR.RELEASE
 # Release and Distribution
 

@@ -100,6 +100,18 @@ A workflow for writing docs source with documents links and checking generated d
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.HOW_TO.INTRODUCE_PATTERNS
 A workflow for naming a repeated implementation structure and applying it without turning style advice into patterns.
 
+### @area SPECIAL.DOCUMENTATION.PUBLIC.PATTERNIZING
+The opinionated guide to recognizing, writing, applying, and reviewing Special patterns in code and documentation.
+
+### @module SPECIAL.DOCUMENTATION.PUBLIC.PATTERNIZING.CODE
+Explains how to turn repeated implementation structures into code patterns without turning broad principles into pattern claims.
+
+### @module SPECIAL.DOCUMENTATION.PUBLIC.PATTERNIZING.DOCUMENTATION
+Explains how to patternize documentation as reader-visible structures at page, guide, section, and example scale.
+
+### @module SPECIAL.DOCUMENTATION.PUBLIC.PATTERNIZING.DISPOSITION
+Explains how docs coverage gaps should be dispositioned before adding prose, changing specs, or declaring new docs patterns.
+
 ### @area SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE
 Lookup documentation for command, annotation, configuration, and metric details.
 
@@ -188,28 +200,65 @@ Generated documentation for changing and shipping Special itself.
 The release, source dependency, GitHub release, Homebrew, and marketplace workflow.
 
 ### @pattern DOCS.SURFACE_OVERVIEW_PAGE
+@strictness low
 A page-level structure for one first-class Special surface: the question it answers, the primary annotations or config, the primary command, a runnable example, representative output, and the next related surface.
 
 ### @pattern DOCS.GETTING_STARTED_SEQUENCE
+@strictness low
 A page- or multi-section tutorial structure that moves from installation to one claim, one proof, one module, one pattern, one docs link, and one health pass.
 
 ### @pattern DOCS.COMMAND_REFERENCE_ENTRY
+@strictness low
 A command-reference section structure: command purpose, common invocation shapes, representative output excerpt, interpretation, and related commands.
 
 ### @pattern DOCS.ANNOTATION_REFERENCE_ENTRY
+@strictness low
 An annotation-reference section structure: purpose, valid placement, minimal snippet, invalid or non-obvious shape, validating command, and related annotations.
 
 ### @pattern DOCS.METRIC_REFERENCE_ENTRY
+@strictness low
 A metrics-reference section structure: metric name, exact count definition, interpretation, what it does not prove, and the next investigation command.
 
 ### @pattern DOCS.TRACEABLE_DOCS_EXAMPLE
+@strictness low
 A docs-as-code section structure: docs source with `documents://`, build command, generated markdown output, and relationship or coverage check.
 
 ### @pattern DOCS.CROSS_SURFACE_WORKFLOW
+@strictness low
 A section- or page-level workflow structure that moves one concrete task across two or more Special surfaces, such as specs to verifies, modules to implements, patterns to applies, or docs links to health coverage.
 
 ### @pattern DOCS.CONFIG_REFERENCE_BLOCK
+@strictness low
 A configuration-reference section structure: config snippet, behavior enabled, safety boundary, and command that observes the behavior.
 
 ### @pattern DOCS.AGENT_SETUP_PATH
+@strictness low
 An agent setup section structure: native binary requirement, plugin or skill path, MCP surface, and verification command.
+
+### @pattern DOCS.PRODUCT_ENTRYPOINT_PAGE
+@strictness low
+A product entrypoint page structure: short problem frame, install path, smallest runnable start, map of the main surfaces, and a reading path into task and reference docs.
+
+### @pattern DOCS.CONCEPTUAL_OVERVIEW_PAGE
+@strictness low
+A concept page structure: the maintenance problem, the product's mental model, the first-class concepts, the question each concept answers, and links from concepts to operational guides.
+
+### @pattern DOCS.SURFACE_GUIDE_PAGE
+@strictness low
+A first-class surface guide structure: what the surface is for, primary command, primary annotations or config, one runnable example, representative output, and handoff to the adjacent surface.
+
+### @pattern DOCS.TASK_RECIPE_PAGE
+@strictness low
+A how-to page structure: one concrete maintenance task, prerequisites, command sequence, expected signal, decision point, and the next corrective action.
+
+### @pattern DOCS.REFERENCE_CATALOG_PAGE
+@strictness low
+A reference catalog page structure: stable lookup entries grouped by user question, each with command or syntax shape, output or validation signal, and the decision the entry supports.
+
+### @pattern DOCS.CONTRIBUTOR_RUNBOOK_PAGE
+@strictness low
+A contributor runbook structure: maintainer-only goal, ordered command phases, external system boundaries, validation evidence, and failure points that must not be hand-waved.
+
+### @pattern DOCS.PATTERNIZING_GUIDE_PAGE
+@strictness low
+An opinionated patternizing guide structure: distinguish patterns from principles, show the admission bar, show a code pattern path, show a documentation pattern path, and explain how metrics guide review without becoming proof.
