@@ -24,7 +24,7 @@ the release script dry-run prints the planned prepare, validate, and publish pip
 the release script requires the requested tag version to exactly match the current `Cargo.toml` package version.
 
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.RELEASE_REVISION
-the release script publishes the current Jujutsu working-copy revision when it contains changes, or its parent when the working-copy revision is an empty child.
+the release script publishes the nearest non-empty Jujutsu ancestor of the current working-copy revision.
 
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.PUSHES_MAIN_RELEASE_BOOKMARK_AND_TAG
 the release script publishes only through the explicit publish phase, which pushes the `main` bookmark and a versioned release bookmark with Jujutsu, then pushes the release Git tag to origin.
@@ -331,6 +331,66 @@ fn release_tag_dry_run_uses_current_non_empty_jj_revision() {
 
     assert_ne!(current, parent);
     assert_eq!(payload["revision"], current);
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.RELEASE_REVISION
+fn release_tag_dry_run_skips_stacked_empty_jj_revisions() {
+    let root = std::env::temp_dir().join(format!(
+        "special-tag-release-empty-stack-{}",
+        std::process::id()
+    ));
+    if root.exists() {
+        fs::remove_dir_all(&root).expect("existing temp repo should be removable");
+    }
+    fs::create_dir_all(&root).expect("temp repo should be created");
+    copy_release_script_fixture(&root);
+    fs::write(
+        root.join("Cargo.toml"),
+        "[package]\nname = \"tag-fixture\"\nversion = \"1.2.3\"\nedition = \"2024\"\n",
+    )
+    .expect("Cargo.toml fixture should be written");
+
+    run_jj(&root, &["git", "init", "."]);
+    run_jj(
+        &root,
+        &[
+            "--config=user.name=Test User",
+            "--config=user.email=test@example.com",
+            "commit",
+            "-m",
+            "release revision",
+        ],
+    );
+    let release_revision = jj_commit_id(&root, "@-");
+    run_jj(&root, &["new", "-m", "empty layer one"]);
+    run_jj(&root, &["new", "-m", "empty layer two"]);
+
+    let current = jj_commit_id(&root, "@");
+    let parent = jj_commit_id(&root, "@-");
+    let mut command = support::python3_command();
+    let output = command
+        .arg("scripts/tag-release.py")
+        .arg("1.2.3")
+        .arg("--dry-run")
+        .current_dir(&root)
+        .output()
+        .expect("tag release dry-run should run");
+    assert!(
+        output.status.success(),
+        "stdout:\n{}\n\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let payload: Value =
+        serde_json::from_slice(&output.stdout).expect("dry-run output should be valid json");
+
+    assert_ne!(current, release_revision);
+    assert_ne!(parent, release_revision);
+    assert_eq!(payload["release_revset"], Value::String("@---".to_string()));
+    assert_eq!(payload["revision"], Value::String(release_revision));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

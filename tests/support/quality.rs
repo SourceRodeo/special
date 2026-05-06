@@ -455,27 +455,28 @@ pub fn default_release_revision() -> String {
 }
 
 pub fn default_release_revset() -> String {
-    let empty_output = Command::new("jj")
-        .args(["log", "-r", "@", "--no-graph", "-T", "empty"])
-        .current_dir(repo_root())
-        .output()
-        .expect("jj log should run");
-    assert!(
-        empty_output.status.success(),
-        "stdout:\n{}\n\nstderr:\n{}",
-        String::from_utf8_lossy(&empty_output.stdout),
-        String::from_utf8_lossy(&empty_output.stderr)
-    );
-    if String::from_utf8(empty_output.stdout)
-        .expect("empty output should be utf-8")
-        .trim()
-        == "true"
-    {
-        "@-"
-    } else {
-        "@"
+    let mut revset = "@".to_string();
+    loop {
+        let empty_output = Command::new("jj")
+            .args(["log", "-r", &revset, "--no-graph", "-T", "empty"])
+            .current_dir(repo_root())
+            .output()
+            .expect("jj log should run");
+        assert!(
+            empty_output.status.success(),
+            "stdout:\n{}\n\nstderr:\n{}",
+            String::from_utf8_lossy(&empty_output.stdout),
+            String::from_utf8_lossy(&empty_output.stderr)
+        );
+        if String::from_utf8(empty_output.stdout)
+            .expect("empty output should be utf-8")
+            .trim()
+            != "true"
+        {
+            return revset;
+        }
+        revset.push('-');
     }
-    .to_string()
 }
 
 pub fn tag_exists(tag: &str) -> bool {

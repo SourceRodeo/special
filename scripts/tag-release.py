@@ -128,7 +128,12 @@ def revision_description(root: Path, revset: str) -> str:
 
 
 def release_revset(root: Path) -> str:
-    return "@-" if is_empty_revision(root, "@") else "@"
+    revset = "@"
+    while is_empty_revision(root, revset):
+        parent = f"{revset}-"
+        revision_id(root, parent)
+        revset = parent
+    return revset
 
 
 def release_revision(root: Path) -> str:
