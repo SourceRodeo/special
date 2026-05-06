@@ -84,6 +84,23 @@ unattached architecture intent. A current module needs ownership: attach code
 from source, or attach markdown docs with `@implements` or `@fileimplements`.
 Without that attachment, `special arch --unimplemented` will keep reporting it.
 
+Markdown docs can own modules too. Use a file-level attachment when the whole
+page owns the module, or a section-level attachment when only the next heading
+section does:
+
+```markdown
+@implements APP.DOCS.SETUP
+@applies DOCS.COMMAND_EXAMPLE
+## Setup
+
+Run `app setup`, then check the generated config.
+```
+
+When you publish docs through
+[`special docs build`](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES),
+Special removes those authoring lines from the generated markdown while keeping
+literal examples inside code fences or inline code.
+
 ## Patterns
 
 ```text
