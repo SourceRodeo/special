@@ -54,6 +54,45 @@ fn docs_output_rewrites_document_links_and_removes_document_lines() {
 }
 
 #[test]
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES
+fn docs_output_removes_markdown_architecture_authoring_lines() {
+    let root = temp_repo_dir("special-cli-docs-output-authoring-lines");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("source.md"),
+        concat!(
+            "# Guide\n\n",
+            "@fileimplements APP.PARSER\n",
+            "@fileapplies CACHE.SINGLE_FLIGHT_FILL\n",
+            "@implements APP.PARSER\n",
+            "@applies CACHE.SINGLE_FLIGHT_FILL\n",
+            "[CSV](documents://spec/EXPORT.CSV.HEADERS).\n\n",
+            "`@implements APP.EXAMPLE`\n\n",
+            "```markdown\n",
+            "@applies APP.EXAMPLE\n",
+            "```\n",
+        ),
+    )
+    .expect("docs source should be written");
+
+    let output = run_special(&root, &["docs", "build", "source.md", "public.md"]);
+
+    assert!(
+        output.status.success(),
+        "docs output should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let rendered = fs::read_to_string(root.join("public.md")).expect("output should be written");
+    assert!(!rendered.contains("@fileimplements APP.PARSER"));
+    assert!(!rendered.contains("@fileapplies CACHE.SINGLE_FLIGHT_FILL"));
+    assert!(!rendered.contains("@implements APP.PARSER"));
+    assert!(!rendered.contains("@applies CACHE.SINGLE_FLIGHT_FILL"));
+    assert!(rendered.contains("CSV."));
+    assert!(rendered.contains("`@implements APP.EXAMPLE`"));
+    assert!(rendered.contains("@applies APP.EXAMPLE"));
+}
+
+#[test]
 // @verifies SPECIAL.DOCS.LINKS.OUTPUT
 fn docs_output_rewrites_document_links_to_plain_text() {
     let root = temp_repo_dir("special-cli-docs-link-output");
@@ -529,6 +568,26 @@ fn docs_output_refuses_to_overwrite_docs_evidence() {
         "[Authored evidence](documents://spec/EXPORT.CSV.HEADERS).\n",
     )
     .expect("existing evidence-bearing output should be written");
+
+    let output = run_special(&root, &["docs", "build", "source.md", "public.md"]);
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("refusing to overwrite docs evidence"));
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
+fn docs_output_refuses_to_overwrite_markdown_authoring_lines() {
+    let root = temp_repo_dir("special-cli-docs-overwrite-authoring-lines");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("source.md"),
+        "[CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("source docs markdown should be written");
+    fs::write(root.join("public.md"), "@implements APP.PARSER\n")
+        .expect("existing authoring output should be written");
 
     let output = run_special(&root, &["docs", "build", "source.md", "public.md"]);
 

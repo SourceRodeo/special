@@ -17,6 +17,9 @@ special docs build SOURCE OUTPUT rewrites markdown `documents://KIND/ID` links t
 @spec SPECIAL.DOCS.DOCUMENTS_LINES
 Documentation relationship lines `@documents KIND ID` and `@filedocuments KIND ID` attach one documentation relationship per line, are removed from docs output, and may not appear as adjacent stacked relationship lines.
 
+@spec SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES
+special docs build removes markdown architecture and pattern attachment lines from generated docs output while preserving literal examples.
+
 @spec SPECIAL.DOCS_COMMAND
 special docs validates documentation links and prints a documentation relationship view without writing files.
 
@@ -57,8 +60,8 @@ use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 
 use crate::annotation_syntax::{
-    ReservedSpecialAnnotation, normalize_markdown_declaration_line,
-    reserved_special_annotation_rest,
+    ReservedSpecialAnnotation, normalize_markdown_annotation_line,
+    normalize_markdown_declaration_line, reserved_special_annotation_rest,
 };
 use crate::cache::{load_or_parse_architecture, load_or_parse_repo};
 use crate::config::{DocsOutputConfig, SpecialVersion};
@@ -946,6 +949,10 @@ fn write_markdown_output(
         }
         previous_docs_line = false;
 
+        if is_markdown_authoring_annotation_line(raw) {
+            continue;
+        }
+
         collect_reserved_special_link_diagnostics(path, line, line_number, diagnostics);
         output.push_str(&write_document_link_output(
             path,
@@ -973,6 +980,23 @@ fn parse_markdown_documents_line(
         return false;
     };
     parse_documents_annotation_line(trimmed, path, line_number, refs, diagnostics)
+}
+
+fn is_markdown_authoring_annotation_line(line: &str) -> bool {
+    if parse_source_annotations::is_whole_line_code_span(line) {
+        return false;
+    }
+    let Some(trimmed) = normalize_markdown_annotation_line(line) else {
+        return false;
+    };
+    [
+        ReservedSpecialAnnotation::Implements,
+        ReservedSpecialAnnotation::FileImplements,
+        ReservedSpecialAnnotation::Applies,
+        ReservedSpecialAnnotation::FileApplies,
+    ]
+    .into_iter()
+    .any(|annotation| reserved_special_annotation_rest(trimmed, annotation).is_some())
 }
 
 fn push_stacked_document_line_diagnostic(
@@ -1403,6 +1427,7 @@ fn existing_file_contains_docs_evidence(path: &Path) -> Result<bool> {
             || evidence_line.contains("special://")
             || evidence_line.contains("@documents")
             || evidence_line.contains("@filedocuments")
+            || is_markdown_authoring_annotation_line(line)
         {
             return Ok(true);
         }
