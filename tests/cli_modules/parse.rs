@@ -396,7 +396,7 @@ fn lint_rejects_current_modules_without_direct_implements() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(
         stdout.contains(
-            "current module `DEMO` has no direct @implements or @fileimplements attachment"
+            "current module `DEMO` has no source ownership; add @implements/@fileimplements in source or mark the module @planned while it is architecture intent"
         )
     );
 
