@@ -49,6 +49,9 @@ special docs --metrics counts documentation relationships by target kind, source
 
 @spec SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
 special docs --metrics reports configured generated docs pages, markdown links among those pages, broken local docs links, orphan pages, and configured-entrypoint reachability.
+
+@spec SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE.DOCS_SOURCE_DECLARATIONS
+special health --metrics documentation coverage excludes module, area, and pattern targets that are declared, implemented, or applied by configured docs output source paths.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -612,7 +615,7 @@ fn documentation_target_coverage(
     targets: &DocumentTargets,
     generated_sources: &[PathBuf],
 ) -> DocumentationTargetCoverage {
-    let target_ids = targets.ids(kind);
+    let target_ids = targets.coverage_ids(kind, generated_sources);
     let mut documented = BTreeSet::new();
     let mut generated = BTreeSet::new();
     let mut internal = BTreeSet::new();
@@ -1402,11 +1405,13 @@ fn validate_document_refs(
 }
 
 struct DocumentTargets {
-    specs: BTreeSet<String>,
-    groups: BTreeSet<String>,
-    modules: BTreeSet<String>,
-    areas: BTreeSet<String>,
-    patterns: BTreeSet<String>,
+    specs: BTreeMap<String, SourceLocation>,
+    groups: BTreeMap<String, SourceLocation>,
+    modules: BTreeMap<String, SourceLocation>,
+    areas: BTreeMap<String, SourceLocation>,
+    patterns: BTreeMap<String, SourceLocation>,
+    module_implementation_locations: BTreeMap<String, Vec<SourceLocation>>,
+    pattern_application_locations: BTreeMap<String, Vec<SourceLocation>>,
 }
 
 impl DocumentTargets {
@@ -1418,45 +1423,51 @@ impl DocumentTargets {
                 .specs
                 .iter()
                 .filter(|decl| decl.kind() == NodeKind::Spec)
-                .map(|decl| decl.id.clone())
+                .map(|decl| (decl.id.clone(), decl.location.clone()))
                 .collect(),
             groups: parsed_repo
                 .specs
                 .iter()
                 .filter(|decl| decl.kind() == NodeKind::Group)
-                .map(|decl| decl.id.clone())
+                .map(|decl| (decl.id.clone(), decl.location.clone()))
                 .collect(),
             modules: parsed_architecture
                 .modules
                 .iter()
                 .filter(|decl| decl.kind() == ArchitectureKind::Module)
-                .map(|decl| decl.id.clone())
+                .map(|decl| (decl.id.clone(), decl.location.clone()))
                 .collect(),
             areas: parsed_architecture
                 .modules
                 .iter()
                 .filter(|decl| decl.kind() == ArchitectureKind::Area)
-                .map(|decl| decl.id.clone())
+                .map(|decl| (decl.id.clone(), decl.location.clone()))
                 .collect(),
             patterns: parsed_architecture
                 .patterns
                 .iter()
-                .map(|definition| definition.pattern_id.clone())
+                .map(|definition| (definition.pattern_id.clone(), definition.location.clone()))
                 .collect(),
+            module_implementation_locations: collect_module_implementation_locations(
+                &parsed_architecture.implements,
+            ),
+            pattern_application_locations: collect_pattern_application_locations(
+                &parsed_architecture.pattern_applications,
+            ),
         })
     }
 
     fn contains(&self, kind: DocumentTargetKind, id: &str) -> bool {
         match kind {
-            DocumentTargetKind::Spec => self.specs.contains(id),
-            DocumentTargetKind::Group => self.groups.contains(id),
-            DocumentTargetKind::Module => self.modules.contains(id),
-            DocumentTargetKind::Area => self.areas.contains(id),
-            DocumentTargetKind::Pattern => self.patterns.contains(id),
+            DocumentTargetKind::Spec => self.specs.contains_key(id),
+            DocumentTargetKind::Group => self.groups.contains_key(id),
+            DocumentTargetKind::Module => self.modules.contains_key(id),
+            DocumentTargetKind::Area => self.areas.contains_key(id),
+            DocumentTargetKind::Pattern => self.patterns.contains_key(id),
         }
     }
 
-    fn ids(&self, kind: DocumentTargetKind) -> &BTreeSet<String> {
+    fn targets(&self, kind: DocumentTargetKind) -> &BTreeMap<String, SourceLocation> {
         match kind {
             DocumentTargetKind::Spec => &self.specs,
             DocumentTargetKind::Group => &self.groups,
@@ -1465,6 +1476,133 @@ impl DocumentTargets {
             DocumentTargetKind::Pattern => &self.patterns,
         }
     }
+
+    fn coverage_ids(
+        &self,
+        kind: DocumentTargetKind,
+        generated_sources: &[PathBuf],
+    ) -> BTreeSet<String> {
+        self.targets(kind)
+            .iter()
+            .filter(|(id, location)| {
+                !self.is_docs_source_target_excluded_from_coverage(
+                    kind,
+                    id,
+                    location,
+                    generated_sources,
+                )
+            })
+            .map(|(id, _)| id.clone())
+            .collect()
+    }
+
+    fn is_docs_source_target_excluded_from_coverage(
+        &self,
+        kind: DocumentTargetKind,
+        id: &str,
+        location: &SourceLocation,
+        generated_sources: &[PathBuf],
+    ) -> bool {
+        match kind {
+            DocumentTargetKind::Spec | DocumentTargetKind::Group => false,
+            DocumentTargetKind::Module => {
+                self.module_is_docs_source_target(id, location, generated_sources)
+            }
+            DocumentTargetKind::Area => {
+                self.area_is_docs_source_target(id, location, generated_sources)
+            }
+            DocumentTargetKind::Pattern => {
+                self.pattern_is_docs_source_target(id, location, generated_sources)
+            }
+        }
+    }
+
+    fn module_is_docs_source_target(
+        &self,
+        id: &str,
+        location: &SourceLocation,
+        generated_sources: &[PathBuf],
+    ) -> bool {
+        is_generated_doc_source(&location.path, generated_sources)
+            || self
+                .module_implementation_locations
+                .get(id)
+                .is_some_and(|locations| {
+                    locations
+                        .iter()
+                        .any(|location| is_generated_doc_source(&location.path, generated_sources))
+                })
+    }
+
+    fn area_is_docs_source_target(
+        &self,
+        id: &str,
+        location: &SourceLocation,
+        generated_sources: &[PathBuf],
+    ) -> bool {
+        is_generated_doc_source(&location.path, generated_sources)
+            || self.modules.iter().any(|(module_id, module_location)| {
+                module_id.starts_with(&format!("{id}."))
+                    && self.module_is_docs_source_target(
+                        module_id,
+                        module_location,
+                        generated_sources,
+                    )
+            })
+    }
+
+    fn pattern_is_docs_source_target(
+        &self,
+        id: &str,
+        location: &SourceLocation,
+        generated_sources: &[PathBuf],
+    ) -> bool {
+        is_generated_doc_source(&location.path, generated_sources)
+            || self
+                .pattern_application_locations
+                .get(id)
+                .is_some_and(|locations| {
+                    locations
+                        .iter()
+                        .any(|location| is_generated_doc_source(&location.path, generated_sources))
+                })
+    }
+}
+
+fn collect_module_implementation_locations(
+    implementations: &[crate::model::ImplementRef],
+) -> BTreeMap<String, Vec<SourceLocation>> {
+    let mut locations = BTreeMap::<String, Vec<SourceLocation>>::new();
+    for implementation in implementations {
+        locations
+            .entry(implementation.module_id.clone())
+            .or_default()
+            .push(
+                implementation
+                    .body_location
+                    .clone()
+                    .unwrap_or_else(|| implementation.location.clone()),
+            );
+    }
+    locations
+}
+
+fn collect_pattern_application_locations(
+    applications: &[crate::model::PatternApplication],
+) -> BTreeMap<String, Vec<SourceLocation>> {
+    let mut locations = BTreeMap::<String, Vec<SourceLocation>>::new();
+    for application in applications {
+        locations
+            .entry(application.pattern_id.clone())
+            .or_default()
+            .push(
+                application
+                    .body_location
+                    .clone()
+                    .unwrap_or_else(|| application.location.clone()),
+            );
+    }
+    locations
 }
 
 fn is_markdown_path(path: &Path) -> bool {

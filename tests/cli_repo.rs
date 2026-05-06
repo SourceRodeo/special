@@ -350,6 +350,52 @@ fn repo_metrics_json_includes_documentation_coverage() {
 }
 
 #[test]
+// @verifies SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE.DOCS_SOURCE_DECLARATIONS
+fn repo_metrics_documentation_coverage_excludes_docs_source_architecture_targets() {
+    let root = temp_repo_dir("special-cli-repo-doc-coverage-docs-source-targets");
+    write_health_docs_coverage_fixture(&root);
+
+    let output = run_special(&root, &["health", "-m", "--json"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let target_kinds = json["metrics"]["documentation"]["target_kinds"]
+        .as_array()
+        .expect("target kinds should be an array");
+    let modules = target_kinds
+        .iter()
+        .find(|kind| kind["kind"] == "module")
+        .expect("module coverage should exist");
+    let areas = target_kinds
+        .iter()
+        .find(|kind| kind["kind"] == "area")
+        .expect("area coverage should exist");
+    let patterns = target_kinds
+        .iter()
+        .find(|kind| kind["kind"] == "pattern")
+        .expect("pattern coverage should exist");
+
+    assert_eq!(modules["total"], Value::from(1));
+    assert_eq!(
+        modules["undocumented_ids"],
+        Value::Array(vec![Value::from("APP.PARSER")])
+    );
+    assert_eq!(areas["total"], Value::from(1));
+    assert_eq!(
+        areas["undocumented_ids"],
+        Value::Array(vec![Value::from("APP")])
+    );
+    assert_eq!(patterns["total"], Value::from(1));
+    assert_eq!(
+        patterns["undocumented_ids"],
+        Value::Array(vec![Value::from("CACHE.SINGLE_FLIGHT_FILL")])
+    );
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 fn repo_metrics_json_includes_structured_metrics() {
     let root = temp_repo_dir("special-cli-repo-metrics-json");
     write_duplicate_item_signals_module_analysis_fixture(&root);
@@ -414,10 +460,27 @@ fn write_health_docs_coverage_fixture(root: &std::path::Path) {
         "### `@pattern CACHE.SINGLE_FLIGHT_FILL`\nCache fill.\n",
     )
     .expect("patterns should be written");
+    fs::write(
+        root.join("docs-architecture.md"),
+        concat!(
+            "### `@area DOCS`\n",
+            "Docs architecture.\n\n",
+            "### `@module DOCS.README`\n",
+            "README docs section.\n\n",
+            "### `@pattern DOCS.TRACEABLE_EXAMPLE`\n",
+            "Traceable docs example.\n",
+        ),
+    )
+    .expect("docs architecture should be written");
     fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
     fs::write(
         root.join("docs/src/README.md"),
-        "[CSV](documents://spec/EXPORT.CSV.HEADERS)\n",
+        concat!(
+            "@implements DOCS.README\n",
+            "@applies DOCS.TRACEABLE_EXAMPLE\n",
+            "## README\n",
+            "[CSV](documents://spec/EXPORT.CSV.HEADERS)\n",
+        ),
     )
     .expect("docs source should be written");
 }

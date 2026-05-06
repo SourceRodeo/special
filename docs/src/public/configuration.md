@@ -52,7 +52,10 @@ output = "docs"
 
 Behavior enabled: `special docs build` writes the configured output tree and
 preserves paths below the source directory. Entrypoints feed generated-docs graph
-reachability metrics.
+reachability metrics. [`special health --metrics`](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE.DOCS_SOURCE_DECLARATIONS)
+treats architecture and pattern targets implemented or applied by these sources
+as docs structure, so docs modules do not recursively require docs links to
+themselves.
 
 Observe with:
 

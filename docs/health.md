@@ -32,7 +32,9 @@ connect back to current spec support. It does not mean the code is unused. It
 means the proof path is missing or hidden behind a boundary Special deliberately
 does not treat as the preferred proof path.
 
-`documentation coverage` counts which declared specs, groups, modules, areas, and
-patterns are connected to docs evidence. Use it to find public or internal docs
-gaps, then inspect the specific target with `special specs`, `special arch`, or
-`special patterns`.
+`documentation coverage`
+counts which declared specs, groups, modules, areas, and patterns are connected
+to docs evidence. Architecture and pattern targets delivered by configured docs
+output sources are treated as docs structure, not as separate targets that must
+be documented again. Use coverage gaps to inspect the specific target with
+`special specs`, `special arch`, or `special patterns`.

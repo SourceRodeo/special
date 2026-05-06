@@ -523,7 +523,9 @@ fn parser_crate_git_monorepo_contract_is_documented() {
     let docs = read_repo_file("docs/contributor/release.md");
     assert!(docs.contains("SourceRodeo/crates"));
     assert!(docs.contains("parse-source-annotations"));
-    assert!(docs.contains("Cargo resolves that package"));
+    assert!(docs.contains("Cargo"));
+    assert!(docs.contains("Git dependency"));
+    assert!(docs.contains("release builds"));
     assert!(!docs.contains("../crates/parse-source-annotations"));
 }
 
