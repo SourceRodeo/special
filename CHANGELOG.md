@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.1 - 2026-05-05
+
+- Restored `special docs --metrics` as the intended 0.9 docs-audit surface,
+  with text and JSON output for public/internal documentation coverage,
+  undocumented targets, configured docs entrypoint reachability, local docs
+  links, broken local links, and orphan pages.
+- Added `[docs] entrypoints` configuration and exposed docs metrics through the
+  MCP `special_docs` tool so plugin users can inspect the same docs coverage
+  surface as CLI users.
+- Clarified module ownership diagnostics and docs: planned modules may remain
+  markdown-only architecture intent, while current modules mean source-backed
+  code ownership and should attach real source with `@implements` or
+  `@fileimplements`.
+
 ## 0.9.0 - 2026-05-05
 
 - Added `special docs` and `special docs build` for traceable public docs:

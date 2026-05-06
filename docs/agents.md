@@ -11,6 +11,7 @@ special mcp
 
 The server speaks stdio MCP. It exposes controlled tools
 for status, overview, specs, architecture, patterns, docs validation,
+docs metrics,
 docs output, lint, and health.
 
 The first MCP surface is intentionally inspection-heavy. It does not make broad

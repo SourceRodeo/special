@@ -95,7 +95,7 @@ index that keeps claims, evidence, and implementation boundaries connected.
 | `special arch` | [Inspect architecture declarations and implementation ownership](special://spec/SPECIAL.MODULE_COMMAND). |
 | `special patterns` | [Inspect adopted implementation patterns and their source applications](special://spec/SPECIAL.PATTERNS.COMMAND). |
 | `special health` | [Inspect repo-wide quality and traceability signals](special://spec/SPECIAL.HEALTH_COMMAND). |
-| `special docs` | [Validate docs relationships or write docs outputs](special://spec/SPECIAL.DOCS_COMMAND). |
+| `special docs` | [Validate docs relationships](special://spec/SPECIAL.DOCS_COMMAND), inspect [docs coverage metrics](special://spec/SPECIAL.DOCS_COMMAND.METRICS), or write docs outputs. |
 | `special mcp` | [Run the stdio MCP server for controlled agent access](special://spec/SPECIAL.MCP_COMMAND). |
 | `special lint` | [Check annotation and reference structure](special://spec/SPECIAL.LINT_COMMAND). |
 | `special init` | Add a starter `special.toml`. |
