@@ -15,6 +15,7 @@ mise exec -- cargo test
 mise exec -- cargo run --quiet -- lint
 mise exec -- cargo run --quiet -- docs build
 mise exec -- cargo run --quiet -- docs --metrics
+mise exec -- cargo test --test docs_self_check
 ```
 
 Clippy is pinned through the quality test surface:
@@ -49,4 +50,3 @@ Lean kernel embedding, and plugin layout:
 [no local parser checkout](documents://spec/SPECIAL.DISTRIBUTION.SOURCE_DEPENDENCIES.NO_LOCAL_CHECKOUT),
 [Homebrew formula](documents://spec/SPECIAL.DISTRIBUTION.HOMEBREW.FORMULA), and
 [Codex plugin layout](documents://spec/SPECIAL.DISTRIBUTION.CODEX_PLUGIN.SOURCE_LAYOUT).
-

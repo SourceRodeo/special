@@ -13,6 +13,7 @@ mise exec -- cargo test
 mise exec -- cargo run --quiet -- lint
 mise exec -- cargo run --quiet -- docs build
 mise exec -- cargo run --quiet -- docs --metrics
+mise exec -- cargo test --test docs_self_check
 ```
 
 Clippy is pinned through the quality test surface:
@@ -47,4 +48,3 @@ parser source dependency,
 no local parser checkout,
 Homebrew formula, and
 Codex plugin layout.
-
