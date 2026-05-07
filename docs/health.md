@@ -34,6 +34,10 @@ missing or hidden behind a
 boundary
 Special deliberately does not treat as the preferred proof path.
 
+`duplicate source shapes`
+counts repeated implementation shapes found through concrete parser structure
+or normalized source projections, such as repeated label-to-field mappings.
+
 Docs coverage is explicit relationship accounting, so it belongs to
 `special docs --metrics`,
 not health.

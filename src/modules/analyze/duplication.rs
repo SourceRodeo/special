@@ -57,7 +57,10 @@ pub(super) fn apply_duplicate_item_summary_in_files(
         )?
         .into_iter()
         .filter_map(|item| {
-            let duplicate_key = duplication_key(&item)?;
+            let duplicate_keys = duplication_keys(&item);
+            if duplicate_keys.is_empty() {
+                return None;
+            }
             Some(OwnedDuplicateItem {
                 module_id: module.id.clone(),
                 source_path: item.source_path,
@@ -66,37 +69,50 @@ pub(super) fn apply_duplicate_item_summary_in_files(
                     SourceItemKind::Function => ModuleItemKind::Function,
                     SourceItemKind::Method => ModuleItemKind::Method,
                 },
-                duplicate_key,
+                duplicate_keys,
             })
         })
         .collect::<Vec<_>>();
         items.append(&mut module_items);
     }
 
-    let mut groups: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+    let mut groups: BTreeMap<String, Vec<usize>> = BTreeMap::new();
     for (index, item) in items.iter().enumerate() {
-        groups
-            .entry(item.duplicate_key.as_str())
-            .or_default()
-            .push(index);
+        for duplicate_key in &item.duplicate_keys {
+            groups.entry(duplicate_key.clone()).or_default().push(index);
+        }
     }
 
-    let mut duplicates = Vec::new();
+    let mut duplicate_items = BTreeMap::<DuplicateItemIdentity, usize>::new();
     for indexes in groups.values() {
         if indexes.len() < 2 {
             continue;
         }
         for index in indexes {
             let item = &items[*index];
-            duplicates.push(ArchitectureDuplicateItem {
+            let identity = DuplicateItemIdentity {
                 module_id: item.module_id.clone(),
-                path: display_path(root, Path::new(&item.source_path)),
+                source_path: item.source_path.clone(),
                 name: item.name.clone(),
                 kind: item.kind,
-                duplicate_peer_count: indexes.len() - 1,
-            });
+            };
+            duplicate_items
+                .entry(identity)
+                .and_modify(|peer_count| *peer_count = (*peer_count).max(indexes.len() - 1))
+                .or_insert(indexes.len() - 1);
         }
     }
+
+    let mut duplicates = duplicate_items
+        .into_iter()
+        .map(|(item, duplicate_peer_count)| ArchitectureDuplicateItem {
+            module_id: item.module_id,
+            path: display_path(root, Path::new(&item.source_path)),
+            name: item.name,
+            kind: item.kind,
+            duplicate_peer_count,
+        })
+        .collect::<Vec<_>>();
 
     duplicates.sort_by(|left, right| {
         right
@@ -160,20 +176,37 @@ struct OwnedDuplicateItem {
     source_path: String,
     name: String,
     kind: ModuleItemKind,
-    duplicate_key: String,
+    duplicate_keys: Vec<String>,
 }
 
-fn duplication_key(item: &SourceItem) -> Option<String> {
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct DuplicateItemIdentity {
+    module_id: String,
+    source_path: String,
+    name: String,
+    kind: ModuleItemKind,
+}
+
+fn duplication_keys(item: &SourceItem) -> Vec<String> {
     if item.is_test || looks_like_test_path(&item.source_path) {
-        return None;
-    }
-    if item.shape_node_count < MIN_DUPLICATE_SHAPE_NODES {
-        return None;
-    }
-    if !has_substantive_structure(item) {
-        return None;
+        return Vec::new();
     }
 
+    let mut keys = Vec::new();
+    if item.shape_node_count >= MIN_DUPLICATE_SHAPE_NODES && has_substantive_structure(item) {
+        keys.push(format!("concrete:{}", concrete_duplication_key(item)));
+    }
+    keys.extend(
+        item.normalized_fingerprints
+            .iter()
+            .map(|fingerprint| format!("normalized:{fingerprint}")),
+    );
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
+fn concrete_duplication_key(item: &SourceItem) -> String {
     let call_profile = item
         .calls
         .iter()
@@ -194,10 +227,10 @@ fn duplication_key(item: &SourceItem) -> Option<String> {
         .collect::<Vec<_>>()
         .join("|");
 
-    Some(format!(
+    format!(
         "{}#calls:{}#invoke:{}",
         item.shape_fingerprint, call_profile, invocation_profile
-    ))
+    )
 }
 
 fn has_substantive_structure(item: &SourceItem) -> bool {

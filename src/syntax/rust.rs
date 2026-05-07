@@ -10,7 +10,7 @@ use tree_sitter::{Node, Parser};
 use super::{
     CallSyntaxKind, ParsedSourceGraph, SourceInvocation, SourceInvocationKind, SourceItem,
     SourceItemKind, SourceLanguage, SourceSpan, SyntaxProvider, build_qualified_name,
-    collect_calls_with, structural_shape,
+    collect_calls_with, normalized_shape_fingerprints, structural_shape,
 };
 
 pub(crate) struct RustSyntaxProvider;
@@ -71,6 +71,7 @@ fn parse_function_item(path: &Path, node: Node<'_>, source: &[u8]) -> Option<Sou
         module_path,
         container_path,
         shape_fingerprint,
+        normalized_fingerprints: normalized_shape_fingerprints(node, source),
         shape_node_count,
         kind: item_kind(node),
         span,

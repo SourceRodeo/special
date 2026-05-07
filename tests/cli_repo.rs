@@ -132,7 +132,7 @@ special health surfaces traceability in the default health view.
 special health surfaces raw unexplained-item evidence, including visibility, test-file placement, declared-module ownership, whether the owning module already has current-spec-traced code, and whether the item is structurally connected inside that module to traced code, across text, HTML, and JSON output when backward trace is available.
 
 @spec SPECIAL.HEALTH_COMMAND.DUPLICATION
-special health surfaces repo-wide duplicate-logic signals from owned implementation when built-in analyzers can identify substantively similar code shapes honestly.
+special health surfaces repo-wide duplicate-logic signals from owned implementation when built-in analyzers can identify substantively similar concrete or normalized code shapes honestly.
 
 @spec SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS
 special health surfaces repo-wide unowned item indicators so code outside declared modules stays visible even when traceability is available.
@@ -178,6 +178,7 @@ use support::{
     run_special, rust_analyzer_available, spawn_special, temp_repo_dir, top_level_help_commands,
     write_duplicate_item_signals_module_analysis_fixture,
     write_many_duplicate_item_signals_module_analysis_fixture,
+    write_normalized_duplicate_item_signals_module_analysis_fixture,
     write_unreached_code_module_analysis_fixture,
 };
 use typescript_test_fixtures::{
@@ -270,6 +271,38 @@ fn repo_surfaces_repo_wide_duplication_signals() {
         !stdout.contains(
             "duplicate item: DEMO:beta.rs:second_duplicate [function; duplicate peers 1]"
         )
+    );
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.DUPLICATION
+fn repo_surfaces_normalized_duplication_signals() {
+    let root = temp_repo_dir("special-cli-repo-normalized-duplication");
+    write_normalized_duplicate_item_signals_module_analysis_fixture(&root);
+
+    let output = run_special(&root, &["health", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let duplicate_items = json["analysis"]["repo_signals"]["duplicate_item_details"]
+        .as_array()
+        .expect("duplicate items should be an array");
+    assert_eq!(
+        json["analysis"]["repo_signals"]["duplicate_items"],
+        Value::from(2)
+    );
+    assert!(
+        duplicate_items
+            .iter()
+            .any(|item| item["name"] == "render_text")
+    );
+    assert!(
+        duplicate_items
+            .iter()
+            .any(|item| item["name"] == "render_rows")
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -718,12 +751,10 @@ fn repo_verbose_includes_fuller_repo_signal_detail() {
     let verbose_stdout = String::from_utf8(verbose_output.stdout).expect("stdout should be utf-8");
 
     assert!(normal_stdout.contains("duplicate source shapes: 6"));
-    assert!(!normal_stdout.contains(
-        "duplicate source shape: DEMO:zeta.rs:zeta_duplicate [function; duplicate peers 5]"
-    ));
-    assert!(verbose_stdout.contains(
-        "duplicate source shape: DEMO:zeta.rs:zeta_duplicate [function; duplicate peers 5]"
-    ));
+    assert!(!normal_stdout.contains("duplicate source shape:"));
+    assert!(verbose_stdout.contains("duplicate source shape:"));
+    assert!(verbose_stdout.contains("DEMO:zeta.rs:zeta_duplicate"));
+    assert!(verbose_stdout.contains("duplicate peers 5"));
 
     fs::remove_dir_all(&duplicate_root).expect("temp repo should be cleaned up");
 }

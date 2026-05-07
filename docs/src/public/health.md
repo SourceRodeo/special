@@ -39,6 +39,10 @@ missing or hidden behind a
 [boundary](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY.BOUNDARY_NON_PENETRATION)
 Special deliberately does not treat as the preferred proof path.
 
+[`duplicate source shapes`](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION)
+counts repeated implementation shapes found through concrete parser structure
+or normalized source projections, such as repeated label-to-field mappings.
+
 Docs coverage is explicit relationship accounting, so it belongs to
 [`special docs --metrics`](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE),
 not health.

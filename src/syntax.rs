@@ -20,6 +20,9 @@ the Rust syntax provider records functions, methods, module/container-qualified 
 @spec SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
 the Rust syntax provider treats real tests as test roots without mistaking non-test cfg attributes or stringified binary names for tests or invocations.
 
+@spec SPECIAL.SYNTAX.NORMALIZED_FINGERPRINTS
+the shared syntax layer records normalized source-shape fingerprints for repeated literal-to-access mappings and access sets without replacing concrete structural fingerprints.
+
 @spec SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_ITEMS_AND_CALLS
 the TypeScript syntax provider records exported/internal functions, exported arrow functions, and identifier or field call edges.
 
@@ -121,6 +124,7 @@ pub(crate) struct SourceItem {
     pub(crate) module_path: Vec<String>,
     pub(crate) container_path: Vec<String>,
     pub(crate) shape_fingerprint: String,
+    pub(crate) normalized_fingerprints: Vec<String>,
     pub(crate) shape_node_count: usize,
     pub(crate) kind: SourceItemKind,
     pub(crate) span: SourceSpan,
@@ -167,6 +171,236 @@ pub(crate) fn structural_shape(node: Node<'_>) -> (String, usize) {
     collect_structural_shape(node, &mut kinds);
     let node_count = kinds.len();
     (kinds.join(">"), node_count)
+}
+
+pub(crate) fn normalized_shape_fingerprints(node: Node<'_>, source: &[u8]) -> Vec<String> {
+    let mut events = Vec::new();
+    collect_normalized_shape_events(node, source, &mut events);
+
+    let mut rows = literal_access_rows(&events);
+    rows.sort();
+    rows.dedup();
+
+    let mut fingerprints = Vec::new();
+    if rows.len() >= 3 {
+        fingerprints.push(format!("literal-access-map:{}", rows.join("|")));
+    }
+
+    let mut accesses = events
+        .iter()
+        .filter_map(|event| match event {
+            NormalizedShapeEvent::Access(access) => Some(access.clone()),
+            NormalizedShapeEvent::Literal(_) => None,
+        })
+        .collect::<Vec<_>>();
+    accesses.sort();
+    accesses.dedup();
+    if accesses.len() >= 4 {
+        fingerprints.push(format!("access-set:{}", accesses.join("|")));
+    }
+
+    fingerprints
+}
+
+#[derive(Debug, Clone)]
+enum NormalizedShapeEvent {
+    Literal(String),
+    Access(String),
+}
+
+fn collect_normalized_shape_events(
+    node: Node<'_>,
+    source: &[u8],
+    events: &mut Vec<NormalizedShapeEvent>,
+) {
+    if node.kind() == "token_tree" {
+        if let Ok(text) = node.utf8_text(source) {
+            collect_token_tree_shape_events(text, events);
+        }
+        return;
+    }
+    if is_access_node(node) && !node.parent().is_some_and(is_access_node) {
+        if let Some(access) = normalized_access_text(node, source) {
+            events.push(NormalizedShapeEvent::Access(access));
+            return;
+        }
+    }
+
+    if is_string_literal_node(node)
+        && let Some(label) = normalized_literal_text(node, source)
+    {
+        events.push(NormalizedShapeEvent::Literal(label));
+        return;
+    }
+
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        collect_normalized_shape_events(child, source, events);
+    }
+}
+
+fn is_access_node(node: Node<'_>) -> bool {
+    matches!(
+        node.kind(),
+        "field_expression" | "member_expression" | "selector_expression" | "attribute"
+    )
+}
+
+fn is_string_literal_node(node: Node<'_>) -> bool {
+    matches!(
+        node.kind(),
+        "string_literal"
+            | "raw_string_literal"
+            | "string"
+            | "interpreted_string_literal"
+            | "template_string"
+    )
+}
+
+fn normalized_literal_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    let raw = node.utf8_text(source).ok()?.trim();
+    normalized_literal_value(raw)
+}
+
+fn normalized_literal_value(raw: &str) -> Option<String> {
+    let text = strip_literal_quotes(raw);
+    let text = text
+        .split('{')
+        .next()
+        .unwrap_or(text)
+        .replace("\\n", " ")
+        .replace("\\t", " ");
+    let words = text
+        .split(|ch: char| !ch.is_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .take(6)
+        .map(|part| part.to_ascii_lowercase())
+        .collect::<Vec<_>>();
+    if words.is_empty() {
+        None
+    } else {
+        Some(words.join("-"))
+    }
+}
+
+fn collect_token_tree_shape_events(text: &str, events: &mut Vec<NormalizedShapeEvent>) {
+    let bytes = text.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        let ch = bytes[index] as char;
+        if matches!(ch, '"' | '\'' | '`') {
+            let start = index;
+            index += 1;
+            while index < bytes.len() {
+                let current = bytes[index] as char;
+                if current == '\\' {
+                    index = (index + 2).min(bytes.len());
+                    continue;
+                }
+                index += 1;
+                if current == ch {
+                    break;
+                }
+            }
+            if let Some(label) = normalized_literal_value(&text[start..index.min(bytes.len())]) {
+                events.push(NormalizedShapeEvent::Literal(label));
+            }
+            continue;
+        }
+
+        if ch.is_ascii_alphabetic() || ch == '_' {
+            let start = index;
+            index += 1;
+            while index < bytes.len() {
+                let current = bytes[index] as char;
+                if current.is_ascii_alphanumeric() || matches!(current, '_' | '.') {
+                    index += 1;
+                } else {
+                    break;
+                }
+            }
+            let candidate = &text[start..index];
+            if candidate.contains('.')
+                && let Some(access) = normalized_access_value(candidate)
+            {
+                events.push(NormalizedShapeEvent::Access(access));
+            }
+            continue;
+        }
+
+        index += 1;
+    }
+}
+
+fn strip_literal_quotes(raw: &str) -> &str {
+    let mut text = raw.trim();
+    loop {
+        let Some(first) = text.chars().next() else {
+            return text;
+        };
+        if !matches!(first, 'r' | 'b' | 'f') {
+            break;
+        }
+        text = text[first.len_utf8()..].trim_start_matches('#');
+    }
+    text.trim_matches(['"', '\'', '`', '#'])
+}
+
+fn normalized_access_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    normalized_access_value(node.utf8_text(source).ok()?)
+}
+
+fn normalized_access_value(raw: &str) -> Option<String> {
+    let mut text = raw.to_string();
+    text.retain(|ch| !ch.is_whitespace());
+    for suffix in [
+        ".to_string",
+        ".to_owned",
+        ".as_str",
+        ".clone",
+        ".display",
+        ".String",
+    ] {
+        if let Some(stripped) = text.strip_suffix(suffix) {
+            text = stripped.to_string();
+        }
+    }
+    let separator_count = text.matches('.').count();
+    if separator_count == 0 || text.contains('"') || text.contains('\'') {
+        return None;
+    }
+    let segments = text.split('.').collect::<Vec<_>>();
+    let significant = if segments.len() > 2 {
+        segments[1..].join(".")
+    } else {
+        segments.join(".")
+    };
+    if significant.len() < 3 || significant.len() > 120 {
+        None
+    } else {
+        Some(significant)
+    }
+}
+
+fn literal_access_rows(events: &[NormalizedShapeEvent]) -> Vec<String> {
+    let mut rows = Vec::new();
+    for (index, event) in events.iter().enumerate() {
+        let NormalizedShapeEvent::Literal(label) = event else {
+            continue;
+        };
+        let Some(access) = events[index + 1..]
+            .iter()
+            .take_while(|event| !matches!(event, NormalizedShapeEvent::Literal(_)))
+            .find_map(|event| match event {
+                NormalizedShapeEvent::Access(access) => Some(access),
+                NormalizedShapeEvent::Literal(_) => None,
+            })
+        else {
+            continue;
+        };
+        rows.push(format!("{label}->{access}"));
+    }
+    rows
 }
 
 fn collect_structural_shape(node: Node<'_>, kinds: &mut Vec<String>) {
@@ -248,6 +482,50 @@ mod tests {
             .iter()
             .find(|item| item.qualified_name == qualified_name)
             .unwrap_or_else(|| panic!("item {qualified_name} should be present"))
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.NORMALIZED_FINGERPRINTS
+    fn rust_provider_collects_normalized_literal_access_maps() {
+        let graph = parse_source_graph_for_language(
+            SourceLanguage::new("rust"),
+            r#"
+pub struct RepoMetrics {
+    pub alpha: Count,
+    pub beta: Count,
+    pub gamma: Count,
+}
+
+pub struct Count {
+    pub total: usize,
+}
+
+pub struct CountRow {
+    pub label: String,
+    pub value: String,
+}
+
+pub fn render_rows(metrics: &RepoMetrics) -> Vec<CountRow> {
+    vec![
+        CountRow { label: "alpha".to_string(), value: metrics.alpha.total.to_string() },
+        CountRow { label: "beta".to_string(), value: metrics.beta.total.to_string() },
+        CountRow { label: "gamma".to_string(), value: metrics.gamma.total.to_string() },
+    ]
+}
+"#,
+        )
+        .expect("rust graph should parse");
+
+        let item = item_named(&graph, "render_rows");
+        assert!(
+            item.normalized_fingerprints.iter().any(|fingerprint| {
+                fingerprint.contains("literal-access-map:")
+                    && fingerprint.contains("alpha->alpha.total")
+                    && fingerprint.contains("gamma->gamma.total")
+            }),
+            "{:?}",
+            item.normalized_fingerprints
+        );
     }
 
     #[test]

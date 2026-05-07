@@ -145,6 +145,8 @@ struct CachedSourceItem {
     module_path: Vec<String>,
     container_path: Vec<String>,
     shape_fingerprint: String,
+    #[serde(default)]
+    normalized_fingerprints: Vec<String>,
     shape_node_count: usize,
     kind: CachedSourceItemKind,
     span: CachedSourceSpan,
@@ -165,6 +167,7 @@ impl CachedSourceItem {
             module_path: item.module_path.clone(),
             container_path: item.container_path.clone(),
             shape_fingerprint: item.shape_fingerprint.clone(),
+            normalized_fingerprints: item.normalized_fingerprints.clone(),
             shape_node_count: item.shape_node_count,
             kind: CachedSourceItemKind::from_parsed(item.kind),
             span: CachedSourceSpan::from_parsed(item.span),
@@ -189,6 +192,7 @@ impl CachedSourceItem {
             module_path: self.module_path,
             container_path: self.container_path,
             shape_fingerprint: self.shape_fingerprint,
+            normalized_fingerprints: self.normalized_fingerprints,
             shape_node_count: self.shape_node_count,
             kind: self.kind.into_parsed(),
             span: self.span.into_parsed(),
@@ -542,6 +546,7 @@ mod tests {
                 .map(ToString::to_string)
                 .collect(),
             shape_fingerprint: format!("shape-{name}"),
+            normalized_fingerprints: Vec::new(),
             shape_node_count: 3,
             kind,
             span: span(),

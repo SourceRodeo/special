@@ -342,6 +342,7 @@ mod tests {
             module_path: Vec::new(),
             container_path: Vec::new(),
             shape_fingerprint: String::new(),
+            normalized_fingerprints: Vec::new(),
             shape_node_count: 0,
             kind: SourceItemKind::Function,
             span: span(1),

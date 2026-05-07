@@ -16,6 +16,7 @@ pub use analysis::{
     write_item_scoped_item_signals_module_analysis_fixture,
     write_item_scoped_module_analysis_fixture, write_item_signals_module_analysis_fixture,
     write_many_duplicate_item_signals_module_analysis_fixture, write_module_analysis_fixture,
+    write_normalized_duplicate_item_signals_module_analysis_fixture,
     write_quality_module_analysis_fixture, write_restricted_visibility_root_fixture,
     write_source_local_module_analysis_fixture, write_unreached_code_module_analysis_fixture,
 };

@@ -9,7 +9,8 @@ use tree_sitter::{Node, Parser};
 
 use super::{
     CallSyntaxKind, ParsedSourceGraph, SourceItem, SourceItemKind, SourceLanguage, SourceSpan,
-    SyntaxProvider, build_qualified_name, collect_calls_with, structural_shape,
+    SyntaxProvider, build_qualified_name, collect_calls_with, normalized_shape_fingerprints,
+    structural_shape,
 };
 
 pub(crate) struct PythonSyntaxProvider;
@@ -99,6 +100,7 @@ fn build_item(
         module_path,
         container_path,
         shape_fingerprint,
+        normalized_fingerprints: normalized_shape_fingerprints(node, source),
         shape_node_count,
         kind,
         span,

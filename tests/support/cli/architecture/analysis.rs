@@ -227,6 +227,68 @@ pub fn write_duplicate_item_signals_module_analysis_fixture(root: &Path) {
     .expect("second duplicate fixture should be written");
 }
 
+pub fn write_normalized_duplicate_item_signals_module_analysis_fixture(root: &Path) {
+    fs::create_dir_all(root.join("_project")).expect("architecture dir should be created");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("_project/ARCHITECTURE.md"),
+        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+    )
+    .expect("architecture fixture should be written");
+    fs::write(
+        root.join("alpha.rs"),
+        r#"// @fileimplements DEMO
+pub struct RepoMetrics {
+    pub alpha: Count,
+    pub beta: Count,
+    pub gamma: Count,
+}
+
+pub struct Count {
+    pub total: usize,
+}
+
+pub fn render_text(metrics: &RepoMetrics) -> String {
+    let mut output = String::new();
+    output.push_str(&format!("alpha: {}", metrics.alpha.total));
+    output.push_str(&format!("beta: {}", metrics.beta.total));
+    output.push_str(&format!("gamma: {}", metrics.gamma.total));
+    output
+}
+"#,
+    )
+    .expect("first normalized duplicate fixture should be written");
+    fs::write(
+        root.join("beta.rs"),
+        r#"// @fileimplements DEMO
+pub struct RepoMetrics {
+    pub alpha: Count,
+    pub beta: Count,
+    pub gamma: Count,
+}
+
+pub struct Count {
+    pub total: usize,
+}
+
+pub struct CountRow {
+    pub label: String,
+    pub value: String,
+}
+
+pub fn render_rows(metrics: &RepoMetrics) -> Vec<CountRow> {
+    vec![
+        CountRow { label: "alpha".to_string(), value: metrics.alpha.total.to_string() },
+        CountRow { label: "beta".to_string(), value: metrics.beta.total.to_string() },
+        CountRow { label: "gamma".to_string(), value: metrics.gamma.total.to_string() },
+    ]
+}
+"#,
+    )
+    .expect("second normalized duplicate fixture should be written");
+}
+
 pub fn write_many_duplicate_item_signals_module_analysis_fixture(root: &Path) {
     fs::create_dir_all(root.join("_project")).expect("architecture dir should be created");
     fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
