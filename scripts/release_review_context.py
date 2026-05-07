@@ -9,7 +9,36 @@ from pathlib import Path
 
 from release_tooling import run_checked, semver_sort_key
 
-REVIEW_PATHS = ("src", "tests", "scripts", ".github/workflows", "Cargo.toml")
+REVIEW_PATHS = (
+    "src",
+    "tests",
+    "scripts",
+    ".github/workflows",
+    "codex-plugin",
+    "Cargo.toml",
+    "Cargo.lock",
+)
+REPO_TEXT_SUFFIXES = (
+    ".rs",
+    ".py",
+    ".sh",
+    ".json",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".md",
+    ".txt",
+    ".lock",
+    ".html",
+    ".css",
+    ".js",
+    ".ts",
+)
+REPO_TEXT_NAMES = {
+    "LICENSE",
+    "CHANGELOG.md",
+    "README.md",
+}
 MAX_INPUT_TOKENS = 32_000
 CHARS_PER_TOKEN = 4
 MAX_INPUT_CHARS = MAX_INPUT_TOKENS * CHARS_PER_TOKEN
@@ -141,6 +170,21 @@ def full_scan_files(root: Path, backend: str) -> list[str]:
     return list_review_files(root, backend)
 
 
+def list_repo_text_files(root: Path, backend: str) -> list[str]:
+    if backend == "jj":
+        output = run_checked(root, ["jj", "file", "list"])
+    else:
+        output = run_checked(root, ["git", "ls-files", "--cached", "--others", "--exclude-standard"])
+    return sorted(path for path in output.splitlines() if include_repo_text_file(path))
+
+
+def include_repo_text_file(path: str) -> bool:
+    if path.startswith((".git/", ".jj/", ".kimura/", "target/", ".agents/", "_project/")):
+        return False
+    name = Path(path).name
+    return path in REPO_TEXT_NAMES or name in REPO_TEXT_NAMES or path.endswith(REPO_TEXT_SUFFIXES)
+
+
 def include_file(path: str) -> bool:
     return (
         path.endswith(".rs")
@@ -149,6 +193,9 @@ def include_file(path: str) -> bool:
         or path.endswith(".json")
         or path.endswith(".yml")
         or path.endswith(".yaml")
+        or path.endswith(".toml")
+        or path == "Cargo.lock"
+        or (path.startswith("codex-plugin/") and path.endswith(".md"))
         or path == "Cargo.toml"
     )
 

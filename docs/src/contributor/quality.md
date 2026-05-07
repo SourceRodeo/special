@@ -33,6 +33,7 @@ The release-review wrapper is manual, local, and
 It should capture durable structured output while staying code-focused:
 [spec-owned wrapper](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SPEC_OWNED),
 [structured output](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT),
+[DeepSeek swarm mode](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_MODEL),
 [code-only surface](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.CODE_ONLY_SURFACE),
 [read-only sandbox](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.READ_ONLY_SANDBOX),
 [no web](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.NO_WEB),

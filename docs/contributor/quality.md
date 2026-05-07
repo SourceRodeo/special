@@ -31,6 +31,7 @@ warn-only.
 It should capture durable structured output while staying code-focused:
 spec-owned wrapper,
 structured output,
+DeepSeek swarm mode,
 code-only surface,
 read-only sandbox,
 no web,

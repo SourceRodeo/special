@@ -31,6 +31,13 @@ REQUIRED_CODEX_INVOCATION_KEYS = {
     "default_permissions",
     "filesystem_permissions",
 }
+OPTIONAL_CODEX_INVOCATION_KEYS = {
+    "harness",
+    "format",
+    "prompt_transport",
+    "permission",
+    "auth_source",
+}
 REQUIRED_PREVIEW_CHUNK_KEYS = {
     "chunk_index",
     "chunk_count",
@@ -149,11 +156,17 @@ def validate_review_preview(payload: dict, *, subject: str) -> dict:
         raise SystemExit(f"{subject} `model` must be a string")
     if not isinstance(payload["review_mode"], str):
         raise SystemExit(f"{subject} `review_mode` must be a string")
-    if payload["review_mode"] not in {"default", "fast", "smart"}:
-        raise SystemExit(f"{subject} `review_mode` must be `default`, `fast`, or `smart`")
+    if payload["review_mode"] not in {"default", "fast", "smart", "swarm"}:
+        raise SystemExit(
+            f"{subject} `review_mode` must be `default`, `fast`, `smart`, or `swarm`"
+        )
     if not isinstance(payload["codex_invocation"], dict):
         raise SystemExit(f"{subject} `codex_invocation` must be an object")
-    extra = payload["codex_invocation"].keys() - REQUIRED_CODEX_INVOCATION_KEYS
+    extra = (
+        payload["codex_invocation"].keys()
+        - REQUIRED_CODEX_INVOCATION_KEYS
+        - OPTIONAL_CODEX_INVOCATION_KEYS
+    )
     if extra:
         raise SystemExit(
             f"{subject} `codex_invocation` has unexpected keys: {sorted(extra)}"
@@ -177,6 +190,15 @@ def validate_review_preview(payload: dict, *, subject: str) -> dict:
         raise SystemExit(
             f"{subject} `codex_invocation.filesystem_permissions` must be an object"
         )
+    for key in ("harness", "format", "prompt_transport", "auth_source"):
+        if key in payload["codex_invocation"] and not isinstance(
+            payload["codex_invocation"][key], str
+        ):
+            raise SystemExit(f"{subject} `codex_invocation.{key}` must be a string")
+    if "permission" in payload["codex_invocation"] and not isinstance(
+        payload["codex_invocation"]["permission"], dict
+    ):
+        raise SystemExit(f"{subject} `codex_invocation.permission` must be an object")
     if not isinstance(payload["schema_path"], str):
         raise SystemExit(f"{subject} `schema_path` must be a string")
     if not isinstance(payload["backend"], str):

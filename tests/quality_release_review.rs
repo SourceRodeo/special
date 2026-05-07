@@ -17,6 +17,9 @@ the fast release-review mode uses `gpt-5.3-codex-spark`.
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SMART_MODEL
 the smart release-review mode uses `gpt-5.4`.
 
+@spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_MODEL
+the swarm release-review mode uses DeepSeek V4 Flash through OpenCode with mutating tools denied.
+
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT
 the release-review wrapper validates structured warning output against the review contract.
 
@@ -128,6 +131,38 @@ fn release_review_uses_smart_model_when_requested() {
     let payload = release_review_dry_run(&["--smart"]);
     assert_eq!(payload["model"], "gpt-5.4");
     assert_eq!(payload["review_mode"], "smart");
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_MODEL
+fn release_review_uses_deepseek_swarm_when_requested() {
+    let payload = release_review_dry_run(&["--swarm", "2"]);
+    assert_eq!(payload["model"], "deepseek/deepseek-v4-flash");
+    assert_eq!(payload["review_mode"], "swarm");
+    assert_eq!(payload["full_scan"], true);
+    assert_eq!(payload["baseline"], Value::Null);
+    assert_eq!(payload["codex_invocation"]["harness"], "opencode");
+    assert_eq!(
+        payload["codex_invocation"]["sandbox_mode"],
+        "opencode-read-only-permissions"
+    );
+    assert_eq!(payload["codex_invocation"]["web_search"], "denied");
+    assert_eq!(payload["codex_invocation"]["permission"]["read"], "allow");
+    assert_eq!(payload["codex_invocation"]["permission"]["bash"], "deny");
+    assert_eq!(payload["codex_invocation"]["permission"]["edit"], "deny");
+    let chunks = payload["review_passes"][0]["chunks"]
+        .as_array()
+        .expect("swarm preview should expose agent prompts");
+    assert_eq!(chunks.len(), 2);
+    assert!(
+        payload["changed_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|path| {
+                path.as_str() == Some("codex-plugin/special/skills/special-workflow/SKILL.md")
+            })
+    );
 }
 
 #[test]
@@ -285,17 +320,22 @@ fn release_review_full_scan_stays_on_code_surface() {
         let path = value.as_str().expect("changed file should be a string");
         assert!(
             path == "Cargo.toml"
+                || path == "Cargo.lock"
                 || path.starts_with("src/")
                 || path.starts_with("tests/")
                 || path.starts_with("scripts/")
+                || path.starts_with("codex-plugin/")
                 || path.starts_with(".github/workflows/"),
             "unexpected review-surface path: {path}"
         );
         assert!(
             path == "Cargo.toml"
-                || [".rs", ".py", ".sh", ".json", ".yml", ".yaml"]
-                    .iter()
-                    .any(|suffix| path.ends_with(suffix)),
+                || path == "Cargo.lock"
+                || [
+                    ".rs", ".py", ".sh", ".json", ".yml", ".yaml", ".toml", ".md"
+                ]
+                .iter()
+                .any(|suffix| path.ends_with(suffix)),
             "unexpected review-surface file type: {path}"
         );
     }
@@ -920,6 +960,50 @@ fn release_review_writes_progressive_output_and_status() {
     assert!(stderr.contains("planned"));
     assert!(stderr.contains("completed"));
     assert!(stderr.contains("partial output flushed"));
+    let _ = fs::remove_dir_all(output_path.parent().unwrap());
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.DURABLE_OUTPUT
+fn release_review_swarm_writes_durable_output() {
+    let output_path = unique_review_temp_repo("swarm-review-output").join("review.json");
+    let output = python3_command()
+        .arg("scripts/review-rust-release-style.py")
+        .arg("--allow-mock")
+        .arg("--swarm")
+        .arg("2")
+        .arg("--output")
+        .arg(&output_path)
+        .current_dir(support::repo_root())
+        .env("SPECIAL_RUST_RELEASE_REVIEW_ALLOW_MOCK", "1")
+        .env(
+            "SPECIAL_RUST_RELEASE_REVIEW_MOCK_OUTPUT",
+            r#"{"baseline":null,"full_scan":true,"summary":"clean","warnings":[]}"#,
+        )
+        .output()
+        .expect("release review swarm script should run with mocked output");
+
+    let response: Value = serde_json::from_str(
+        &fs::read_to_string(&output_path).expect("swarm durable output file should be written"),
+    )
+    .expect("swarm durable output should be json");
+    assert_eq!(response["complete"], true);
+    assert_eq!(response["completed_chunks"], 2);
+    assert_eq!(response["total_chunks"], 2);
+    assert_eq!(response["full_scan"], true);
+    assert!(
+        response["runner_warnings"]
+            .as_array()
+            .expect("swarm durable output should preserve runner warnings")
+            .iter()
+            .all(|warning| warning
+                .as_str()
+                .expect("runner warning should be text")
+                .contains("swarm prompt"))
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("DeepSeek swarm review agent"));
+    assert!(stderr.contains("swarm: agent 1/2"));
     let _ = fs::remove_dir_all(output_path.parent().unwrap());
 }
 

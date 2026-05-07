@@ -27,6 +27,7 @@ from release_review_invoke import (
     FAST_MODEL,
     MOCK_ALLOW_ENV,
     SMART_MODEL,
+    SWARM_MODEL,
     CodexInvocationError,
     codex_invocation_config,
     invoke_codex,
@@ -43,7 +44,14 @@ from release_review_pipeline import (
     diff_text_for_paths,
     extract_context_ranges,
     full_scan_files,
+    list_repo_text_files,
     parse_changed_line_ranges,
+)
+from release_review_swarm import (
+    DEFAULT_SWARM_COUNT,
+    MAX_SWARM_COUNT,
+    run_swarm_review,
+    swarm_dry_run_preview,
 )
 from release_tooling import package_version
 
@@ -88,6 +96,17 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=f"Use the stronger {SMART_MODEL} review model.",
     )
+    model_group.add_argument(
+        "--swarm",
+        nargs="?",
+        const=DEFAULT_SWARM_COUNT,
+        type=swarm_count,
+        metavar="COUNT",
+        help=(
+            f"Run COUNT parallel full-repo DeepSeek V4 Flash review agents through "
+            f"OpenCode with mutating tools denied. Defaults to {DEFAULT_SWARM_COUNT}."
+        ),
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -104,6 +123,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def swarm_count(value: str) -> int:
+    try:
+        count = int(value)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError("--swarm count must be an integer") from err
+    if count < 1 or count > MAX_SWARM_COUNT:
+        raise argparse.ArgumentTypeError(f"--swarm count must be between 1 and {MAX_SWARM_COUNT}")
+    return count
+
+
 def running_in_ci() -> bool:
     return any(
         os.environ.get(name, "").strip()
@@ -112,6 +141,8 @@ def running_in_ci() -> bool:
 
 
 def selected_model(args: argparse.Namespace) -> tuple[str, str]:
+    if args.swarm is not None:
+        return ("swarm", SWARM_MODEL)
     if args.fast:
         return ("fast", FAST_MODEL)
     if args.smart:
@@ -124,7 +155,7 @@ def status(message: str) -> None:
 
 
 def is_expensive_review(args: argparse.Namespace, review_mode: str, model: str) -> bool:
-    return args.full or review_mode == "smart" or model == SMART_MODEL
+    return args.full or review_mode in {"smart", "swarm"} or model in {SMART_MODEL, SWARM_MODEL}
 
 
 def default_output_path(root: Path, review_mode: str, full_scan: bool) -> Path:
@@ -147,7 +178,7 @@ def resolve_output_path(
     if args.output:
         return Path(args.output)
     if is_expensive_review(args, review_mode, model):
-        return default_output_path(root, review_mode, args.full)
+        return default_output_path(root, review_mode, bool(args.full or args.swarm is not None))
     return None
 
 
@@ -182,6 +213,24 @@ def write_merged_review(
     complete: bool,
 ) -> dict:
     payload = merge_pass_responses(base, full_scan, responses, runner_warnings)
+    return write_review_payload(
+        output_path,
+        payload,
+        runner_warnings,
+        completed_chunks,
+        total_chunks,
+        complete,
+    )
+
+
+def write_review_payload(
+    output_path: Path | None,
+    payload: dict,
+    runner_warnings: list[str],
+    completed_chunks: int,
+    total_chunks: int,
+    complete: bool,
+) -> dict:
     output_payload = {
         **payload,
         "complete": complete,
@@ -234,16 +283,83 @@ def main() -> int:
             )
     version = load_version(root)
     head = args.head or ("@" if backend == "jj" else "HEAD")
-    base = None if args.full else (args.base or discover_latest_semver_tag(root, backend, head))
+    swarm_count_value = int(args.swarm) if args.swarm is not None else None
+    full_scan = bool(args.full or swarm_count_value)
+    base = None if full_scan else (args.base or discover_latest_semver_tag(root, backend, head))
     review_files = (
-        full_scan_files(root, backend)
-        if args.full
+        list_repo_text_files(root, backend)
+        if swarm_count_value
+        else full_scan_files(root, backend)
+        if full_scan
         else changed_files_from_diff(root, backend, base, head)
     )
+
+    if swarm_count_value:
+        if args.dry_run:
+            print(
+                json.dumps(
+                    swarm_dry_run_preview(
+                        root,
+                        version,
+                        backend,
+                        head,
+                        swarm_count_value,
+                        review_files,
+                        SCHEMA_PATH,
+                    ),
+                    indent=2,
+                )
+            )
+            return 0
+        if running_in_ci():
+            raise SystemExit(
+                "rust release review is local-only and must not invoke model runners from CI; "
+                "use --dry-run for wrapper verification"
+            )
+        status(
+            f"planned {swarm_count_value} DeepSeek swarm review agent(s) across {len(review_files)} repo text file(s)"
+        )
+        write_review_payload(
+            output_path,
+            merge_pass_responses(None, True, [], []),
+            [],
+            0,
+            swarm_count_value,
+            False,
+        )
+        payload, runner_warnings, completed_agents = run_swarm_review(
+            root,
+            version,
+            backend,
+            head,
+            swarm_count_value,
+            review_files,
+            validate_response_shape,
+        )
+        output_payload = write_review_payload(
+            output_path,
+            payload,
+            runner_warnings,
+            completed_agents,
+            swarm_count_value,
+            True,
+        )
+        for warning in runner_warnings:
+            print(warning, file=sys.stderr)
+        if output_path:
+            print(output_payload["summary"])
+            print(f"Wrote review JSON to {output_path}")
+        else:
+            print(json.dumps(payload, indent=2))
+        mock_exit_code = os.environ.get("SPECIAL_RUST_RELEASE_REVIEW_MOCK_EXIT_CODE")
+        if mock_exit_code is not None and os.environ.get(MOCK_ALLOW_ENV) == "1":
+            return int(mock_exit_code)
+        return 1 if runner_warnings else 0
+
     review_passes = build_review_passes(review_files)
 
     changed_line_ranges: dict[str, list[tuple[int, int]]] = {}
-    if not args.full and review_files and base is not None:
+    if not full_scan and review_files and base is not None:
         changed_line_ranges = parse_changed_line_ranges(
             diff_text_for_paths(root, backend, base, head, review_files)
         )
@@ -253,14 +369,14 @@ def main() -> int:
 
     for review_pass in review_passes:
         pass_files = list(review_pass["files"])
-        file_contexts = build_file_contexts(root, pass_files, changed_line_ranges, args.full)
+        file_contexts = build_file_contexts(root, pass_files, changed_line_ranges, full_scan)
         chunks, pass_runner_warnings = build_pass_chunks(
             root,
             version,
             backend,
             base,
             head,
-            args.full,
+            full_scan,
             review_pass,
             file_contexts,
         )
@@ -277,7 +393,7 @@ def main() -> int:
                 "backend": backend,
                 "baseline": base,
                 "head": head,
-                "full_scan": args.full,
+                "full_scan": full_scan,
                 "changed_files": review_files,
                 "runner_warnings": runner_warnings,
                 "review_passes": [
@@ -313,14 +429,14 @@ def main() -> int:
         )
 
     if not chunk_records:
-        payload = write_merged_review(output_path, base, args.full, [], runner_warnings, 0, 0, True)
+        payload = write_merged_review(output_path, base, full_scan, [], runner_warnings, 0, 0, True)
         for warning in runner_warnings:
             print(warning, file=sys.stderr)
         if output_path:
             print(payload["summary"])
             print(f"Wrote review JSON to {output_path}")
         else:
-            print(json.dumps(merge_pass_responses(base, args.full, [], runner_warnings), indent=2))
+            print(json.dumps(merge_pass_responses(base, full_scan, [], runner_warnings), indent=2))
         return 1 if runner_warnings else 0
 
     responses: list[tuple[str, int, dict]] = []
@@ -334,7 +450,7 @@ def main() -> int:
     write_merged_review(
         output_path,
         base,
-        args.full,
+        full_scan,
         responses,
         runner_warnings,
         completed_chunks,
@@ -371,7 +487,7 @@ def main() -> int:
                 write_merged_review(
                     output_path,
                     base,
-                    args.full,
+                    full_scan,
                     responses,
                     runner_warnings,
                     completed_chunks,
@@ -391,7 +507,7 @@ def main() -> int:
                 write_merged_review(
                     output_path,
                     base,
-                    args.full,
+                    full_scan,
                     responses,
                     runner_warnings,
                     completed_chunks,
@@ -410,7 +526,7 @@ def main() -> int:
             write_merged_review(
                 output_path,
                 base,
-                args.full,
+                full_scan,
                 responses,
                 runner_warnings,
                 completed_chunks,
@@ -422,7 +538,7 @@ def main() -> int:
     payload = write_merged_review(
         output_path,
         base,
-        args.full,
+        full_scan,
         responses,
         runner_warnings,
         completed_chunks,
@@ -435,7 +551,7 @@ def main() -> int:
         print(payload["summary"])
         print(f"Wrote review JSON to {output_path}")
     else:
-        print(json.dumps(merge_pass_responses(base, args.full, responses, runner_warnings), indent=2))
+        print(json.dumps(merge_pass_responses(base, full_scan, responses, runner_warnings), indent=2))
     mock_exit_code = os.environ.get("SPECIAL_RUST_RELEASE_REVIEW_MOCK_EXIT_CODE")
     if mock_exit_code is not None and os.environ.get(MOCK_ALLOW_ENV) == "1":
         return int(mock_exit_code)
