@@ -123,8 +123,13 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
         discovered.markdown_files.len()
     ));
     if !view_scope_paths.is_empty() {
-        let scoped_file_count = discovered
+        let scoped_source_count = discovered
             .source_files
+            .iter()
+            .filter(|path| scope_matches(path, &view_scope_paths))
+            .count();
+        let scoped_markdown_count = discovered
+            .markdown_files
             .iter()
             .filter(|path| scope_matches(path, &view_scope_paths))
             .count();
@@ -134,21 +139,28 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
             .map(|symbol| format!(", symbol `{symbol}`"))
             .unwrap_or_default();
         status.note(&format!(
-            "target covers {} source files across {} path(s){}",
-            scoped_file_count,
+            "target covers {} source files and {} markdown files across {} path(s){}",
+            scoped_source_count,
+            scoped_markdown_count,
             view_scope_paths.len(),
             symbol_suffix
         ));
     }
     if !within_paths.is_empty() {
-        let within_file_count = discovered
+        let within_source_count = discovered
             .source_files
             .iter()
             .filter(|path| scope_matches(path, &within_paths))
             .count();
+        let within_markdown_count = discovered
+            .markdown_files
+            .iter()
+            .filter(|path| scope_matches(path, &within_paths))
+            .count();
         status.note(&format!(
-            "analysis corpus covers {} source files across {} path(s)",
-            within_file_count,
+            "analysis corpus covers {} source files and {} markdown files across {} path(s)",
+            within_source_count,
+            within_markdown_count,
             within_paths.len()
         ));
     }

@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use crate::discovery::{DiscoveryConfig, discover_annotation_files};
+use crate::discovery::{DiscoveredAnnotationFiles, DiscoveryConfig, discover_annotation_files};
 use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureTraceabilitySummary, ModuleAnalysisOptions,
     ModuleAnalysisSummary, ModuleComplexitySummary, ModuleDependencySummary,
@@ -111,16 +111,17 @@ pub(crate) fn build_repo_analysis_summary(
     parsed_repo: &ParsedRepo,
     scoped_paths: Option<&[PathBuf]>,
 ) -> Result<ArchitectureAnalysisSummary> {
-    let all_files = discover_annotation_files(DiscoveryConfig {
+    let discovered = discover_annotation_files(DiscoveryConfig {
         root,
         ignore_patterns,
-    })?
-    .source_files;
-    let scope_boundary = repo_scope::build_scope_boundary(root, &all_files, scoped_paths)?;
-    let scoped_files = scope_boundary
+    })?;
+    let all_files = discovered.source_files.clone();
+    let scope_files = scope_candidate_files(&discovered);
+    let scope_boundary = repo_scope::build_scope_boundary(root, &scope_files, scoped_paths)?;
+    let scoped_source_files = scope_boundary
         .as_ref()
-        .map(|boundary| boundary.matched_files())
-        .unwrap_or(&all_files);
+        .map(|boundary| boundary.matched_source_files(&all_files));
+    let scoped_files = scoped_source_files.as_deref().unwrap_or(&all_files);
     if scope_boundary.is_none() {
         status::emit_analysis_status(&format!(
             "repo health analysis considers {} analyzable source files",
@@ -205,16 +206,18 @@ pub(crate) fn build_bounded_repo_analysis_summary(
     parsed_repo: &ParsedRepo,
     within_paths: &[PathBuf],
 ) -> Result<ArchitectureAnalysisSummary> {
-    let all_files = discover_annotation_files(DiscoveryConfig {
+    let discovered = discover_annotation_files(DiscoveryConfig {
         root,
         ignore_patterns,
-    })?
-    .source_files;
-    let Some(boundary) = repo_scope::build_scope_boundary(root, &all_files, Some(within_paths))?
+    })?;
+    let all_files = discovered.source_files.clone();
+    let scope_files = scope_candidate_files(&discovered);
+    let Some(boundary) = repo_scope::build_scope_boundary(root, &scope_files, Some(within_paths))?
     else {
         return build_repo_analysis_summary(root, ignore_patterns, parsed, parsed_repo, None);
     };
-    let corpus_files = boundary.matched_files();
+    let corpus_source_files = boundary.matched_source_files(&all_files);
+    let corpus_files = corpus_source_files.as_slice();
     status::emit_analysis_status(&format!(
         "repo health hard analysis corpus matches {} of {} analyzable source files",
         corpus_files.len(),
@@ -287,12 +290,12 @@ pub(crate) fn filter_repo_analysis_summary_to_paths(
     scoped_paths: &[PathBuf],
     summary: &mut ArchitectureAnalysisSummary,
 ) -> Result<()> {
-    let all_files = discover_annotation_files(DiscoveryConfig {
+    let discovered = discover_annotation_files(DiscoveryConfig {
         root,
         ignore_patterns,
-    })?
-    .source_files;
-    let Some(boundary) = repo_scope::build_scope_boundary(root, &all_files, Some(scoped_paths))?
+    })?;
+    let scope_files = scope_candidate_files(&discovered);
+    let Some(boundary) = repo_scope::build_scope_boundary(root, &scope_files, Some(scoped_paths))?
     else {
         return Ok(());
     };
@@ -303,6 +306,16 @@ pub(crate) fn filter_repo_analysis_summary_to_paths(
         repo_scope::filter_traceability_to_scope(&boundary, traceability);
     }
     Ok(())
+}
+
+fn scope_candidate_files(discovered: &DiscoveredAnnotationFiles) -> Vec<PathBuf> {
+    let mut files =
+        Vec::with_capacity(discovered.source_files.len() + discovered.markdown_files.len());
+    files.extend(discovered.source_files.iter().cloned());
+    files.extend(discovered.markdown_files.iter().cloned());
+    files.sort();
+    files.dedup();
+    files
 }
 
 fn build_repo_traceability_summary(

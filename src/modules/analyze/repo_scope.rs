@@ -86,7 +86,7 @@ pub(super) fn build_scope_boundary(
     let boundary = RepoScopeBoundary::new(root, scoped_paths, all_files);
 
     if boundary.matched_files.is_empty() {
-        anyhow::bail!("repo scope did not match any analyzable source files");
+        anyhow::bail!("repo scope did not match any discoverable source or markdown files");
     }
 
     Ok(Some(boundary))
@@ -200,6 +200,14 @@ impl RepoScopeBoundary {
         &self.matched_files
     }
 
+    pub(super) fn matched_source_files(&self, all_files: &[PathBuf]) -> Vec<PathBuf> {
+        all_files
+            .iter()
+            .filter(|path| self.matches_display_path(path))
+            .cloned()
+            .collect()
+    }
+
     pub(super) fn traceability_candidate_files(&self, all_files: &[PathBuf]) -> Vec<PathBuf> {
         let scoped_languages = self
             .matched_files
@@ -207,7 +215,7 @@ impl RepoScopeBoundary {
             .filter_map(|path| SourceLanguage::from_path(path))
             .collect::<BTreeSet<_>>();
         if scoped_languages.is_empty() {
-            return all_files.to_vec();
+            return Vec::new();
         }
 
         all_files

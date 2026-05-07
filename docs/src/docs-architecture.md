@@ -202,8 +202,29 @@ The bundled skills fallback guide.
 ### @area SPECIAL.DOCUMENTATION.CONTRIBUTOR
 Generated documentation for changing and shipping Special itself.
 
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.INDEX
+The contributor reference entrypoint and map of maintainer-only surfaces.
+
 ### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.RELEASE
 The release, source dependency, GitHub release, Homebrew, and marketplace workflow.
+
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.PARSER
+The parser, annotation syntax, markdown ownership, and docs-link rules maintainers must preserve.
+
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.LANGUAGE_PACKS
+The built-in language-pack admission, parser surface, traceability, and degradation contracts.
+
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.TRACEABILITY
+The scoped traceability, process-boundary, and Lean kernel proof boundary.
+
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.RENDERING
+The text, JSON, HTML, and generated-doc output architecture.
+
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.CACHE
+The cache, single-flight, lock, and invalidation behavior that keeps expensive analysis usable.
+
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.QUALITY
+The release review, clippy, distribution, docs, and Special self-check gates maintainers run before shipping.
 
 ### @pattern DOCS.SURFACE_OVERVIEW_PAGE
 @strictness low

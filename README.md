@@ -108,4 +108,4 @@ that the graph still holds together.
 - [Health](docs/health.md): how to read cross-surface signals.
 - [Command reference](docs/commands.md), [Annotation reference](docs/annotations.md), and [Configuration](docs/configuration.md): lookup material.
 - [Agents](docs/agents.md): MCP, plugin, and skill setup.
-- [Contributor release notes](docs/contributor/release.md): release and distribution workflow.
+- [Contributor reference](docs/contributor/index.md): maintainer release, parser, language-pack, traceability, rendering, cache, and quality workflow.

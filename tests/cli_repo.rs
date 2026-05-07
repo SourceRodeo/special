@@ -27,7 +27,10 @@ special health --html emits an HTML repo-wide quality view.
 special health --verbose includes fuller detail for repo-wide quality signals when built-in analyzers provide it.
 
 @spec SPECIAL.HEALTH_COMMAND.TARGET
-special health --target PATH scopes repo-wide quality and traceability reporting to analyzable items in matching files or directories without changing the underlying repo analysis model.
+special health --target PATH scopes repo-wide quality and traceability reporting to matching files or directories without changing the underlying repo analysis model.
+
+@spec SPECIAL.HEALTH_COMMAND.TARGET.MARKDOWN_SCOPE
+special health --target PATH accepts markdown-only scopes so docs and prose health checks can run over documentation trees even when no language-pack source files are present.
 
 @spec SPECIAL.HEALTH_COMMAND.NO_POSITIONAL_SCOPE
 special health requires explicit --target PATH instead of accepting positional path scopes.
@@ -421,6 +424,59 @@ fn repo_surfaces_long_prose_outside_configured_docs() {
         .expect("long prose details should be present");
     assert_eq!(details[0]["path"], "notes.md");
     assert!(details[0]["prose_score"].as_f64().is_some());
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.TARGET.MARKDOWN_SCOPE
+fn repo_health_accepts_markdown_only_target_and_within_scopes() {
+    let root = temp_repo_dir("special-cli-repo-health-markdown-only-scope");
+    fs::create_dir_all(root.join("docs/src/contributor"))
+        .expect("docs source dir should be created");
+    fs::write(
+        root.join("special.toml"),
+        concat!(
+            "version = \"1\"\n",
+            "root = \".\"\n\n",
+            "[[docs.outputs]]\n",
+            "source = \"docs/src\"\n",
+            "output = \"docs\"\n",
+        ),
+    )
+    .expect("special.toml should be written");
+    let docs_prose = (0..14)
+        .map(|_| "Docs describe commands.")
+        .collect::<Vec<_>>()
+        .join(" ");
+    fs::write(root.join("docs/src/contributor/index.md"), docs_prose)
+        .expect("docs markdown should be written");
+
+    let output = run_special(
+        &root,
+        &[
+            "health",
+            "--metrics",
+            "--json",
+            "--target",
+            "docs/src/contributor",
+            "--within",
+            "docs/src",
+        ],
+    );
+    assert!(
+        output.status.success(),
+        "markdown-only health scope should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    assert_eq!(
+        json["metrics"]["docs"]["long_prose_outside_docs"],
+        Value::from(0)
+    );
+    assert_eq!(json["analysis"]["traceability"], Value::Null);
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
