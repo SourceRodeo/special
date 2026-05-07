@@ -81,6 +81,7 @@ use crate::model::{
     DocumentationTargetCoverage, LintReport, NodeKind, SourceLocation,
 };
 use crate::parser::starts_markdown_fence;
+use crate::source_paths::matches_scope_path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -1123,7 +1124,7 @@ fn scoped_refs(refs: Vec<DocumentRef>, scope_paths: &[PathBuf]) -> Vec<DocumentR
         return refs;
     }
     refs.into_iter()
-        .filter(|reference| scope_matches(&reference.location.path, scope_paths))
+        .filter(|reference| matches_scope_path(&reference.location.path, scope_paths))
         .collect()
 }
 
@@ -1131,17 +1132,7 @@ fn retain_scoped_diagnostics(diagnostics: &mut Vec<Diagnostic>, scope_paths: &[P
     if scope_paths.is_empty() {
         return;
     }
-    diagnostics.retain(|diagnostic| scope_matches(&diagnostic.path, scope_paths));
-}
-
-fn scope_matches(path: &Path, scope_paths: &[PathBuf]) -> bool {
-    scope_paths.iter().any(|scope| {
-        if scope.is_dir() {
-            path.starts_with(scope)
-        } else {
-            path == scope || path.starts_with(scope)
-        }
-    })
+    diagnostics.retain(|diagnostic| matches_scope_path(&diagnostic.path, scope_paths));
 }
 
 fn collect_source_document_refs(
@@ -1637,8 +1628,18 @@ impl DocumentTargets {
     fn load(root: &Path, ignore_patterns: &[String], version: SpecialVersion) -> Result<Self> {
         let parsed_repo = load_or_parse_repo(root, ignore_patterns, version)?;
         let parsed_architecture = load_or_parse_architecture(root, ignore_patterns)?;
-        let verifies_by_spec = count_by_spec_id(&parsed_repo.verifies);
-        let attests_by_spec = count_attests_by_spec_id(&parsed_repo.attests);
+        let verifies_by_spec = count_spec_ids(
+            parsed_repo
+                .verifies
+                .iter()
+                .map(|reference| reference.spec_id.as_str()),
+        );
+        let attests_by_spec = count_spec_ids(
+            parsed_repo
+                .attests
+                .iter()
+                .map(|reference| reference.spec_id.as_str()),
+        );
         let module_implementation_locations =
             collect_module_implementation_locations(&parsed_architecture.implements);
         let pattern_application_locations =
@@ -1912,18 +1913,10 @@ fn collect_module_implementation_locations(
     locations
 }
 
-fn count_by_spec_id(refs: &[crate::model::VerifyRef]) -> BTreeMap<String, usize> {
+fn count_spec_ids<'a>(refs: impl Iterator<Item = &'a str>) -> BTreeMap<String, usize> {
     let mut counts = BTreeMap::new();
-    for reference in refs {
-        *counts.entry(reference.spec_id.clone()).or_default() += 1;
-    }
-    counts
-}
-
-fn count_attests_by_spec_id(refs: &[crate::model::AttestRef]) -> BTreeMap<String, usize> {
-    let mut counts = BTreeMap::new();
-    for reference in refs {
-        *counts.entry(reference.spec_id.clone()).or_default() += 1;
+    for spec_id in refs {
+        *counts.entry(spec_id.to_string()).or_default() += 1;
     }
     counts
 }

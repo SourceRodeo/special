@@ -16,6 +16,7 @@ use serde_json::{Value, json};
 use url::Url;
 
 use crate::config::ProjectToolchain;
+use crate::source_paths::canonicalize_or_original_path as normalize_path;
 use crate::model::{ArchitectureTraceabilitySummary, ImplementRef, ParsedArchitecture, ParsedRepo};
 use crate::syntax::{CallSyntaxKind, ParsedSourceGraph, SourceCall, parse_source_graph};
 
@@ -824,12 +825,6 @@ fn lsp_locations(response: &Value) -> Vec<LspLocation> {
     serde_json::from_value::<LspLocation>(response.clone())
         .map(|location| vec![location])
         .unwrap_or_default()
-}
-
-fn normalize_path(path: impl AsRef<Path>) -> PathBuf {
-    path.as_ref()
-        .canonicalize()
-        .unwrap_or_else(|_| path.as_ref().to_path_buf())
 }
 
 fn query_item_character(path: &Path, item: &SourceCallableItem) -> Result<usize> {

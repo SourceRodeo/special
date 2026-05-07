@@ -21,7 +21,6 @@ special allows @spec nodes to have children while still remaining direct claims 
 special does not allow the same node id to be declared as both @spec and @group.
 */
 // @fileimplements SPECIAL.INDEX
-use std::collections::BTreeMap;
 use std::path::Path;
 
 use anyhow::Result;
@@ -29,7 +28,8 @@ use anyhow::Result;
 use crate::cache::load_or_parse_repo;
 use crate::config::SpecialVersion;
 use crate::model::{
-    AttestScope, GroupedCount, LintReport, ParsedRepo, SpecDocument, SpecFilter, SpecMetricsSummary,
+    AttestScope, LintReport, ParsedRepo, SpecDocument, SpecFilter, SpecMetricsSummary,
+    grouped_counts,
 };
 
 mod lint;
@@ -170,15 +170,5 @@ fn top_level_id(id: &str) -> String {
     id.split('.').next().unwrap_or(id).to_string()
 }
 
-fn grouped_counts(values: impl Iterator<Item = String>) -> Vec<GroupedCount> {
-    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
-    for value in values {
-        *counts.entry(value).or_default() += 1;
-    }
-    counts
-        .into_iter()
-        .map(|(value, count)| GroupedCount { value, count })
-        .collect()
-}
 #[cfg(test)]
 mod tests;

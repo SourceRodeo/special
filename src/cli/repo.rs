@@ -21,6 +21,7 @@ use crate::modules::{
     RepoDocumentOptions, analyze::with_analysis_status_notifier, build_repo_document,
 };
 use crate::render::{render_lint_text, render_repo_html, render_repo_json, render_repo_text};
+use crate::source_paths::matches_scope_path;
 
 #[derive(Debug, Args)]
 pub(super) struct HealthArgs {
@@ -126,12 +127,12 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
         let scoped_source_count = discovered
             .source_files
             .iter()
-            .filter(|path| scope_matches(path, &view_scope_paths))
+            .filter(|path| matches_scope_path(path, &view_scope_paths))
             .count();
         let scoped_markdown_count = discovered
             .markdown_files
             .iter()
-            .filter(|path| scope_matches(path, &view_scope_paths))
+            .filter(|path| matches_scope_path(path, &view_scope_paths))
             .count();
         let symbol_suffix = args
             .symbol
@@ -150,12 +151,12 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
         let within_source_count = discovered
             .source_files
             .iter()
-            .filter(|path| scope_matches(path, &within_paths))
+            .filter(|path| matches_scope_path(path, &within_paths))
             .count();
         let within_markdown_count = discovered
             .markdown_files
             .iter()
-            .filter(|path| scope_matches(path, &within_paths))
+            .filter(|path| matches_scope_path(path, &within_paths))
             .count();
         status.note(&format!(
             "analysis corpus covers {} source files and {} markdown files across {} path(s)",
@@ -211,15 +212,5 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
         ExitCode::from(1)
     } else {
         ExitCode::SUCCESS
-    })
-}
-
-fn scope_matches(path: &Path, scope_paths: &[PathBuf]) -> bool {
-    scope_paths.iter().any(|scope| {
-        if scope.is_dir() {
-            path.starts_with(scope)
-        } else {
-            path == scope || path.starts_with(scope)
-        }
     })
 }

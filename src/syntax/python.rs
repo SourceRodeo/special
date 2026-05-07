@@ -9,8 +9,8 @@ use tree_sitter::{Node, Parser};
 
 use super::{
     CallSyntaxKind, ParsedSourceGraph, SourceItem, SourceItemKind, SourceLanguage, SourceSpan,
-    SyntaxProvider, build_qualified_name, collect_calls_with, normalized_shape_fingerprints,
-    structural_shape,
+    SyntaxProvider, ancestor_name_segments, build_qualified_name, collect_calls_with,
+    first_named_child, last_named_child, normalized_shape_fingerprints, structural_shape,
 };
 
 pub(crate) struct PythonSyntaxProvider;
@@ -137,20 +137,7 @@ fn function_name(
 }
 
 fn class_container_segments(node: Node<'_>, source: &[u8]) -> Vec<String> {
-    let mut segments = Vec::new();
-    let mut current = node.parent();
-    while let Some(parent) = current {
-        if parent.kind() == "class_definition"
-            && let Some(name) = parent
-                .child_by_field_name("name")
-                .and_then(|name| name.utf8_text(source).ok())
-        {
-            segments.push(name.to_string());
-        }
-        current = parent.parent();
-    }
-    segments.reverse();
-    segments
+    ancestor_name_segments(node, source, "class_definition", "name")
 }
 
 fn file_module_segments(path: &Path) -> Vec<String> {
@@ -195,16 +182,6 @@ pub(crate) fn is_python_test_file(path: &Path) -> bool {
             .file_name()
             .and_then(|name| name.to_str())
             .is_some_and(|name| name.starts_with("test_") || name.ends_with("_test.py"))
-}
-
-fn first_named_child(node: Node<'_>) -> Option<Node<'_>> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor).next()
-}
-
-fn last_named_child(node: Node<'_>) -> Option<Node<'_>> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor).last()
 }
 
 #[cfg(test)]

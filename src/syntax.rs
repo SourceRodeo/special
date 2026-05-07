@@ -18,10 +18,10 @@ the Python syntax provider records functions, methods, pytest test roots, module
 the Rust syntax provider records functions, methods, module/container-qualified names, test roots, local binary invocations, and identifier/scoped/field call edges.
 
 @spec SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
-the Rust syntax provider treats real tests as test roots without mistaking non-test cfg attributes or stringified binary names for tests or invocations.
+the Rust syntax provider treats real tests and functions inside `#[cfg(test)]` modules as test roots without mistaking non-test cfg attributes or stringified binary names for tests or invocations.
 
 @spec SPECIAL.SYNTAX.NORMALIZED_FINGERPRINTS
-the shared syntax layer records normalized source-shape fingerprints for repeated literal-to-access mappings and access sets without replacing concrete structural fingerprints.
+the shared syntax layer records normalized source-shape fingerprints for repeated literal-to-access mappings without replacing concrete structural fingerprints.
 
 @spec SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_ITEMS_AND_CALLS
 the TypeScript syntax provider records exported/internal functions, exported arrow functions, and identifier or field call edges.
@@ -186,19 +186,6 @@ pub(crate) fn normalized_shape_fingerprints(node: Node<'_>, source: &[u8]) -> Ve
         fingerprints.push(format!("literal-access-map:{}", rows.join("|")));
     }
 
-    let mut accesses = events
-        .iter()
-        .filter_map(|event| match event {
-            NormalizedShapeEvent::Access(access) => Some(access.clone()),
-            NormalizedShapeEvent::Literal(_) => None,
-        })
-        .collect::<Vec<_>>();
-    accesses.sort();
-    accesses.dedup();
-    if accesses.len() >= 4 {
-        fingerprints.push(format!("access-set:{}", accesses.join("|")));
-    }
-
     fingerprints
 }
 
@@ -219,11 +206,12 @@ fn collect_normalized_shape_events(
         }
         return;
     }
-    if is_access_node(node) && !node.parent().is_some_and(is_access_node) {
-        if let Some(access) = normalized_access_text(node, source) {
-            events.push(NormalizedShapeEvent::Access(access));
-            return;
-        }
+    if is_access_node(node)
+        && !node.parent().is_some_and(is_access_node)
+        && let Some(access) = normalized_access_text(node, source)
+    {
+        events.push(NormalizedShapeEvent::Access(access));
+        return;
     }
 
     if is_string_literal_node(node)
@@ -420,6 +408,38 @@ pub(super) fn build_qualified_name(
     segments.extend(container_path.iter().cloned());
     segments.push(name.to_string());
     segments.join("::")
+}
+
+pub(super) fn first_named_child(node: Node<'_>) -> Option<Node<'_>> {
+    let mut cursor = node.walk();
+    node.named_children(&mut cursor).next()
+}
+
+pub(super) fn last_named_child(node: Node<'_>) -> Option<Node<'_>> {
+    let mut cursor = node.walk();
+    node.named_children(&mut cursor).last()
+}
+
+pub(super) fn ancestor_name_segments(
+    node: Node<'_>,
+    source: &[u8],
+    ancestor_kind: &str,
+    name_field: &str,
+) -> Vec<String> {
+    let mut segments = Vec::new();
+    let mut current = node.parent();
+    while let Some(parent) = current {
+        if parent.kind() == ancestor_kind
+            && let Some(name) = parent
+                .child_by_field_name(name_field)
+                .and_then(|name| name.utf8_text(source).ok())
+        {
+            segments.push(name.to_string());
+        }
+        current = parent.parent();
+    }
+    segments.reverse();
+    segments
 }
 
 pub(super) fn collect_calls_with(

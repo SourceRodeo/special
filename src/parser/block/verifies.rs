@@ -9,6 +9,7 @@ use crate::annotation_syntax::{ReservedSpecialAnnotation, reserved_special_annot
 use crate::model::{CommentBlock, ParsedRepo, SourceLocation, VerifyRef};
 
 use super::super::push_diag;
+use super::parse_supported_spec_id;
 
 pub(super) fn handle_verify_line(
     block: &CommentBlock,
@@ -51,7 +52,7 @@ fn handle_item_verify(
         return;
     }
 
-    let Some(id) = parse_spec_id(rest, parsed, block, line, "@verifies") else {
+    let Some(id) = parse_supported_spec_id(rest, parsed, block, line, "@verifies") else {
         return;
     };
     if let Some(owned_item) = &block.owned_item {
@@ -93,7 +94,7 @@ fn handle_file_verify(
         return;
     }
 
-    let Some(id) = parse_spec_id(rest, parsed, block, line, "@fileverifies") else {
+    let Some(id) = parse_supported_spec_id(rest, parsed, block, line, "@fileverifies") else {
         return;
     };
     let body = fs::read_to_string(&block.path)
@@ -109,33 +110,4 @@ fn handle_file_verify(
         body,
     });
     *seen_verifies = true;
-}
-
-fn parse_spec_id(
-    rest: &str,
-    parsed: &mut ParsedRepo,
-    block: &CommentBlock,
-    line: usize,
-    annotation: &str,
-) -> Option<String> {
-    let mut parts = rest.split_whitespace();
-    let Some(id) = parts.next() else {
-        push_diag(
-            parsed,
-            block,
-            line,
-            &format!("missing spec id after {annotation}"),
-        );
-        return None;
-    };
-    if parts.next().is_some() {
-        push_diag(
-            parsed,
-            block,
-            line,
-            &format!("unexpected trailing content after {annotation} spec id"),
-        );
-        return None;
-    }
-    Some(id.to_string())
 }

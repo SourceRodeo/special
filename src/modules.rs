@@ -15,11 +15,11 @@ use crate::cache::{
 };
 use crate::config::{DocsOutputConfig, PatternMetricBenchmarks, SpecialVersion};
 use crate::model::{
-    ArchitectureAnalysisSummary, ArchitectureKind, ArchitectureMetricsSummary, GroupedCount,
-    LintReport, ModuleAnalysisOptions, ModuleDocument, ModuleFilter, ModuleNode,
-    ParsedArchitecture, PatternFilter, RepoArchitectureHealthMetrics, RepoDocsHealthMetrics,
-    RepoDocument, RepoMetricsSummary, RepoPatternHealthMetrics, RepoSpecHealthMetrics,
-    RepoTestHealthMetrics, RepoTraceabilityMetrics,
+    ArchitectureAnalysisSummary, ArchitectureKind, ArchitectureMetricsSummary, LintReport,
+    ModuleAnalysisOptions, ModuleDocument, ModuleFilter, ModuleNode, ParsedArchitecture,
+    PatternFilter, RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument,
+    RepoMetricsSummary, RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
+    RepoTraceabilityMetrics, grouped_count_map, grouped_counts,
 };
 
 pub(crate) mod analyze;
@@ -742,24 +742,6 @@ fn count_descendant_modules(nodes: &[ModuleNode]) -> usize {
                 + count_descendant_modules(&node.children)
         })
         .sum()
-}
-
-fn grouped_counts(values: impl Iterator<Item = String>) -> Vec<GroupedCount> {
-    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
-    for value in values {
-        *counts.entry(value).or_default() += 1;
-    }
-    counts
-        .into_iter()
-        .map(|(value, count)| GroupedCount { value, count })
-        .collect()
-}
-
-fn grouped_count_map(counts: BTreeMap<String, usize>) -> Vec<GroupedCount> {
-    counts
-        .into_iter()
-        .map(|(value, count)| GroupedCount { value, count })
-        .collect()
 }
 
 pub fn build_module_lint_report(root: &Path, ignore_patterns: &[String]) -> Result<LintReport> {

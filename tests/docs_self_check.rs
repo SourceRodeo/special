@@ -26,7 +26,7 @@ fn run_repo_json(args: &[&str]) -> Value {
     serde_json::from_slice(&output.stdout).expect("stdout should be valid json")
 }
 
-fn number_at<'a>(json: &'a Value, path: &[&str]) -> u64 {
+fn number_at(json: &Value, path: &[&str]) -> u64 {
     path.iter()
         .fold(json, |value, key| &value[*key])
         .as_u64()

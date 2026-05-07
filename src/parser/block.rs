@@ -100,6 +100,39 @@ pub(super) fn collect_description_lines(block: &CommentBlock, cursor: &mut usize
     description_lines
 }
 
+fn parse_supported_spec_id(
+    rest: &str,
+    parsed: &mut ParsedRepo,
+    block: &CommentBlock,
+    line: usize,
+    annotation: &str,
+) -> Option<String> {
+    let mut parts = rest.split_whitespace();
+    let Some(id) = parts.next() else {
+        push_diag(
+            parsed,
+            block,
+            line,
+            &format!("missing spec id after {annotation}"),
+        );
+        return None;
+    };
+    if parts.next().is_some() {
+        push_diag(
+            parsed,
+            block,
+            line,
+            &format!("unexpected trailing content after {annotation} spec id"),
+        );
+        return None;
+    }
+    Some(id.to_string())
+}
+
+fn push_diag(parsed: &mut ParsedRepo, block: &CommentBlock, line: usize, message: &str) {
+    super::push_diag(parsed, block, line, message);
+}
+
 fn skip_reserved_arch_annotation(block: &CommentBlock, mut index: usize) -> usize {
     while index < block.lines.len() {
         let text = block.lines[index].text.trim();

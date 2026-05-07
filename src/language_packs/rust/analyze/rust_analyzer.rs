@@ -16,6 +16,7 @@ use serde_json::{Value, json};
 use url::Url;
 
 use crate::config::ProjectToolchain;
+use crate::source_paths::canonicalize_or_original_path as normalize_path;
 use crate::modules::analyze::ProgressHeartbeat;
 use crate::syntax::{SourceCall, SourceSpan};
 
@@ -624,12 +625,6 @@ struct LspRange {
 #[derive(Debug, Deserialize)]
 struct LspPosition {
     line: u32,
-}
-
-fn normalize_path(path: impl AsRef<Path>) -> PathBuf {
-    path.as_ref()
-        .canonicalize()
-        .unwrap_or_else(|_| path.as_ref().to_path_buf())
 }
 
 fn query_call_character(path: &Path, call: &SourceCall) -> Result<usize> {

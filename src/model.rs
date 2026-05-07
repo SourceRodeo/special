@@ -36,7 +36,7 @@ pub use overview::{
     OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary,
     RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument, RepoMetricsSummary,
     RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
-    RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary,
+    RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary, grouped_count_map, grouped_counts,
 };
 pub use spec::{
     AttestRef, AttestScope, Diagnostic, ParsedRepo, SpecDecl, SpecFilter, SpecNode, VerifyRef,

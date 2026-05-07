@@ -9,7 +9,7 @@ use crate::annotation_syntax::{ReservedSpecialAnnotation, reserved_special_annot
 use crate::model::{AttestRef, AttestScope, CommentBlock, ParsedRepo, SourceLocation};
 
 use super::super::attestation::parse_attestation_metadata;
-use super::super::push_diag;
+use super::parse_supported_spec_id;
 
 pub(super) fn handle_attest_line(
     block: &CommentBlock,
@@ -40,7 +40,7 @@ fn handle_block_attest(
     line: usize,
     rest: &str,
 ) -> usize {
-    let Some(id) = parse_spec_id(rest, parsed, block, line, "@attests") else {
+    let Some(id) = parse_supported_spec_id(rest, parsed, block, line, "@attests") else {
         return index + 1;
     };
 
@@ -80,7 +80,7 @@ fn handle_file_attest(
     line: usize,
     rest: &str,
 ) -> usize {
-    let Some(id) = parse_spec_id(rest, parsed, block, line, "@fileattests") else {
+    let Some(id) = parse_supported_spec_id(rest, parsed, block, line, "@fileattests") else {
         return index + 1;
     };
 
@@ -105,33 +105,4 @@ fn handle_file_attest(
     }
 
     cursor
-}
-
-fn parse_spec_id(
-    rest: &str,
-    parsed: &mut ParsedRepo,
-    block: &CommentBlock,
-    line: usize,
-    annotation: &str,
-) -> Option<String> {
-    let mut parts = rest.split_whitespace();
-    let Some(id) = parts.next() else {
-        push_diag(
-            parsed,
-            block,
-            line,
-            &format!("missing spec id after {annotation}"),
-        );
-        return None;
-    };
-    if parts.next().is_some() {
-        push_diag(
-            parsed,
-            block,
-            line,
-            &format!("unexpected trailing content after {annotation} spec id"),
-        );
-        return None;
-    }
-    Some(id.to_string())
 }

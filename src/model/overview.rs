@@ -4,6 +4,7 @@ Rendered document, filter, metrics, and lint report domain types.
 */
 // @fileimplements SPECIAL.MODEL.OVERVIEW
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 use super::{ArchitectureAnalysisSummary, Diagnostic, DiagnosticSeverity, ModuleNode, SpecNode};
 
@@ -157,6 +158,21 @@ pub struct RepoTestHealthMetrics {
 pub struct GroupedCount {
     pub value: String,
     pub count: usize,
+}
+
+pub fn grouped_counts(values: impl Iterator<Item = String>) -> Vec<GroupedCount> {
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    for value in values {
+        *counts.entry(value).or_default() += 1;
+    }
+    grouped_count_map(counts)
+}
+
+pub fn grouped_count_map(counts: BTreeMap<String, usize>) -> Vec<GroupedCount> {
+    counts
+        .into_iter()
+        .map(|(value, count)| GroupedCount { value, count })
+        .collect()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

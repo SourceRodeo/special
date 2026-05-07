@@ -43,11 +43,46 @@ pub(crate) fn normalize_existing_or_joined_path(root: &Path, path: &Path) -> Pat
     std::fs::canonicalize(&joined).unwrap_or(joined)
 }
 
+pub(crate) fn canonicalize_or_original_path(path: impl AsRef<Path>) -> PathBuf {
+    path.as_ref()
+        .canonicalize()
+        .unwrap_or_else(|_| path.as_ref().to_path_buf())
+}
+
+pub(crate) fn normalize_existing_or_lexical_path(path: &Path) -> PathBuf {
+    if let Ok(canonical) = path.canonicalize() {
+        return canonical;
+    }
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                normalized.pop();
+            }
+            _ => normalized.push(component.as_os_str()),
+        }
+    }
+    normalized
+}
+
+pub(crate) fn matches_scope_path(path: &Path, scope_paths: &[PathBuf]) -> bool {
+    scope_paths.iter().any(|scope| {
+        if scope.is_dir() {
+            path.starts_with(scope)
+        } else {
+            path == scope || path.starts_with(scope)
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
-    use super::{has_extension, looks_like_test_path, normalize_existing_or_joined_path};
+    use super::{
+        has_extension, looks_like_test_path, matches_scope_path, normalize_existing_or_joined_path,
+    };
 
     #[test]
     fn matches_known_extensions() {
@@ -86,5 +121,21 @@ mod tests {
         );
 
         std::fs::remove_dir_all(&root).expect("temp dir should be cleaned up");
+    }
+
+    #[test]
+    fn matches_file_and_directory_scope_paths() {
+        assert!(matches_scope_path(
+            Path::new("src/docs.rs"),
+            &[PathBuf::from("src/docs.rs")]
+        ));
+        assert!(matches_scope_path(
+            Path::new("src/render/text.rs"),
+            &[PathBuf::from("src/render")]
+        ));
+        assert!(!matches_scope_path(
+            Path::new("src/rendering.rs"),
+            &[PathBuf::from("src/render")]
+        ));
     }
 }

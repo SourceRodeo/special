@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::Write;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -18,8 +18,9 @@ use crate::model::{
     ArchitectureTraceabilitySummary, ImplementRef, ModuleMetricsSummary, ParsedArchitecture,
     ParsedRepo,
 };
-use crate::syntax::{ParsedSourceGraph, SourceCall, parse_source_graph};
 use crate::config::{ProjectToolchain, supported_project_toolchain_contracts};
+use crate::source_paths::normalize_existing_or_lexical_path as normalize_path;
+use crate::syntax::{ParsedSourceGraph, SourceCall, parse_source_graph};
 
 use crate::modules::analyze::source_item_signals::summarize_source_item_signals_with_metrics;
 use crate::modules::analyze::traceability_core::{
@@ -510,23 +511,6 @@ pub(crate) fn build_traceability_graph_facts(
         tool_call_edges: build_tool_call_edges(root, &source_graphs)?,
     };
     Ok(serde_json::to_vec(&facts)?)
-}
-
-fn normalize_path(path: &Path) -> PathBuf {
-    if let Ok(canonical) = path.canonicalize() {
-        return canonical;
-    }
-    let mut normalized = PathBuf::new();
-    for component in path.components() {
-        match component {
-            Component::CurDir => {}
-            Component::ParentDir => {
-                normalized.pop();
-            }
-            _ => normalized.push(component.as_os_str()),
-        }
-    }
-    normalized
 }
 
 #[derive(Debug, Clone)]

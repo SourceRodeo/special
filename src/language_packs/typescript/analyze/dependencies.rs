@@ -4,12 +4,13 @@ Extracts TypeScript import-based dependency and coupling evidence for the built-
 */
 // @fileimplements SPECIAL.LANGUAGE_PACKS.TYPESCRIPT.ANALYZE.DEPENDENCIES
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use tree_sitter::{Node, Parser};
 
 use crate::model::ModuleDependencySummary;
 use crate::modules::analyze::{ModuleCouplingInput, build_dependency_summary};
+use crate::source_paths::normalize_existing_or_lexical_path as normalize_path;
 
 #[derive(Default)]
 pub(super) struct TypeScriptDependencySummary {
@@ -107,23 +108,6 @@ fn resolve_internal_import(root: &Path, source_path: &Path, target: &str) -> Opt
         .into_iter()
         .map(|candidate| normalize_path(&candidate))
         .find(|candidate| candidate.exists())
-}
-
-fn normalize_path(path: &Path) -> PathBuf {
-    if let Ok(canonical) = path.canonicalize() {
-        return canonical;
-    }
-    let mut normalized = PathBuf::new();
-    for component in path.components() {
-        match component {
-            Component::CurDir => {}
-            Component::ParentDir => {
-                normalized.pop();
-            }
-            _ => normalized.push(component.as_os_str()),
-        }
-    }
-    normalized
 }
 
 #[cfg(test)]

@@ -9,8 +9,8 @@ use tree_sitter::{Node, Parser};
 
 use super::{
     CallSyntaxKind, ParsedSourceGraph, SourceItem, SourceItemKind, SourceLanguage, SourceSpan,
-    SyntaxProvider, build_qualified_name, collect_calls_with, normalized_shape_fingerprints,
-    structural_shape,
+    SyntaxProvider, build_qualified_name, collect_calls_with, first_named_child, last_named_child,
+    normalized_shape_fingerprints, structural_shape,
 };
 
 pub(crate) struct GoSyntaxProvider;
@@ -222,16 +222,6 @@ fn is_go_test_item(path: &Path, name: &str) -> bool {
         .and_then(|name| name.to_str())
         .is_some_and(|file| file.ends_with("_test.go"))
         && name.starts_with("Test")
-}
-
-fn first_named_child(node: Node<'_>) -> Option<Node<'_>> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor).next()
-}
-
-fn last_named_child(node: Node<'_>) -> Option<Node<'_>> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor).last()
 }
 
 #[cfg(test)]

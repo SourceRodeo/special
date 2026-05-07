@@ -9,8 +9,8 @@ use tree_sitter::{Node, Parser};
 
 use super::{
     CallSyntaxKind, ParsedSourceGraph, SourceInvocation, SourceInvocationKind, SourceItem,
-    SourceItemKind, SourceLanguage, SourceSpan, SyntaxProvider, build_qualified_name,
-    collect_calls_with, normalized_shape_fingerprints, structural_shape,
+    SourceItemKind, SourceLanguage, SourceSpan, SyntaxProvider, ancestor_name_segments,
+    build_qualified_name, collect_calls_with, normalized_shape_fingerprints, structural_shape,
 };
 
 pub(crate) struct RustSyntaxProvider;
@@ -77,7 +77,7 @@ fn parse_function_item(path: &Path, node: Node<'_>, source: &[u8]) -> Option<Sou
         span,
         public: has_public_visibility(node, source),
         root_visible: has_root_visibility(node, source),
-        is_test: has_test_attribute(node, source),
+        is_test: has_test_attribute(node, source) || has_cfg_test_module_ancestor(node, source),
         calls: collect_calls_with(body, source, function_name),
         invocations: collect_invocations(body, source),
     })
@@ -99,6 +99,23 @@ fn item_kind(node: Node<'_>) -> SourceItemKind {
 }
 
 fn has_test_attribute(node: Node<'_>, source: &[u8]) -> bool {
+    has_preceding_attribute(node, source, attribute_marks_test)
+}
+
+fn has_cfg_test_module_ancestor(node: Node<'_>, source: &[u8]) -> bool {
+    let mut current = node.parent();
+    while let Some(parent) = current {
+        if parent.kind() == "mod_item"
+            && has_preceding_attribute(parent, source, attribute_marks_cfg_test)
+        {
+            return true;
+        }
+        current = parent.parent();
+    }
+    false
+}
+
+fn has_preceding_attribute(node: Node<'_>, source: &[u8], predicate: fn(&str) -> bool) -> bool {
     let Ok(text) = std::str::from_utf8(source) else {
         return false;
     };
@@ -120,7 +137,7 @@ fn has_test_attribute(node: Node<'_>, source: &[u8]) -> bool {
         }
         if trimmed.starts_with("#[") || trimmed.ends_with(']') {
             let (attribute_start, attribute) = collect_attribute_text(&lines, line_index);
-            if attribute_marks_test(&attribute) {
+            if predicate(&attribute) {
                 return true;
             }
             line_index = attribute_start;
@@ -160,6 +177,20 @@ fn attribute_marks_test(attribute_text: &str) -> bool {
         .unwrap_or_default()
         .trim();
     path == "test" || path.ends_with("::test")
+}
+
+fn attribute_marks_cfg_test(attribute_text: &str) -> bool {
+    let Some(attribute) = attribute_text
+        .strip_prefix("#[")
+        .and_then(|text| text.strip_suffix(']'))
+    else {
+        return false;
+    };
+    let compact = attribute
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<String>();
+    matches!(compact.as_str(), "cfg(test)" | "cfg(all(test))")
 }
 
 fn has_public_visibility(node: Node<'_>, source: &[u8]) -> bool {
@@ -323,37 +354,11 @@ pub(crate) fn file_module_segments(path: &Path) -> Vec<String> {
 }
 
 fn nested_mod_segments(node: Node<'_>, source: &[u8]) -> Vec<String> {
-    let mut segments = Vec::new();
-    let mut current = node.parent();
-    while let Some(parent) = current {
-        if parent.kind() == "mod_item"
-            && let Some(name) = parent
-                .child_by_field_name("name")
-                .and_then(|name| name.utf8_text(source).ok())
-        {
-            segments.push(name.to_string());
-        }
-        current = parent.parent();
-    }
-    segments.reverse();
-    segments
+    ancestor_name_segments(node, source, "mod_item", "name")
 }
 
 fn impl_container_segments(node: Node<'_>, source: &[u8]) -> Vec<String> {
-    let mut segments = Vec::new();
-    let mut current = node.parent();
-    while let Some(parent) = current {
-        if parent.kind() == "impl_item"
-            && let Some(type_name) = parent
-                .child_by_field_name("type")
-                .and_then(|node| node.utf8_text(source).ok())
-        {
-            segments.push(type_name.to_string());
-        }
-        current = parent.parent();
-    }
-    segments.reverse();
-    segments
+    ancestor_name_segments(node, source, "impl_item", "type")
 }
 
 #[cfg(test)]
@@ -525,5 +530,34 @@ async fn helper() {}
         assert!(test_item.is_test);
         let helper = item_named(&graph, "helper");
         assert!(!helper.is_test);
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
+    fn provider_facade_marks_cfg_test_module_items_as_tests() {
+        let graph = parse_source_graph(
+            Path::new("src/lib.rs"),
+            r#"
+fn production_helper() {}
+
+#[cfg(test)]
+mod tests {
+    fn fixture_helper() {}
+
+    #[test]
+    fn verifies_behavior() {
+        fixture_helper();
+    }
+}
+"#,
+        )
+        .expect("rust graph should parse");
+
+        let production_helper = item_named(&graph, "production_helper");
+        assert!(!production_helper.is_test);
+        let fixture_helper = item_named(&graph, "fixture_helper");
+        assert!(fixture_helper.is_test);
+        let verifies_behavior = item_named(&graph, "verifies_behavior");
+        assert!(verifies_behavior.is_test);
     }
 }
