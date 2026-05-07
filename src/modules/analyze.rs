@@ -22,6 +22,7 @@ mod duplication;
 pub(crate) mod explain;
 mod module_summary;
 mod ownership;
+mod prose;
 mod provider_merge;
 mod registry;
 mod repo_scope;
@@ -33,6 +34,7 @@ mod unreached_code;
 
 pub(crate) use coupling::ModuleCouplingInput;
 pub(crate) use ownership::{FileOwnership, display_path, read_owned_file_text, visit_owned_texts};
+pub(crate) use prose::apply_long_prose_outside_docs_summary;
 pub(crate) use provider_merge::build_dependency_summary;
 pub(crate) use repo_scope::normalized_scope_paths;
 pub(crate) use status::{

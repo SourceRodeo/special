@@ -11,11 +11,12 @@ mod spec;
 
 pub use analysis::{
     ArchitectureAnalysisSummary, ArchitectureDuplicateItem, ArchitectureLongExactProseAssertion,
-    ArchitectureRepoSignalsSummary, ArchitectureTraceabilityItem, ArchitectureTraceabilitySummary,
-    ArchitectureUnownedItem, ModuleAnalysisOptions, ModuleAnalysisSummary, ModuleComplexitySummary,
-    ModuleCouplingSummary, ModuleCoverageSummary, ModuleDependencySummary,
-    ModuleDependencyTargetSummary, ModuleItemKind, ModuleItemSignal, ModuleItemSignalsSummary,
-    ModuleMetricsSummary, ModuleQualitySummary, ModuleTraceabilityItem, ModuleTraceabilitySummary,
+    ArchitectureLongProseBlock, ArchitectureRepoSignalsSummary, ArchitectureTraceabilityItem,
+    ArchitectureTraceabilitySummary, ArchitectureUnownedItem, ModuleAnalysisOptions,
+    ModuleAnalysisSummary, ModuleComplexitySummary, ModuleCouplingSummary, ModuleCoverageSummary,
+    ModuleDependencySummary, ModuleDependencyTargetSummary, ModuleItemKind, ModuleItemSignal,
+    ModuleItemSignalsSummary, ModuleMetricsSummary, ModuleQualitySummary, ModuleTraceabilityItem,
+    ModuleTraceabilitySummary,
 };
 pub use architecture::{
     ImplementRef, ModuleDecl, ModuleFilter, ModuleNode, ParsedArchitecture, PatternApplication,
@@ -32,8 +33,10 @@ pub use core::{
 pub use overview::{
     ArchitectureMetricsSummary, DocumentationCoverageSummary, DocumentationTargetCoverage,
     GroupedCount, LintReport, ModuleDocument, OverviewArchSummary, OverviewDocument,
-    OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary, RepoDocument,
-    RepoMetricsSummary, RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary,
+    OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary,
+    RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument, RepoGlobalHealthMetrics,
+    RepoMetricsSummary, RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
+    RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary,
 };
 pub use spec::{
     AttestRef, AttestScope, Diagnostic, ParsedRepo, SpecDecl, SpecFilter, SpecNode, VerifyRef,

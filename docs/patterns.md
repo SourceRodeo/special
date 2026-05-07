@@ -33,8 +33,10 @@ special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
 special patterns --metrics
 ```
 
-Pattern metrics are advisory. They can suggest repeated source shapes or missing
-applications, but they are not lint failures. A good pattern is identifiable by
+Pattern metrics are advisory fit checks for declared applications. Raw repeated
+source shapes and possible missing applications appear in
+`special health --metrics`, because
+health owns uncaptured analysis queues. A good pattern is identifiable by
 structure; a principle like "write clear docs" is not a Special pattern.
 
 For the opinionated admission bar, see [Patternizing Code and Docs](patternizing.md).

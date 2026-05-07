@@ -108,10 +108,10 @@ special health includes every verifying test and verified spec claim that suppor
 special health reports a degraded analyzer status when Rust traceability falls back to parser-resolved call edges because `rust-analyzer` is unavailable.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.UNEXPLAINED
-special health keeps currently unsupported implementation separate from traced and statically mediated implementation.
+special health keeps currently untraced implementation separate from traced and statically mediated implementation.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.BOUNDARY_NON_PENETRATION
-special health intentionally does not treat process launches, command-line entrypoints, route handlers, generated entrypoints, or framework callback dispatch as proof paths into internal behavior; unsupported implementation behind those boundaries remains visible so teams can move behavior behind ordinary modules or facades that tests call directly.
+special health intentionally does not treat process launches, command-line entrypoints, route handlers, generated entrypoints, or framework callback dispatch as proof paths into internal behavior; untraced implementation behind those boundaries remains visible so teams can move behavior behind ordinary modules or facades that tests call directly.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.DETERMINISTIC_ORDERING
 special health emits traceability item lists in deterministic source/name order rather than analyzer discovery order.
@@ -133,6 +133,12 @@ special health surfaces repo-wide duplicate-logic signals from owned implementat
 
 @spec SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS
 special health surfaces repo-wide unowned item indicators so code outside declared modules stays visible even when traceability is available.
+
+@group SPECIAL.HEALTH_COMMAND.DOCS
+Health documentation-adjacent raw analysis signals.
+
+@spec SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS
+special health reports long natural-language prose blocks outside configured docs sources when the block has no docs evidence link or docs annotation.
 
 @group SPECIAL.HEALTH_COMMAND.TEST_QUALITY
 
@@ -214,7 +220,7 @@ fn top_level_help_presents_repo_command() {
             .iter()
             .any(|(name, summary)| {
                 name == "health"
-                    && ["ownership", "proof", "docs", "patterns", "traceability"]
+                    && ["raw", "inferred", "repo", "analysis"]
                         .iter()
                         .all(|token| summary.contains(token))
             })
@@ -249,9 +255,9 @@ fn repo_surfaces_repo_wide_duplication_signals() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("duplicate items: 2"));
-    assert!(stdout.contains("duplicate items meaning:"));
-    assert!(stdout.contains("duplicate items exact:"));
+    assert!(stdout.contains("duplicate source shapes: 2"));
+    assert!(stdout.contains("duplicate source shapes meaning:"));
+    assert!(stdout.contains("duplicate source shapes exact:"));
     assert!(
         !stdout.contains(
             "duplicate item: DEMO:alpha.rs:first_duplicate [function; duplicate peers 1]"
@@ -276,9 +282,9 @@ fn repo_surfaces_unowned_items() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("unowned items: 1"));
-    assert!(stdout.contains("unowned items meaning:"));
-    assert!(stdout.contains("unowned item: hidden.rs:hidden_unreached [function]"));
+    assert!(stdout.contains("source outside architecture: 1"));
+    assert!(stdout.contains("source outside architecture meaning:"));
+    assert!(stdout.contains("source outside architecture: hidden.rs:hidden_unreached [function]"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -353,13 +359,68 @@ fn repo_metrics_text_surfaces_repo_health_counts() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("special health metrics"));
-    assert!(stdout.contains("duplicate items: 2"));
-    assert!(stdout.contains("unowned items: 0"));
-    assert!(stdout.contains("long exact prose assertions: 0"));
-    assert!(stdout.contains("duplicate items by file"));
+    assert!(stdout.contains("summary"));
+    assert!(stdout.contains("duplicate source shapes: 2"));
+    assert!(stdout.contains("source outside architecture: 0"));
+    assert!(stdout.contains("exact long-prose test assertions: 0"));
+    assert!(stdout.contains("duplicate source shapes by file"));
     assert!(stdout.contains("alpha.rs: 1"));
     assert!(stdout.contains("beta.rs: 1"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS
+fn repo_surfaces_long_prose_outside_configured_docs() {
+    let root = temp_repo_dir("special-cli-repo-long-prose-outside-docs");
+    fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
+    fs::write(
+        root.join("special.toml"),
+        concat!(
+            "version = \"1\"\n",
+            "root = \".\"\n\n",
+            "[[docs.outputs]]\n",
+            "source = \"docs/src\"\n",
+            "output = \"docs\"\n",
+        ),
+    )
+    .expect("special.toml should be written");
+    fs::write(
+        root.join("docs/src/guide.md"),
+        concat!(
+            "This configured docs paragraph is intentionally long enough to look like natural language. ",
+            "It should not appear in health because configured docs source belongs to the docs command. ",
+            "The generated docs graph is responsible for this prose, not repo health.\n",
+        ),
+    )
+    .expect("docs source should be written");
+    fs::write(
+        root.join("notes.md"),
+        concat!(
+            "@area APP\n",
+            "Application notes.\n\n",
+            "This long internal paragraph explains a behavior in enough detail that it should be visible to health. ",
+            "It is not inside the configured docs source tree and it does not carry a documents link or documents annotation. ",
+            "The signal should stay advisory so the user can decide whether to promote the text, link it, or delete it.\n",
+        ),
+    )
+    .expect("notes markdown should be written");
+
+    let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    assert_eq!(
+        json["metrics"]["docs"]["long_prose_outside_docs"],
+        Value::from(1)
+    );
+    let details = json["analysis"]["repo_signals"]["long_prose_outside_docs_details"]
+        .as_array()
+        .expect("long prose details should be present");
+    assert_eq!(details[0]["path"], "notes.md");
+    assert!(details[0]["prose_score"].as_f64().is_some());
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -374,10 +435,16 @@ fn repo_metrics_json_includes_structured_metrics() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    assert_eq!(json["metrics"]["duplicate_items"], Value::from(2));
-    assert_eq!(json["metrics"]["unowned_items"], Value::from(0));
     assert_eq!(
-        json["metrics"]["duplicate_items_by_file"],
+        json["metrics"]["patterns"]["duplicate_source_shapes"],
+        Value::from(2)
+    );
+    assert_eq!(
+        json["metrics"]["architecture"]["source_outside_architecture"],
+        Value::from(0)
+    );
+    assert_eq!(
+        json["metrics"]["patterns"]["duplicate_source_shapes_by_file"],
         Value::Array(vec![
             serde_json::json!({"value": "alpha.rs", "count": 1}),
             serde_json::json!({"value": "beta.rs", "count": 1}),
@@ -575,7 +642,7 @@ fn repo_html_emits_html_output() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("<!doctype html>"));
     assert!(stdout.contains("special health"));
-    assert!(stdout.contains("duplicate items"));
+    assert!(stdout.contains("duplicate source shapes"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -594,15 +661,13 @@ fn repo_verbose_includes_fuller_repo_signal_detail() {
     assert!(verbose_output.status.success());
     let verbose_stdout = String::from_utf8(verbose_output.stdout).expect("stdout should be utf-8");
 
-    assert!(normal_stdout.contains("duplicate items: 6"));
-    assert!(
-        !normal_stdout
-            .contains("duplicate item: DEMO:zeta.rs:zeta_duplicate [function; duplicate peers 5]")
-    );
-    assert!(
-        verbose_stdout
-            .contains("duplicate item: DEMO:zeta.rs:zeta_duplicate [function; duplicate peers 5]")
-    );
+    assert!(normal_stdout.contains("duplicate source shapes: 6"));
+    assert!(!normal_stdout.contains(
+        "duplicate source shape: DEMO:zeta.rs:zeta_duplicate [function; duplicate peers 5]"
+    ));
+    assert!(verbose_stdout.contains(
+        "duplicate source shape: DEMO:zeta.rs:zeta_duplicate [function; duplicate peers 5]"
+    ));
 
     fs::remove_dir_all(&duplicate_root).expect("temp repo should be cleaned up");
 }
@@ -961,7 +1026,7 @@ fn repo_surfaces_traceability() {
     assert!(stdout.contains("traceability"));
     assert!(stderr.contains("Rust analyzer enrichment degraded"));
     assert!(stdout.contains("current spec item:"));
-    assert!(stdout.contains("unsupported item:"));
+    assert!(stdout.contains("untraced implementation:"));
     assert!(!stdout.contains("unavailable:"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
@@ -1172,32 +1237,32 @@ fn repo_traceability_surfaces_unexplained_evidence_in_text_and_html() {
     let html_stdout = String::from_utf8(html_output.stdout).expect("stdout should be utf-8");
 
     if rust_analyzer_available() {
-        assert!(text_stdout.contains("unsupported public items: 0"));
-        assert!(text_stdout.contains("unsupported review-surface items: 0"));
-        assert!(text_stdout.contains("unsupported internal items: 2"));
-        assert!(text_stdout.contains("unsupported module-owned items: 2"));
-        assert!(text_stdout.contains("unsupported module-backed items: 2"));
-        assert!(text_stdout.contains("unsupported module-connected items: 1"));
-        assert!(text_stdout.contains("unsupported module-isolated items: 1"));
-        assert!(text_stdout.contains("unsupported unowned items: 0"));
-        assert!(text_stdout.contains("unsupported review-surface items meaning:"));
-        assert!(text_stdout.contains("unsupported public items meaning:"));
-        assert!(text_stdout.contains("unsupported internal items exact:"));
-        assert!(text_stdout.contains("unsupported module-owned items meaning:"));
-        assert!(text_stdout.contains("unsupported module-backed items meaning:"));
-        assert!(text_stdout.contains("unsupported module-connected items exact:"));
-        assert!(text_stdout.contains("unsupported module-isolated items meaning:"));
-        assert!(text_stdout.contains("unsupported item: src/lib.rs:connected_helper"));
-        assert!(text_stdout.contains("unsupported item: src/lib.rs:isolated_helper"));
+        assert!(text_stdout.contains("untraced public implementation: 0"));
+        assert!(text_stdout.contains("untraced review-surface implementation: 0"));
+        assert!(text_stdout.contains("untraced internal implementation: 2"));
+        assert!(text_stdout.contains("untraced module-owned implementation: 2"));
+        assert!(text_stdout.contains("untraced module-backed implementation: 2"));
+        assert!(text_stdout.contains("untraced module-connected implementation: 1"));
+        assert!(text_stdout.contains("untraced module-isolated implementation: 1"));
+        assert!(text_stdout.contains("untraced unowned implementation: 0"));
+        assert!(text_stdout.contains("untraced review-surface implementation meaning:"));
+        assert!(text_stdout.contains("untraced public implementation meaning:"));
+        assert!(text_stdout.contains("untraced internal implementation exact:"));
+        assert!(text_stdout.contains("untraced module-owned implementation meaning:"));
+        assert!(text_stdout.contains("untraced module-backed implementation meaning:"));
+        assert!(text_stdout.contains("untraced module-connected implementation exact:"));
+        assert!(text_stdout.contains("untraced module-isolated implementation meaning:"));
+        assert!(text_stdout.contains("untraced implementation: src/lib.rs:connected_helper"));
+        assert!(text_stdout.contains("untraced implementation: src/lib.rs:isolated_helper"));
         assert!(text_stdout.contains("connected inside module"));
         assert!(text_stdout.contains("isolated inside module"));
         assert!(text_stdout.contains("modules DEMO"));
 
-        assert!(html_stdout.contains("unsupported review-surface items"));
-        assert!(html_stdout.contains("unsupported internal items"));
-        assert!(html_stdout.contains("unsupported module-backed items"));
-        assert!(html_stdout.contains("unsupported module-connected items"));
-        assert!(html_stdout.contains("unsupported module-isolated items"));
+        assert!(html_stdout.contains("untraced review-surface implementation"));
+        assert!(html_stdout.contains("untraced internal implementation"));
+        assert!(html_stdout.contains("untraced module-backed implementation"));
+        assert!(html_stdout.contains("untraced module-connected implementation"));
+        assert!(html_stdout.contains("untraced module-isolated implementation"));
         assert!(html_stdout.contains("meaning"));
         assert!(html_stdout.contains("exact"));
         assert!(html_stdout.contains("src/lib.rs:connected_helper"));

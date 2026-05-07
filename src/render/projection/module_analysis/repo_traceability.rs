@@ -95,7 +95,7 @@ pub(in crate::render) fn project_repo_traceability_view(
         push_repo_traceability_count(
             &mut counts,
             &mut explanations,
-            "unsupported items",
+            "untraced implementation",
             traceability.unexplained_items.len(),
             "these items have no current spec trace, planned spec trace, linked test trace, or static mediation.",
             "count of analyzed implementation items not classified as current, planned-spec-only, deprecated-spec-only, test-covered unlinked, or statically mediated.",
@@ -145,7 +145,7 @@ pub(in crate::render) fn project_repo_traceability_view(
     );
     push_architecture_traceability_group(
         &mut items,
-        "unsupported item",
+        "untraced implementation",
         &traceability.unexplained_items,
     );
 
@@ -185,58 +185,58 @@ fn unexplained_traceability_details(
 ) -> [RepoTraceabilityDetail; 9] {
     [
         RepoTraceabilityDetail {
-            label: "unsupported review-surface items",
+            label: "untraced review-surface implementation",
             value: traceability.unexplained_review_surface_items(),
-            plain: "these unsupported items are the main review pile: public API or root-visible entrypoints that behave like product surface.",
-            precise: "count of unsupported implementation items marked public or root-visible by the active language pack, including process entrypoints such as `main`.",
+            plain: "these untraced items are the main review pile: public API or root-visible entrypoints that behave like product surface.",
+            precise: "count of untraced implementation items marked public or root-visible by the active language pack, including process entrypoints such as `main`.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported public items",
+            label: "untraced public implementation",
             value: traceability.unexplained_public_items(),
-            plain: "these unsupported items are public entrypoints or exported API surface.",
-            precise: "count of unsupported implementation items marked public by the active language pack.",
+            plain: "these untraced items are public entrypoints or exported API surface.",
+            precise: "count of untraced implementation items marked public by the active language pack.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported internal items",
+            label: "untraced internal implementation",
             value: traceability.unexplained_internal_items(),
-            plain: "these unsupported items are internal implementation, not public API.",
-            precise: "count of unsupported implementation items not marked public by the active language pack.",
+            plain: "these untraced items are internal implementation, not public API.",
+            precise: "count of untraced implementation items not marked public by the active language pack.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported test-file items",
+            label: "untraced test-file implementation",
             value: traceability.unexplained_test_file_items(),
-            plain: "these unsupported items sit in files recognized as test files.",
-            precise: "count of unsupported implementation items whose source path is under a tests directory or in a file named tests.",
+            plain: "these untraced items sit in files recognized as test files.",
+            precise: "count of untraced implementation items whose source path is under a tests directory or in a file named tests.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported module-owned items",
+            label: "untraced module-owned implementation",
             value: traceability.unexplained_module_owned_items(),
-            plain: "these unsupported items still belong to at least one declared module.",
-            precise: "count of unsupported implementation items with one or more declared owning module ids.",
+            plain: "these untraced items still belong to at least one declared module.",
+            precise: "count of untraced implementation items with one or more declared owning module ids.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported module-backed items",
+            label: "untraced module-backed implementation",
             value: traceability.unexplained_module_backed_items(),
-            plain: "these unsupported items sit in modules that already have current-spec-traced code somewhere else.",
-            precise: "count of unsupported implementation items whose declared owning module ids include at least one module with current-spec-backed traced implementation.",
+            plain: "these untraced items sit in modules that already have current-spec-traced code somewhere else.",
+            precise: "count of untraced implementation items whose declared owning module ids include at least one module with current-spec-backed traced implementation.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported module-connected items",
+            label: "untraced module-connected implementation",
             value: traceability.unexplained_module_connected_items(),
-            plain: "these unsupported items also connect inside those modules to code that is already current-spec-traced.",
-            precise: "count of unsupported implementation items in current-spec-backed modules that share a same-module call or reference component with current-spec-traced implementation.",
+            plain: "these untraced items also connect inside those modules to code that is already current-spec-traced.",
+            precise: "count of untraced implementation items in current-spec-backed modules that share a same-module call or reference component with current-spec-traced implementation.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported module-isolated items",
+            label: "untraced module-isolated implementation",
             value: traceability.unexplained_module_isolated_items(),
-            plain: "these unsupported items are in current-spec-backed modules but still sit outside the connected traced cluster in those modules.",
-            precise: "count of unsupported implementation items in current-spec-backed modules that do not share a same-module call or reference component with current-spec-traced implementation.",
+            plain: "these untraced items are in current-spec-backed modules but still sit outside the connected traced cluster in those modules.",
+            precise: "count of untraced implementation items in current-spec-backed modules that do not share a same-module call or reference component with current-spec-traced implementation.",
         },
         RepoTraceabilityDetail {
-            label: "unsupported unowned items",
+            label: "untraced unowned implementation",
             value: traceability.unexplained_unowned_items(),
-            plain: "these unsupported items are outside all declared modules.",
-            precise: "count of unsupported implementation items with no declared owning module ids.",
+            plain: "these untraced items are outside all declared modules.",
+            precise: "count of untraced implementation items with no declared owning module ids.",
         },
     ]
 }

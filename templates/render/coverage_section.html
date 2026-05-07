@@ -13,6 +13,15 @@
   {% for item in duplicate_items %}
   <div class="meta">duplicate item {{ item }}</div>
   {% endfor %}
+  {% for item in possible_missing_pattern_applications %}
+  <div class="meta">possible missing pattern application {{ item }}</div>
+  {% endfor %}
+  {% for item in possible_pattern_clusters %}
+  <div class="meta">possible pattern cluster {{ item }}</div>
+  {% endfor %}
+  {% for item in long_prose_outside_docs %}
+  <div class="meta">long prose outside docs {{ item }}</div>
+  {% endfor %}
   {% for item in long_exact_prose_assertions %}
   <div class="meta">long exact prose assertion {{ item }}</div>
   {% endfor %}

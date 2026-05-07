@@ -15,23 +15,24 @@ special health --metrics
 Representative output shape:
 
 ```text
-special health metrics
-  duplicate items: ...
-  unowned items: ...
-  traceability
-    unsupported items: ...
+summary
+  source outside architecture: ...
+  untraced implementation: ...
+  duplicate source shapes: ...
+  possible missing pattern applications: ...
+  long prose outside docs: ...
 ```
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.METRICS
 @applies DOCS.METRIC_REFERENCE_ENTRY
 ## Metric Interpretation
 
-[`unowned items`](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS) counts
+[`source outside architecture`](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS) counts
 analyzable implementation outside declared module
 ownership. It does not prove the code is wrong; it shows that the architecture
 graph cannot explain that code yet.
 
-[`unsupported items`](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY) counts
+[`untraced implementation`](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY) counts
 implementation that language-pack traceability cannot connect back to current
 spec support. It does not mean the code is unused. It means the proof path is
 missing or hidden behind a

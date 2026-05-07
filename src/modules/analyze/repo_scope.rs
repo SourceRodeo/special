@@ -34,6 +34,21 @@ pub(crate) fn filter_repo_analysis_summary_to_symbol(
             .duplicate_item_details
             .retain(|item| item.name == symbol);
         repo_signals.duplicate_items = repo_signals.duplicate_item_details.len();
+        repo_signals
+            .possible_missing_pattern_application_details
+            .retain(|item| item.item_name == symbol);
+        repo_signals.possible_missing_pattern_applications = repo_signals
+            .possible_missing_pattern_application_details
+            .len();
+        repo_signals
+            .possible_pattern_cluster_details
+            .retain(|cluster| cluster.items.iter().any(|item| item.item_name == symbol));
+        repo_signals.possible_pattern_clusters =
+            repo_signals.possible_pattern_cluster_details.len();
+        repo_signals
+            .long_prose_outside_docs_details
+            .retain(|item| item.preview.contains(symbol));
+        repo_signals.long_prose_outside_docs = repo_signals.long_prose_outside_docs_details.len();
         repo_signals.long_exact_prose_assertion_details.clear();
         repo_signals.long_exact_prose_assertions = 0;
     }
@@ -89,6 +104,22 @@ pub(super) fn filter_repo_signals_to_scope(
         .duplicate_item_details
         .retain(|item| boundary.matches_display_path(&item.path));
     summary.duplicate_items = summary.duplicate_item_details.len();
+    summary
+        .possible_missing_pattern_application_details
+        .retain(|item| boundary.matches_display_path(&item.location.path));
+    summary.possible_missing_pattern_applications =
+        summary.possible_missing_pattern_application_details.len();
+    summary.possible_pattern_cluster_details.retain(|cluster| {
+        cluster
+            .items
+            .iter()
+            .any(|item| boundary.matches_display_path(&item.location.path))
+    });
+    summary.possible_pattern_clusters = summary.possible_pattern_cluster_details.len();
+    summary
+        .long_prose_outside_docs_details
+        .retain(|item| boundary.matches_display_path(&item.path));
+    summary.long_prose_outside_docs = summary.long_prose_outside_docs_details.len();
     summary
         .long_exact_prose_assertion_details
         .retain(|item| boundary.matches_display_path(&item.path));

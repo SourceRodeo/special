@@ -256,11 +256,11 @@ pub(crate) fn implementation_contains_application(
 }
 
 fn pattern_metrics(
-    root: &Path,
-    ignore_patterns: &[String],
+    _root: &Path,
+    _ignore_patterns: &[String],
     parsed: &ParsedArchitecture,
-    filter: &PatternFilter,
-    benchmark_config: PatternMetricBenchmarks,
+    _filter: &PatternFilter,
+    _benchmark_config: PatternMetricBenchmarks,
 ) -> Result<PatternMetricsSummary> {
     let pattern_ids = parsed
         .patterns
@@ -281,25 +281,20 @@ fn pattern_metrics(
         })
         .collect::<BTreeSet<_>>()
         .len();
-    let candidates =
-        pattern_metric_candidates(root, ignore_patterns, parsed, filter, benchmark_config)?;
-
     Ok(PatternMetricsSummary {
         total_patterns: pattern_ids.len(),
         total_definitions: parsed.patterns.len(),
         total_applications: parsed.pattern_applications.len(),
         modules_with_applications,
-        possible_missing_applications: candidates.possible_missing_applications,
-        possible_pattern_clusters: candidates.possible_pattern_clusters,
     })
 }
 
-struct PatternCandidateReport {
-    possible_missing_applications: Vec<PatternMissingApplicationCandidate>,
-    possible_pattern_clusters: Vec<PatternClusterCandidate>,
+pub(crate) struct PatternCandidateReport {
+    pub(crate) possible_missing_applications: Vec<PatternMissingApplicationCandidate>,
+    pub(crate) possible_pattern_clusters: Vec<PatternClusterCandidate>,
 }
 
-fn pattern_metric_candidates(
+pub(crate) fn pattern_metric_candidates(
     root: &Path,
     ignore_patterns: &[String],
     parsed: &ParsedArchitecture,

@@ -43,10 +43,12 @@ Review the pattern with:
 
 ```sh
 special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
-special patterns --metrics --target src --within src
+special patterns --metrics
+special health --metrics --target src
 ```
 
-Use metrics as a review queue. A high-similarity unannotated item may mean a
+Use pattern metrics to review declared applications. Use health metrics for
+uncaptured raw opportunities: a high-similarity unannotated item may mean a
 missing application, a helper that should be extracted, or a pattern definition
 that is too broad.
 
@@ -108,10 +110,10 @@ Run the docs and pattern checks together:
 ```sh
 special docs --metrics --verbose
 special health --metrics
-special patterns --metrics --target docs/src --within docs/src
+special patterns --metrics
 ```
 
 `special docs --metrics --verbose` tells you whether documented targets have
-support. `special health --metrics` shows which targets still lack docs
-coverage. Pattern metrics help decide whether the docs are following the shapes
-the project intended.
+support. `special health --metrics` shows uncaptured prose and raw pattern
+opportunities. Pattern metrics help decide whether declared docs patterns still
+fit their known applications.

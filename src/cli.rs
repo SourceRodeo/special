@@ -110,12 +110,12 @@ enum Command {
     Modules(ModulesArgs),
     #[command(
         name = "patterns",
-        about = "Show adopted patterns and repeated-source candidates"
+        about = "Show declared patterns, applications, and fit metrics"
     )]
     Patterns(PatternsArgs),
     #[command(
         name = "health",
-        about = "Show repo gaps across ownership, proof, docs, patterns, and traceability"
+        about = "Show raw inferred repo analysis by product primitive"
     )]
     Health(HealthArgs),
     #[command(

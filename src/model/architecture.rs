@@ -252,8 +252,6 @@ pub struct PatternMetricsSummary {
     pub total_definitions: usize,
     pub total_applications: usize,
     pub modules_with_applications: usize,
-    pub possible_missing_applications: Vec<PatternMissingApplicationCandidate>,
-    pub possible_pattern_clusters: Vec<PatternClusterCandidate>,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -48,6 +48,11 @@ fn strip_repo_document_analysis_paths(
 fn strip_repo_signal_paths(repo_signals: &mut ArchitectureRepoSignalsSummary) {
     repo_signals.unowned_item_details.clear();
     repo_signals.duplicate_item_details.clear();
+    repo_signals
+        .possible_missing_pattern_application_details
+        .clear();
+    repo_signals.possible_pattern_cluster_details.clear();
+    repo_signals.long_prose_outside_docs_details.clear();
     repo_signals.long_exact_prose_assertion_details.clear();
 }
 

@@ -46,33 +46,65 @@ pub(in crate::render) fn render_repo_html(document: &RepoDocument, verbose: bool
 
 fn format_repo_metrics_html(metrics: &RepoMetricsSummary) -> String {
     let mut html = render_metrics_section_html(
-        "special health metrics",
+        "health summary",
         &[
             HtmlCount {
-                label: "duplicate items",
-                value: metrics.duplicate_items.to_string(),
+                label: "raw investigation queues",
+                value: metrics.global.raw_investigation_queues.to_string(),
             },
             HtmlCount {
-                label: "unowned items",
-                value: metrics.unowned_items.to_string(),
+                label: "source outside architecture",
+                value: metrics.architecture.source_outside_architecture.to_string(),
             },
             HtmlCount {
-                label: "long exact prose assertions",
-                value: metrics.long_exact_prose_assertions.to_string(),
+                label: "untraced implementation",
+                value: metrics.specs.untraced_implementation.to_string(),
+            },
+            HtmlCount {
+                label: "duplicate source shapes",
+                value: metrics.patterns.duplicate_source_shapes.to_string(),
+            },
+            HtmlCount {
+                label: "possible pattern clusters",
+                value: metrics.patterns.possible_pattern_clusters.to_string(),
+            },
+            HtmlCount {
+                label: "possible missing pattern applications",
+                value: metrics.patterns.possible_missing_applications.to_string(),
+            },
+            HtmlCount {
+                label: "long prose outside docs",
+                value: metrics.docs.long_prose_outside_docs.to_string(),
+            },
+            HtmlCount {
+                label: "exact long-prose test assertions",
+                value: metrics.tests.exact_long_prose_assertions.to_string(),
             },
         ],
     );
     html.push_str(&render_grouped_metrics_section_html(
-        "duplicate items by file",
-        &metrics.duplicate_items_by_file,
+        "source outside architecture by file",
+        &metrics.architecture.source_outside_architecture_by_file,
     ));
     html.push_str(&render_grouped_metrics_section_html(
-        "unowned items by file",
-        &metrics.unowned_items_by_file,
+        "untraced implementation by file",
+        &metrics.specs.untraced_implementation_by_file,
     ));
     html.push_str(&render_grouped_metrics_section_html(
-        "long exact prose assertions by file",
-        &metrics.long_exact_prose_assertions_by_file,
+        "duplicate source shapes by file",
+        &metrics.patterns.duplicate_source_shapes_by_file,
+    ));
+    html.push_str(&render_grouped_metrics_section_html(
+        "possible missing pattern applications by file",
+        &metrics.patterns.possible_missing_applications_by_file,
+    ));
+    html.push_str(&render_grouped_metrics_section_html(
+        "long prose outside docs by file",
+        &metrics.docs.long_prose_outside_docs_by_file,
+    ));
+    html.push_str(&render_grouped_metrics_section_html(
+        "exact long-prose test assertions by file",
+        &metrics.tests.exact_long_prose_assertions_by_file,
     ));
     if let Some(traceability) = &metrics.traceability {
         html.push_str(&format_repo_traceability_metrics_html(traceability));

@@ -14,6 +14,16 @@ pub struct ArchitectureRepoSignalsSummary {
     pub duplicate_items: usize,
     #[serde(default)]
     pub duplicate_item_details: Vec<ArchitectureDuplicateItem>,
+    pub possible_missing_pattern_applications: usize,
+    #[serde(default, skip_deserializing)]
+    pub possible_missing_pattern_application_details:
+        Vec<crate::model::PatternMissingApplicationCandidate>,
+    pub possible_pattern_clusters: usize,
+    #[serde(default, skip_deserializing)]
+    pub possible_pattern_cluster_details: Vec<crate::model::PatternClusterCandidate>,
+    pub long_prose_outside_docs: usize,
+    #[serde(default)]
+    pub long_prose_outside_docs_details: Vec<ArchitectureLongProseBlock>,
     pub long_exact_prose_assertions: usize,
     #[serde(default)]
     pub long_exact_prose_assertion_details: Vec<ArchitectureLongExactProseAssertion>,
@@ -24,11 +34,20 @@ impl Serialize for ArchitectureRepoSignalsSummary {
     where
         S: Serializer,
     {
-        let mut field_count = 3;
+        let mut field_count = 8;
         if !self.unowned_item_details.is_empty() {
             field_count += 1;
         }
         if !self.duplicate_item_details.is_empty() {
+            field_count += 1;
+        }
+        if !self.possible_missing_pattern_application_details.is_empty() {
+            field_count += 1;
+        }
+        if !self.possible_pattern_cluster_details.is_empty() {
+            field_count += 1;
+        }
+        if !self.long_prose_outside_docs_details.is_empty() {
             field_count += 1;
         }
         if !self.long_exact_prose_assertion_details.is_empty() {
@@ -39,6 +58,12 @@ impl Serialize for ArchitectureRepoSignalsSummary {
         state.serialize_field("unowned_items", &self.unowned_items)?;
         state.serialize_field("duplicate_items", &self.duplicate_items)?;
         state.serialize_field(
+            "possible_missing_pattern_applications",
+            &self.possible_missing_pattern_applications,
+        )?;
+        state.serialize_field("possible_pattern_clusters", &self.possible_pattern_clusters)?;
+        state.serialize_field("long_prose_outside_docs", &self.long_prose_outside_docs)?;
+        state.serialize_field(
             "long_exact_prose_assertions",
             &self.long_exact_prose_assertions,
         )?;
@@ -47,6 +72,24 @@ impl Serialize for ArchitectureRepoSignalsSummary {
         }
         if !self.duplicate_item_details.is_empty() {
             state.serialize_field("duplicate_item_details", &self.duplicate_item_details)?;
+        }
+        if !self.possible_missing_pattern_application_details.is_empty() {
+            state.serialize_field(
+                "possible_missing_pattern_application_details",
+                &self.possible_missing_pattern_application_details,
+            )?;
+        }
+        if !self.possible_pattern_cluster_details.is_empty() {
+            state.serialize_field(
+                "possible_pattern_cluster_details",
+                &self.possible_pattern_cluster_details,
+            )?;
+        }
+        if !self.long_prose_outside_docs_details.is_empty() {
+            state.serialize_field(
+                "long_prose_outside_docs_details",
+                &self.long_prose_outside_docs_details,
+            )?;
         }
         if !self.long_exact_prose_assertion_details.is_empty() {
             state.serialize_field(
@@ -120,6 +163,16 @@ pub struct ArchitectureDuplicateItem {
     pub name: String,
     pub kind: ModuleItemKind,
     pub duplicate_peer_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArchitectureLongProseBlock {
+    pub path: std::path::PathBuf,
+    pub line: usize,
+    pub word_count: usize,
+    pub sentence_count: usize,
+    pub prose_score: f64,
+    pub preview: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

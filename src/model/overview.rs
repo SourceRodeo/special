@@ -100,17 +100,63 @@ pub struct SpecMetricsSummary {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct RepoMetricsSummary {
-    pub duplicate_items: usize,
-    pub unowned_items: usize,
-    pub long_exact_prose_assertions: usize,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub duplicate_items_by_file: Vec<GroupedCount>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub unowned_items_by_file: Vec<GroupedCount>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub long_exact_prose_assertions_by_file: Vec<GroupedCount>,
+    pub global: RepoGlobalHealthMetrics,
+    pub specs: RepoSpecHealthMetrics,
+    pub architecture: RepoArchitectureHealthMetrics,
+    pub patterns: RepoPatternHealthMetrics,
+    pub docs: RepoDocsHealthMetrics,
+    pub tests: RepoTestHealthMetrics,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub traceability: Option<RepoTraceabilityMetrics>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RepoGlobalHealthMetrics {
+    pub raw_investigation_queues: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RepoSpecHealthMetrics {
+    pub untraced_implementation: usize,
+    pub test_covered_unlinked_implementation: usize,
+    pub planned_or_deprecated_only_implementation: usize,
+    pub statically_mediated_implementation: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub untraced_implementation_by_file: Vec<GroupedCount>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub untraced_review_surface_by_file: Vec<GroupedCount>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RepoArchitectureHealthMetrics {
+    pub source_outside_architecture: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub source_outside_architecture_by_file: Vec<GroupedCount>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RepoPatternHealthMetrics {
+    pub duplicate_source_shapes: usize,
+    pub possible_pattern_clusters: usize,
+    pub possible_missing_applications: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub duplicate_source_shapes_by_file: Vec<GroupedCount>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub possible_missing_applications_by_file: Vec<GroupedCount>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RepoDocsHealthMetrics {
+    pub long_prose_outside_docs: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub long_prose_outside_docs_by_file: Vec<GroupedCount>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RepoTestHealthMetrics {
+    pub exact_long_prose_assertions: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub exact_long_prose_assertions_by_file: Vec<GroupedCount>,
 }
 
 #[derive(Debug, Clone, Serialize)]

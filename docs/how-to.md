@@ -18,8 +18,8 @@ Use the first reports to choose one narrow slice:
 | Signal | First durable move |
 | --- | --- |
 | repeated source shapes | decide whether to extract a helper or declare an adopted pattern |
-| unowned implementation | declare a module and attach the code it owns |
-| unsupported behavior | add a spec only when the behavior is a real product claim, then attach proof |
+| source outside architecture | declare a module and attach the code it owns |
+| untraced implementation | add a spec only when the behavior is a real product claim, then attach proof |
 | undocumented public surface | add a docs link to the smallest relevant spec, module, area, or pattern |
 
 Then run the loop around that slice:
@@ -42,14 +42,15 @@ Use the signal to choose the next command:
 
 | Health signal | Next command | Typical fix |
 | --- | --- | --- |
-| unowned implementation | `special arch --unimplemented` | Add or adjust module ownership. |
-| unsupported implementation | `special specs --verbose` | Move behavior behind a tested module or add direct proof. |
-| duplicate items | `special patterns --metrics` | Extract a helper or name a real repeated pattern. |
-| undocumented targets | `special docs --metrics` | Add generated docs links or confirm the target is internal. |
+| source outside architecture | `special arch --unimplemented` | Add or adjust module ownership. |
+| untraced implementation | `special specs --verbose` | Move behavior behind a tested module or add direct proof. |
+| duplicate source shapes | `special patterns --metrics` | Extract a helper or name a real repeated pattern. |
+| possible missing pattern applications | `special health --metrics --target PATH --verbose` | Add `@applies` where the pattern is really present. |
+| long prose outside docs | `special docs --metrics` | Promote, link, or remove the prose deliberately. |
 
 Health is the broad investigation command. Once it identifies a concrete
 question, move to the surface command that owns the fix: `specs` for claims and
-proof, `arch` for ownership, `patterns` for repeated structures, and `docs` for
+proof, `arch` for ownership, `patterns` for declared structures, and `docs` for
 reader-facing claims.
 
 ## Write Traceable Docs

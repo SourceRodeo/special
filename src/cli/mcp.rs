@@ -222,13 +222,10 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_patterns",
-            "Show adopted patterns plus advisory repeated-source candidates for refactoring or patternization.",
+            "Show declared patterns, known applications, modules, and applied-pattern fit metrics.",
             object_schema(vec![
                 string_property("id", "Optional pattern id to scope the view."),
                 bool_property("metrics", "Include pattern metrics."),
-                string_array_property("target", "Optional file or subtree metric target paths."),
-                string_array_property("within", "Optional file or subtree comparison paths."),
-                string_property("symbol", "Optional source item name for metric scoping."),
                 bool_property(
                     "verbose",
                     "Show pattern definitions and application bodies.",
@@ -273,7 +270,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_health",
-            "Show repo gaps across ownership, proof, docs, patterns, and traceability; start here for existing repos.",
+            "Show raw inferred repo analysis grouped by specs, architecture, patterns, docs, tests, and analyzer status; start here for existing repos.",
             object_schema(vec![
                 string_array_property(
                     "target",
@@ -487,9 +484,9 @@ fn patterns_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
         PatternFilter {
             scope: optional_string_arg(arguments, "id")?,
             metrics: bool_arg(arguments, "metrics")?,
-            target_paths: resolve_cli_paths(current_dir, &path_args(arguments, "target")?),
-            comparison_paths: resolve_cli_paths(current_dir, &path_args(arguments, "within")?),
-            symbol: optional_string_arg(arguments, "symbol")?,
+            target_paths: Vec::new(),
+            comparison_paths: Vec::new(),
+            symbol: None,
         },
         resolution.pattern_benchmarks,
     )?;
@@ -648,6 +645,7 @@ fn health_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
             metrics: bool_arg(arguments, "metrics")?,
             health_ignore_unexplained_patterns: &resolution.health_ignore_unexplained_patterns,
             docs_outputs: &resolution.docs_outputs,
+            pattern_benchmarks: resolution.pattern_benchmarks,
             target_scope_paths: (!target_paths.is_empty()).then_some(target_paths.as_slice()),
             within_scope_paths: (!within_paths.is_empty()).then_some(within_paths.as_slice()),
             symbol: optional_string_arg(arguments, "symbol")?.as_deref(),

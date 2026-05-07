@@ -13,8 +13,18 @@ pub(in crate::render) fn project_repo_signals_view(
     verbose: bool,
 ) -> ProjectedRepoSignals {
     let explanations = vec![
-        explanation("unowned items", MetricExplanationKey::UnownedItems),
-        explanation("duplicate items", MetricExplanationKey::DuplicateItems),
+        explanation(
+            "source outside architecture",
+            MetricExplanationKey::UnownedItems,
+        ),
+        explanation(
+            "duplicate source shapes",
+            MetricExplanationKey::DuplicateItems,
+        ),
+        explanation(
+            "long prose outside docs",
+            MetricExplanationKey::LongProseOutsideDocs,
+        ),
         explanation(
             "long exact prose assertions",
             MetricExplanationKey::LongExactProseAssertions,
@@ -23,8 +33,17 @@ pub(in crate::render) fn project_repo_signals_view(
 
     ProjectedRepoSignals {
         counts: vec![
-            count("unowned items", coverage.unowned_items),
-            count("duplicate items", coverage.duplicate_items),
+            count("source outside architecture", coverage.unowned_items),
+            count("duplicate source shapes", coverage.duplicate_items),
+            count(
+                "possible missing pattern applications",
+                coverage.possible_missing_pattern_applications,
+            ),
+            count(
+                "possible pattern clusters",
+                coverage.possible_pattern_clusters,
+            ),
+            count("long prose outside docs", coverage.long_prose_outside_docs),
             count(
                 "long exact prose assertions",
                 coverage.long_exact_prose_assertions,
@@ -65,6 +84,73 @@ pub(in crate::render) fn project_repo_signals_view(
                             ModuleItemKind::Method => "method",
                         },
                         item.duplicate_peer_count,
+                    )
+                })
+                .collect()
+        } else {
+            Vec::new()
+        },
+        possible_missing_pattern_applications: if verbose {
+            coverage
+                .possible_missing_pattern_application_details
+                .iter()
+                .map(|item| {
+                    format!(
+                        "{} {} {:.3} at {}:{} ({})",
+                        item.confidence.label(),
+                        item.pattern_id,
+                        item.score,
+                        item.location.path.display(),
+                        item.location.line,
+                        item.item_name
+                    )
+                })
+                .collect()
+        } else {
+            Vec::new()
+        },
+        possible_pattern_clusters: if verbose {
+            coverage
+                .possible_pattern_cluster_details
+                .iter()
+                .map(|cluster| {
+                    let first = cluster
+                        .items
+                        .first()
+                        .map(|item| {
+                            format!(
+                                "{} at {}:{}",
+                                item.item_name,
+                                item.location.path.display(),
+                                item.location.line
+                            )
+                        })
+                        .unwrap_or_else(|| "no representative item".to_string());
+                    format!(
+                        "{} item(s), score {:.3}, suggested strictness {}, {}; {first}",
+                        cluster.item_count,
+                        cluster.score,
+                        cluster.suggested_strictness.as_str(),
+                        cluster.interpretation.label()
+                    )
+                })
+                .collect()
+        } else {
+            Vec::new()
+        },
+        long_prose_outside_docs: if verbose {
+            coverage
+                .long_prose_outside_docs_details
+                .iter()
+                .map(|item| {
+                    format!(
+                        "{}:{} [{} words, {} sentence(s), score {:.3}] {}",
+                        item.path.display(),
+                        item.line,
+                        item.word_count,
+                        item.sentence_count,
+                        item.prose_score,
+                        item.preview.replace('\n', "\\n")
                     )
                 })
                 .collect()

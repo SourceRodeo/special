@@ -51,7 +51,7 @@ pub(super) struct HealthArgs {
     #[arg(
         short = 'm',
         long = "metrics",
-        help = "Show deeper analysis for the current health view with grouped counts first"
+        help = "Show grouped raw analysis queues for the current health view"
     )]
     metrics: bool,
 
@@ -167,6 +167,7 @@ pub(super) fn execute_health(args: HealthArgs, current_dir: &Path) -> Result<Exi
                     health_ignore_unexplained_patterns: &resolution
                         .health_ignore_unexplained_patterns,
                     docs_outputs: &resolution.docs_outputs,
+                    pattern_benchmarks: resolution.pattern_benchmarks,
                     target_scope_paths: (!target_paths.is_empty())
                         .then_some(target_paths.as_slice()),
                     within_scope_paths: (!within_paths.is_empty())

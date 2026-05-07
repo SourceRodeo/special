@@ -38,6 +38,9 @@ pub(in crate::render) struct ProjectedRepoSignals {
     pub(in crate::render) explanations: Vec<ProjectedExplanation>,
     pub(in crate::render) unowned_items: Vec<String>,
     pub(in crate::render) duplicate_items: Vec<String>,
+    pub(in crate::render) possible_missing_pattern_applications: Vec<String>,
+    pub(in crate::render) possible_pattern_clusters: Vec<String>,
+    pub(in crate::render) long_prose_outside_docs: Vec<String>,
     pub(in crate::render) long_exact_prose_assertions: Vec<String>,
 }
 

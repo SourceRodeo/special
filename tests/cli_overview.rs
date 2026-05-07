@@ -103,7 +103,7 @@ fn subcommand_help_explains_parallel_metrics_and_verbose_flags() {
     let health_help = run_special(&root, &["health", "--help"]);
     assert!(health_help.status.success());
     let health_stdout = String::from_utf8(health_help.stdout).expect("stdout should be utf-8");
-    assert!(health_stdout.contains("Show deeper analysis for the current health view"));
+    assert!(health_stdout.contains("Show grouped raw analysis queues for the current health view"));
     assert!(health_stdout.contains("Show more item-level detail within the current health view"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");

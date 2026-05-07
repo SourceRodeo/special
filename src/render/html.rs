@@ -102,6 +102,9 @@ pub(super) struct CoverageSectionHtmlTemplate<'a> {
     pub(super) verbose: bool,
     pub(super) unowned_items: &'a [String],
     pub(super) duplicate_items: &'a [String],
+    pub(super) possible_missing_pattern_applications: &'a [String],
+    pub(super) possible_pattern_clusters: &'a [String],
+    pub(super) long_prose_outside_docs: &'a [String],
     pub(super) long_exact_prose_assertions: &'a [String],
 }
 
@@ -210,70 +213,64 @@ pub(super) fn render_grouped_metrics_section_html(title: &str, counts: &[Grouped
 }
 
 pub(super) fn format_repo_traceability_metrics_html(metrics: &RepoTraceabilityMetrics) -> String {
-    let mut html = render_metrics_section_html(
-        "special health traceability metrics",
+    render_metrics_section_html(
+        "health traceability context",
         &[
             HtmlCount {
-                label: "analyzed items",
+                label: "analyzed implementation items",
                 value: metrics.analyzed_items.to_string(),
             },
             HtmlCount {
-                label: "current spec items",
+                label: "current-spec traced implementation",
                 value: metrics.current_spec_items.to_string(),
             },
             HtmlCount {
-                label: "statically mediated items",
+                label: "statically mediated implementation",
                 value: metrics.statically_mediated_items.to_string(),
             },
             HtmlCount {
-                label: "test-covered unlinked items",
+                label: "test-covered unlinked implementation",
                 value: metrics.unverified_test_items.to_string(),
             },
             HtmlCount {
-                label: "unsupported items",
+                label: "untraced implementation",
                 value: metrics.unexplained_items.to_string(),
             },
             HtmlCount {
-                label: "unsupported review-surface items",
+                label: "untraced review-surface implementation",
                 value: metrics.unexplained_review_surface_items.to_string(),
             },
             HtmlCount {
-                label: "unsupported public items",
+                label: "untraced public implementation",
                 value: metrics.unexplained_public_items.to_string(),
             },
             HtmlCount {
-                label: "unsupported internal items",
+                label: "untraced internal implementation",
                 value: metrics.unexplained_internal_items.to_string(),
             },
             HtmlCount {
-                label: "unsupported module-backed items",
+                label: "untraced module-backed implementation",
                 value: metrics.unexplained_module_backed_items.to_string(),
             },
             HtmlCount {
-                label: "unsupported module-connected items",
+                label: "untraced module-connected implementation",
                 value: metrics.unexplained_module_connected_items.to_string(),
             },
             HtmlCount {
-                label: "unsupported module-isolated items",
+                label: "untraced module-isolated implementation",
                 value: metrics.unexplained_module_isolated_items.to_string(),
             },
         ],
-    );
-    html.push_str(&render_grouped_metrics_section_html(
-        "unsupported items by file",
-        &metrics.unexplained_items_by_file,
-    ));
-    html.push_str(&render_grouped_metrics_section_html(
-        "unsupported review-surface items by file",
-        &metrics.unexplained_review_surface_items_by_file,
-    ));
-    html
+    )
 }
 
 pub(super) fn format_repo_signals_html(coverage: &ProjectedRepoSignals) -> String {
     if coverage.counts.is_empty()
         && coverage.unowned_items.is_empty()
         && coverage.duplicate_items.is_empty()
+        && coverage.possible_missing_pattern_applications.is_empty()
+        && coverage.possible_pattern_clusters.is_empty()
+        && coverage.long_prose_outside_docs.is_empty()
         && coverage.long_exact_prose_assertions.is_empty()
     {
         return String::new();
@@ -296,9 +293,15 @@ pub(super) fn format_repo_signals_html(coverage: &ProjectedRepoSignals) -> Strin
         }),
         verbose: !coverage.unowned_items.is_empty()
             || !coverage.duplicate_items.is_empty()
+            || !coverage.possible_missing_pattern_applications.is_empty()
+            || !coverage.possible_pattern_clusters.is_empty()
+            || !coverage.long_prose_outside_docs.is_empty()
             || !coverage.long_exact_prose_assertions.is_empty(),
         unowned_items: &coverage.unowned_items,
         duplicate_items: &coverage.duplicate_items,
+        possible_missing_pattern_applications: &coverage.possible_missing_pattern_applications,
+        possible_pattern_clusters: &coverage.possible_pattern_clusters,
+        long_prose_outside_docs: &coverage.long_prose_outside_docs,
         long_exact_prose_assertions: &coverage.long_exact_prose_assertions,
     })
 }

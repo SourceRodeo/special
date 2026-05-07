@@ -4,13 +4,13 @@ Pattern command behavior.
 
 */
 // @fileimplements SPECIAL.CLI.PATTERNS
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::ExitCode;
 
 use anyhow::Result;
 use clap::Args;
 
-use super::common::{report_cache_stats, resolve_cli_paths};
+use super::common::report_cache_stats;
 use super::status::{CommandStatus, StatusStep};
 use crate::cache::{reset_cache_stats, with_cache_status_notifier};
 use crate::config::resolve_project_root;
@@ -28,30 +28,6 @@ pub(super) struct PatternsArgs {
         help = "Show pattern definition and application metrics"
     )]
     metrics: bool,
-
-    #[arg(
-        long = "target",
-        value_name = "PATH",
-        requires = "metrics",
-        help = "Limit advisory pattern metric candidates to one file or subtree"
-    )]
-    targets: Vec<PathBuf>,
-
-    #[arg(
-        long = "within",
-        value_name = "PATH",
-        requires = "metrics",
-        help = "Limit advisory pattern metric comparison to one file or subtree"
-    )]
-    within: Vec<PathBuf>,
-
-    #[arg(
-        long = "symbol",
-        value_name = "SYMBOL",
-        requires = "metrics",
-        help = "Limit advisory pattern metric candidates to one source item name"
-    )]
-    symbol: Option<String>,
 
     #[arg(long = "json", help = "Render the view as JSON")]
     json: bool,
@@ -88,9 +64,9 @@ pub(super) fn execute_patterns(args: PatternsArgs, current_dir: &Path) -> Result
             PatternFilter {
                 scope: args.pattern_id.clone(),
                 metrics: args.metrics,
-                target_paths: resolve_cli_paths(current_dir, &args.targets),
-                comparison_paths: resolve_cli_paths(current_dir, &args.within),
-                symbol: args.symbol.clone(),
+                target_paths: Vec::new(),
+                comparison_paths: Vec::new(),
+                symbol: None,
             },
             resolution.pattern_benchmarks,
         )

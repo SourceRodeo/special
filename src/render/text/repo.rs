@@ -8,7 +8,7 @@ use crate::render::projection::{
     project_repo_document, project_repo_signals_view, project_repo_traceability_view,
 };
 
-use super::analysis::{format_repo_signals, format_repo_traceability};
+use super::analysis::{format_repo_signal_details, format_repo_signals, format_repo_traceability};
 use super::render_repo_metrics_text;
 
 pub(in crate::render) fn render_repo_text(document: &RepoDocument, verbose: bool) -> String {
@@ -22,10 +22,12 @@ pub(in crate::render) fn render_repo_text(document: &RepoDocument, verbose: bool
         .as_ref()
         .and_then(|analysis| analysis.repo_signals.as_ref())
     {
-        output.push_str(&format_repo_signals(&project_repo_signals_view(
-            repo_signals,
-            verbose,
-        )));
+        let projected = project_repo_signals_view(repo_signals, verbose);
+        if document.metrics.is_some() {
+            output.push_str(&format_repo_signal_details(&projected));
+        } else {
+            output.push_str(&format_repo_signals(&projected));
+        }
     }
     if let Some(analysis) = document.analysis.as_ref() {
         output.push_str(&format_repo_traceability(&project_repo_traceability_view(

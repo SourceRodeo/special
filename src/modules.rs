@@ -13,11 +13,13 @@ use crate::cache::{
     load_or_build_repo_analysis_summary, load_or_build_scoped_repo_analysis_summary,
     load_or_parse_architecture, load_or_parse_repo,
 };
-use crate::config::{DocsOutputConfig, SpecialVersion};
+use crate::config::{DocsOutputConfig, PatternMetricBenchmarks, SpecialVersion};
 use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureKind, ArchitectureMetricsSummary, GroupedCount,
     LintReport, ModuleAnalysisOptions, ModuleDocument, ModuleFilter, ModuleNode,
-    ParsedArchitecture, RepoDocument, RepoMetricsSummary, RepoTraceabilityMetrics,
+    ParsedArchitecture, PatternFilter, RepoArchitectureHealthMetrics, RepoDocsHealthMetrics,
+    RepoDocument, RepoGlobalHealthMetrics, RepoMetricsSummary, RepoPatternHealthMetrics,
+    RepoSpecHealthMetrics, RepoTestHealthMetrics, RepoTraceabilityMetrics,
 };
 
 pub(crate) mod analyze;
@@ -31,6 +33,7 @@ pub struct RepoDocumentOptions<'a> {
     pub metrics: bool,
     pub health_ignore_unexplained_patterns: &'a [String],
     pub docs_outputs: &'a [DocsOutputConfig],
+    pub pattern_benchmarks: PatternMetricBenchmarks,
     pub target_scope_paths: Option<&'a [PathBuf]>,
     pub within_scope_paths: Option<&'a [PathBuf]>,
     pub symbol: Option<&'a str>,
@@ -125,6 +128,17 @@ pub fn build_repo_document(
         options.health_ignore_unexplained_patterns,
         &mut summary,
     )?;
+    apply_pattern_opportunity_signals(root, ignore_patterns, &parsed, options, &mut summary)?;
+    analyze::apply_long_prose_outside_docs_summary(
+        root,
+        ignore_patterns,
+        options.docs_outputs,
+        health_signal_scope_paths(options),
+        summary
+            .repo_signals
+            .as_mut()
+            .expect("repo health should always include repo signals"),
+    )?;
 
     Ok((
         RepoDocument {
@@ -193,6 +207,17 @@ pub(crate) fn build_repo_document_from_parsed(
         options.health_ignore_unexplained_patterns,
         &mut summary,
     )?;
+    apply_pattern_opportunity_signals(root, ignore_patterns, parsed, options, &mut summary)?;
+    analyze::apply_long_prose_outside_docs_summary(
+        root,
+        ignore_patterns,
+        options.docs_outputs,
+        health_signal_scope_paths(options),
+        summary
+            .repo_signals
+            .as_mut()
+            .expect("repo health should always include repo signals"),
+    )?;
 
     Ok(RepoDocument {
         metrics: options
@@ -233,6 +258,52 @@ fn apply_health_ignore_unexplained(
     Ok(())
 }
 
+fn apply_pattern_opportunity_signals(
+    root: &Path,
+    ignore_patterns: &[String],
+    parsed: &ParsedArchitecture,
+    options: RepoDocumentOptions<'_>,
+    summary: &mut ArchitectureAnalysisSummary,
+) -> Result<()> {
+    let Some(repo_signals) = summary.repo_signals.as_mut() else {
+        return Ok(());
+    };
+    let filter = PatternFilter {
+        scope: None,
+        metrics: true,
+        target_paths: health_signal_scope_paths(options)
+            .map(|paths| paths.to_vec())
+            .unwrap_or_default(),
+        comparison_paths: options
+            .within_scope_paths
+            .map(|paths| paths.to_vec())
+            .unwrap_or_default(),
+        symbol: options.symbol.map(ToString::to_string),
+    };
+    let candidates = crate::patterns::pattern_metric_candidates(
+        root,
+        ignore_patterns,
+        parsed,
+        &filter,
+        options.pattern_benchmarks,
+    )?;
+    repo_signals.possible_missing_pattern_applications =
+        candidates.possible_missing_applications.len();
+    repo_signals.possible_missing_pattern_application_details =
+        candidates.possible_missing_applications;
+    repo_signals.possible_pattern_clusters = candidates.possible_pattern_clusters.len();
+    repo_signals.possible_pattern_cluster_details = candidates.possible_pattern_clusters;
+    Ok(())
+}
+
+fn health_signal_scope_paths(options: RepoDocumentOptions<'_>) -> Option<&[PathBuf]> {
+    options.target_scope_paths.or_else(|| {
+        options
+            .within_scope_paths
+            .filter(|_| options.target_scope_paths.is_none())
+    })
+}
+
 fn build_repo_metrics(
     _root: &Path,
     _ignore_patterns: &[String],
@@ -240,9 +311,8 @@ fn build_repo_metrics(
     summary: &crate::model::ArchitectureAnalysisSummary,
     _docs_outputs: &[DocsOutputConfig],
 ) -> Result<RepoMetricsSummary> {
-    let duplicate_items_by_file = summary
-        .repo_signals
-        .as_ref()
+    let signals = summary.repo_signals.as_ref();
+    let duplicate_source_shapes_by_file = signals
         .map(|signals| {
             grouped_counts(
                 signals
@@ -252,9 +322,7 @@ fn build_repo_metrics(
             )
         })
         .unwrap_or_default();
-    let unowned_items_by_file = summary
-        .repo_signals
-        .as_ref()
+    let source_outside_architecture_by_file = signals
         .map(|signals| {
             grouped_counts(
                 signals
@@ -264,14 +332,57 @@ fn build_repo_metrics(
             )
         })
         .unwrap_or_default();
-    let long_exact_prose_assertions_by_file = summary
-        .repo_signals
-        .as_ref()
+    let possible_missing_applications_by_file = signals
+        .map(|signals| {
+            grouped_counts(
+                signals
+                    .possible_missing_pattern_application_details
+                    .iter()
+                    .map(|item| item.location.path.display().to_string()),
+            )
+        })
+        .unwrap_or_default();
+    let long_prose_outside_docs_by_file = signals
+        .map(|signals| {
+            grouped_counts(
+                signals
+                    .long_prose_outside_docs_details
+                    .iter()
+                    .map(|item| item.path.display().to_string()),
+            )
+        })
+        .unwrap_or_default();
+    let exact_long_prose_assertions_by_file = signals
         .map(|signals| {
             grouped_counts(
                 signals
                     .long_exact_prose_assertion_details
                     .iter()
+                    .map(|item| item.path.display().to_string()),
+            )
+        })
+        .unwrap_or_default();
+    let untraced_implementation_by_file = summary
+        .traceability
+        .as_ref()
+        .map(|traceability| {
+            grouped_counts(
+                traceability
+                    .unexplained_items
+                    .iter()
+                    .map(|item| item.path.display().to_string()),
+            )
+        })
+        .unwrap_or_default();
+    let untraced_review_surface_by_file = summary
+        .traceability
+        .as_ref()
+        .map(|traceability| {
+            grouped_counts(
+                traceability
+                    .unexplained_items
+                    .iter()
+                    .filter(|item| item.review_surface)
                     .map(|item| item.path.display().to_string()),
             )
         })
@@ -291,40 +402,85 @@ fn build_repo_metrics(
             unexplained_module_backed_items: traceability.unexplained_module_backed_items(),
             unexplained_module_connected_items: traceability.unexplained_module_connected_items(),
             unexplained_module_isolated_items: traceability.unexplained_module_isolated_items(),
-            unexplained_items_by_file: grouped_counts(
-                traceability
-                    .unexplained_items
-                    .iter()
-                    .map(|item| item.path.display().to_string()),
-            ),
-            unexplained_review_surface_items_by_file: grouped_counts(
-                traceability
-                    .unexplained_items
-                    .iter()
-                    .filter(|item| item.review_surface)
-                    .map(|item| item.path.display().to_string()),
-            ),
+            unexplained_items_by_file: untraced_implementation_by_file.clone(),
+            unexplained_review_surface_items_by_file: untraced_review_surface_by_file.clone(),
         });
-
-    Ok(RepoMetricsSummary {
-        duplicate_items: summary
-            .repo_signals
+    let specs = RepoSpecHealthMetrics {
+        untraced_implementation: traceability
             .as_ref()
-            .map(|signals| signals.duplicate_items)
+            .map(|metrics| metrics.unexplained_items)
             .unwrap_or_default(),
-        unowned_items: summary
-            .repo_signals
+        test_covered_unlinked_implementation: traceability
             .as_ref()
+            .map(|metrics| metrics.unverified_test_items)
+            .unwrap_or_default(),
+        planned_or_deprecated_only_implementation: summary
+            .traceability
+            .as_ref()
+            .map(|traceability| {
+                traceability.planned_only_items.len() + traceability.deprecated_only_items.len()
+            })
+            .unwrap_or_default(),
+        statically_mediated_implementation: traceability
+            .as_ref()
+            .map(|metrics| metrics.statically_mediated_items)
+            .unwrap_or_default(),
+        untraced_implementation_by_file,
+        untraced_review_surface_by_file,
+    };
+    let architecture = RepoArchitectureHealthMetrics {
+        source_outside_architecture: signals
             .map(|signals| signals.unowned_items)
             .unwrap_or_default(),
-        long_exact_prose_assertions: summary
-            .repo_signals
-            .as_ref()
+        source_outside_architecture_by_file,
+    };
+    let patterns = RepoPatternHealthMetrics {
+        duplicate_source_shapes: signals
+            .map(|signals| signals.duplicate_items)
+            .unwrap_or_default(),
+        possible_pattern_clusters: signals
+            .map(|signals| signals.possible_pattern_clusters)
+            .unwrap_or_default(),
+        possible_missing_applications: signals
+            .map(|signals| signals.possible_missing_pattern_applications)
+            .unwrap_or_default(),
+        duplicate_source_shapes_by_file,
+        possible_missing_applications_by_file,
+    };
+    let docs = RepoDocsHealthMetrics {
+        long_prose_outside_docs: signals
+            .map(|signals| signals.long_prose_outside_docs)
+            .unwrap_or_default(),
+        long_prose_outside_docs_by_file,
+    };
+    let tests = RepoTestHealthMetrics {
+        exact_long_prose_assertions: signals
             .map(|signals| signals.long_exact_prose_assertions)
             .unwrap_or_default(),
-        duplicate_items_by_file,
-        unowned_items_by_file,
-        long_exact_prose_assertions_by_file,
+        exact_long_prose_assertions_by_file,
+    };
+    let raw_investigation_queues = [
+        architecture.source_outside_architecture,
+        specs.untraced_implementation,
+        patterns.duplicate_source_shapes,
+        patterns.possible_pattern_clusters,
+        patterns.possible_missing_applications,
+        docs.long_prose_outside_docs,
+        tests.exact_long_prose_assertions,
+    ]
+    .into_iter()
+    .filter(|count| *count > 0)
+    .count();
+
+    Ok(RepoMetricsSummary {
+        global: RepoGlobalHealthMetrics {
+            raw_investigation_queues,
+        },
+        specs,
+        architecture,
+        patterns,
+        docs,
+        tests,
         traceability,
     })
 }

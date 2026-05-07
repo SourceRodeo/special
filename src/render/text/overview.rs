@@ -36,11 +36,11 @@ pub(in crate::render) fn render_overview_text(document: &OverviewDocument) -> St
     ));
     output.push_str("  health\n");
     output.push_str(&format!(
-        "    duplicate items: {}\n",
+        "    duplicate source shapes: {}\n",
         document.health.duplicate_items
     ));
     output.push_str(&format!(
-        "    unowned items: {}\n",
+        "    source outside architecture: {}\n",
         document.health.unowned_items
     ));
 

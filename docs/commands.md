@@ -75,13 +75,13 @@ item-signal explanations.
 ## `special patterns`
 
 Use `special patterns` to inspect
-named repeated implementation structures.
+declared repeated implementation structures and their known applications.
 
 ```sh
 special patterns
 special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
 special patterns --metrics
-special patterns --metrics --target src/cache.ts
+special patterns --metrics
 ```
 
 Representative output:
@@ -93,17 +93,15 @@ CACHE.SINGLE_FLIGHT_FILL
 ```
 
 Decision supported: whether a repeated structure is intentionally named,
-where it is applied, and whether metrics suggest similar unannotated shapes.
+where it is applied, and whether known applications still fit each other.
 
 Contract details: `special patterns` supports
 id-scoped,
 verbose, and
 metrics views. Metrics report
-similarity,
-missing application candidates,
-clusters,
-target scope, and
-symbol scope.
+similarity. Raw
+missing-application and unannotated-cluster queues belong to
+`special health`.
 
 ## `special docs`
 
@@ -207,15 +205,16 @@ special health --html
 Representative output:
 
 ```text
-special health metrics
-  duplicate items: ...
-  unowned items: ...
-traceability
-  unsupported items: ...
+summary
+  source outside architecture: ...
+  untraced implementation: ...
+  duplicate source shapes: ...
+  possible missing pattern applications: ...
+  long prose outside docs: ...
 ```
 
-Decision supported: what remains unowned, unsupported, duplicated, or hard to
-explain from source structure.
+Decision supported: which raw inferred queues should be promoted into specs,
+architecture, patterns, docs, or test changes.
 
 Contract details: `special health` supports
 target scoping,
@@ -224,9 +223,12 @@ within scoping,
 verbose evidence,
 JSON, and
 HTML. Metrics cover
-unowned items,
-duplication,
-traceability,
+source outside architecture,
+duplicate source shapes,
+untraced implementation,
+missing pattern applications,
+pattern clusters,
+long prose outside docs,
 and long exact prose assertions.
 
 ## `special mcp`

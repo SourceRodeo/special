@@ -113,8 +113,8 @@ ignore-unexplained = [
 ]
 ```
 
-Behavior enabled: matching paths stay out of the unsupported-implementation
-review bucket without hiding them from all parsing or architecture analysis.
+Behavior enabled: matching paths stay out of the untraced-implementation review
+queue without hiding them from all parsing or architecture analysis.
 
 Related contracts: health ignore patterns
 exclude configured unsupported paths.

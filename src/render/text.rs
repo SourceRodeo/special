@@ -44,44 +44,6 @@ pub(super) fn render_pattern_text(document: &PatternDocument, verbose: bool) -> 
             "  modules with applications: {}\n",
             metrics.modules_with_applications
         ));
-        output.push_str(&format!(
-            "  possible missing applications: {}\n",
-            metrics.possible_missing_applications.len()
-        ));
-        for candidate in &metrics.possible_missing_applications {
-            output.push_str(&format!(
-                "    {} {} {:.3} at {}:{} ({})\n",
-                candidate.confidence.label(),
-                candidate.pattern_id,
-                candidate.score,
-                candidate.location.path.display(),
-                candidate.location.line,
-                candidate.item_name
-            ));
-        }
-        output.push_str(&format!(
-            "  possible pattern clusters: {}\n",
-            metrics.possible_pattern_clusters.len()
-        ));
-        for cluster in &metrics.possible_pattern_clusters {
-            output.push_str(&format!(
-                "    {} item(s), score {:.3}, suggested strictness {}, {}\n",
-                cluster.item_count,
-                cluster.score,
-                cluster.suggested_strictness.as_str(),
-                cluster.interpretation.label()
-            ));
-            output.push_str(&format!("      meaning: {}\n", cluster.meaning));
-            output.push_str(&format!("      exact: {}\n", cluster.precise));
-            for item in &cluster.items {
-                output.push_str(&format!(
-                    "      {} at {}:{}\n",
-                    item.item_name,
-                    item.location.path.display(),
-                    item.location.line
-                ));
-            }
-        }
     }
 
     for pattern in &document.patterns {
@@ -232,27 +194,74 @@ pub(super) fn render_spec_metrics_text(metrics: &SpecMetricsSummary) -> String {
 }
 
 pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
-    let mut output = String::from("special health metrics\n");
-    output.push_str(&format!("  duplicate items: {}\n", metrics.duplicate_items));
-    output.push_str(&format!("  unowned items: {}\n", metrics.unowned_items));
+    let mut output = String::from("summary\n");
     output.push_str(&format!(
-        "  long exact prose assertions: {}\n",
-        metrics.long_exact_prose_assertions
+        "  raw investigation queues: {}\n",
+        metrics.global.raw_investigation_queues
     ));
+    output.push_str(&format!(
+        "  source outside architecture: {}\n",
+        metrics.architecture.source_outside_architecture
+    ));
+    output.push_str(&format!(
+        "  untraced implementation: {}\n",
+        metrics.specs.untraced_implementation
+    ));
+    output.push_str(&format!(
+        "  duplicate source shapes: {}\n",
+        metrics.patterns.duplicate_source_shapes
+    ));
+    output.push_str(&format!(
+        "  possible pattern clusters: {}\n",
+        metrics.patterns.possible_pattern_clusters
+    ));
+    output.push_str(&format!(
+        "  possible missing pattern applications: {}\n",
+        metrics.patterns.possible_missing_applications
+    ));
+    output.push_str(&format!(
+        "  long prose outside docs: {}\n",
+        metrics.docs.long_prose_outside_docs
+    ));
+    output.push_str(&format!(
+        "  exact long-prose test assertions: {}\n",
+        metrics.tests.exact_long_prose_assertions
+    ));
+    output.push_str("investigation queues\n");
     append_grouped_counts_text(
         &mut output,
-        "duplicate items by file",
-        &metrics.duplicate_items_by_file,
+        "source outside architecture by file",
+        &metrics.architecture.source_outside_architecture_by_file,
     );
     append_grouped_counts_text(
         &mut output,
-        "unowned items by file",
-        &metrics.unowned_items_by_file,
+        "untraced implementation by file",
+        &metrics.specs.untraced_implementation_by_file,
     );
     append_grouped_counts_text(
         &mut output,
-        "long exact prose assertions by file",
-        &metrics.long_exact_prose_assertions_by_file,
+        "untraced review-surface implementation by file",
+        &metrics.specs.untraced_review_surface_by_file,
+    );
+    append_grouped_counts_text(
+        &mut output,
+        "duplicate source shapes by file",
+        &metrics.patterns.duplicate_source_shapes_by_file,
+    );
+    append_grouped_counts_text(
+        &mut output,
+        "possible missing pattern applications by file",
+        &metrics.patterns.possible_missing_applications_by_file,
+    );
+    append_grouped_counts_text(
+        &mut output,
+        "long prose outside docs by file",
+        &metrics.docs.long_prose_outside_docs_by_file,
+    );
+    append_grouped_counts_text(
+        &mut output,
+        "exact long-prose test assertions by file",
+        &metrics.tests.exact_long_prose_assertions_by_file,
     );
     if let Some(traceability) = &metrics.traceability {
         append_repo_traceability_metrics_text(&mut output, traceability);
@@ -358,58 +367,51 @@ pub(super) fn render_arch_metrics_text(metrics: &ArchitectureMetricsSummary) -> 
 }
 
 fn append_repo_traceability_metrics_text(output: &mut String, metrics: &RepoTraceabilityMetrics) {
-    output.push_str("  traceability\n");
-    output.push_str(&format!("    analyzed items: {}\n", metrics.analyzed_items));
+    output.push_str("context\n");
     output.push_str(&format!(
-        "    current spec items: {}\n",
+        "  analyzed implementation items: {}\n",
+        metrics.analyzed_items
+    ));
+    output.push_str(&format!(
+        "  current-spec traced implementation: {}\n",
         metrics.current_spec_items
     ));
     output.push_str(&format!(
-        "    statically mediated items: {}\n",
+        "  statically mediated implementation: {}\n",
         metrics.statically_mediated_items
     ));
     output.push_str(&format!(
-        "    test-covered unlinked items: {}\n",
+        "  test-covered unlinked implementation: {}\n",
         metrics.unverified_test_items
     ));
     output.push_str(&format!(
-        "    unsupported items: {}\n",
+        "  untraced implementation: {}\n",
         metrics.unexplained_items
     ));
     output.push_str(&format!(
-        "    unsupported review-surface items: {}\n",
+        "  untraced review-surface implementation: {}\n",
         metrics.unexplained_review_surface_items
     ));
     output.push_str(&format!(
-        "    unsupported public items: {}\n",
+        "  untraced public implementation: {}\n",
         metrics.unexplained_public_items
     ));
     output.push_str(&format!(
-        "    unsupported internal items: {}\n",
+        "  untraced internal implementation: {}\n",
         metrics.unexplained_internal_items
     ));
     output.push_str(&format!(
-        "    unsupported module-backed items: {}\n",
+        "  untraced module-backed implementation: {}\n",
         metrics.unexplained_module_backed_items
     ));
     output.push_str(&format!(
-        "    unsupported module-connected items: {}\n",
+        "  untraced module-connected implementation: {}\n",
         metrics.unexplained_module_connected_items
     ));
     output.push_str(&format!(
-        "    unsupported module-isolated items: {}\n",
+        "  untraced module-isolated implementation: {}\n",
         metrics.unexplained_module_isolated_items
     ));
-    append_grouped_counts_text(
-        output,
-        "unsupported items by file",
-        &metrics.unexplained_items_by_file,
-    );
-    append_grouped_counts_text(
-        output,
-        "unsupported review-surface items by file",
-        &metrics.unexplained_review_surface_items_by_file,
-    );
 }
 
 fn append_grouped_counts_text(output: &mut String, label: &str, counts: &[GroupedCount]) {

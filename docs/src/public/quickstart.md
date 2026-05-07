@@ -162,16 +162,17 @@ special health --metrics
 Representative output shape:
 
 ```text
-special health metrics
-  unowned items: ...
-  traceability
-    unsupported items: ...
+summary
+  source outside architecture: ...
+  untraced implementation: ...
+  possible missing pattern applications: ...
+  long prose outside docs: ...
 ```
 
 Use this output to choose the next cleanup: add missing ownership, move behavior
 behind a clearer implementation module, add proof to a current spec, or name a
 repeated implementation structure as a pattern. Use `special docs --metrics` for
-documentation coverage.
+explicit documentation graph coverage.
 
 That loop is the point of the fresh-project path: write the claim, attach proof,
 own the implementation, name repeated structures, document reader-facing facts,

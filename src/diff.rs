@@ -393,15 +393,17 @@ fn matches_scope(
     source_text: &str,
     target: Option<TargetEndpoint<'_>>,
 ) -> bool {
-    if let Some(id) = &options.id {
-        if target_id != id && !target_id.starts_with(&format!("{id}.")) {
-            return false;
-        }
+    if let Some(id) = &options.id
+        && target_id != id
+        && !target_id.starts_with(&format!("{id}."))
+    {
+        return false;
     }
-    if let Some(symbol) = &options.symbol {
-        if !source_text.contains(symbol) && !target_id.contains(symbol) {
-            return false;
-        }
+    if let Some(symbol) = &options.symbol
+        && !source_text.contains(symbol)
+        && !target_id.contains(symbol)
+    {
+        return false;
     }
     if options.target_paths.is_empty() {
         return true;

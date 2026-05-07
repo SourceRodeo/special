@@ -50,7 +50,7 @@ fn init_creates_special_toml_in_current_directory() {
     assert!(config.contains("# output = \"docs\""));
     assert!(config.contains("# source = \"docs/src/contributor\""));
     assert!(config.contains("# output = \"docs/contributor\""));
-    assert!(config.contains("# unsupported-implementation review bucket"));
+    assert!(config.contains("# untraced-implementation review queue"));
     assert!(config.contains("# manager = \"mise\" # or \"asdf\""));
     assert!(config.contains("# [patterns.metrics]"));
 
@@ -136,8 +136,8 @@ fn top_level_help_lists_command_summaries() {
     let expectations: [(&str, &[&str]); 10] = [
         ("specs", &["claims", "proof"]),
         ("arch", &["ownership", "boundaries"]),
-        ("patterns", &["patterns", "candidates"]),
-        ("health", &["gaps", "traceability"]),
+        ("patterns", &["patterns", "fit"]),
+        ("health", &["raw", "analysis"]),
         ("docs", &["links", "metrics"]),
         ("diff", &["relationships", "vcs", "changes"]),
         ("mcp", &["agents"]),

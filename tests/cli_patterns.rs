@@ -56,29 +56,32 @@ special patterns --metrics reports advisory per-pattern source similarity decima
 @spec SPECIAL.PATTERNS.METRICS.CONFIGURED_BENCHMARKS
 special patterns --metrics reads optional pattern metric benchmark decimals from special.toml.
 
-@spec SPECIAL.PATTERNS.METRICS.MISSING_APPLICATIONS
-special patterns --metrics reports advisory possible missing pattern applications from unannotated source code without making them lint failures.
+@group SPECIAL.HEALTH_COMMAND.PATTERNS
+Health pattern-opportunity signals.
 
-@spec SPECIAL.PATTERNS.METRICS.HIERARCHICAL_FEATURES
-special patterns --metrics treats contained child pattern applications as structured detector features for larger containing bodies without duplicating the child pattern as a missing application on the parent body.
+@spec SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS
+special health --metrics reports advisory possible missing pattern applications from unannotated source code without making them lint failures.
 
-@spec SPECIAL.PATTERNS.METRICS.IGNORES_TEST_CODE
-special patterns --metrics does not report advisory pattern candidates from recognized test files.
+@spec SPECIAL.HEALTH_COMMAND.PATTERNS.HIERARCHICAL_FEATURES
+special health --metrics treats contained child pattern applications as structured detector features for larger containing bodies without duplicating the child pattern as a missing application on the parent body.
 
-@group SPECIAL.PATTERNS.METRICS.CLUSTERS
+@spec SPECIAL.HEALTH_COMMAND.PATTERNS.IGNORES_TEST_CODE
+special health --metrics does not report advisory pattern candidates from recognized test files.
+
+@group SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS
 Advisory unannotated source cluster metrics.
 
-@spec SPECIAL.PATTERNS.METRICS.CLUSTERS.INTERPRETATION
-special patterns --metrics gives each advisory unannotated source cluster a first-class interpretation so tight duplicate-like clusters can suggest helper or component extraction instead of patternization.
+@spec SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION
+special health --metrics gives each advisory unannotated source cluster a first-class interpretation so tight duplicate-like clusters can suggest helper or component extraction instead of patternization.
 
-@spec SPECIAL.PATTERNS.METRICS.CLUSTERS.THIN_DELEGATES
-special patterns --metrics does not report thin delegate wrappers as advisory pattern clusters after the repeated body has already been extracted into a shared helper.
+@spec SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.THIN_DELEGATES
+special health --metrics does not report thin delegate wrappers as advisory pattern clusters after the repeated body has already been extracted into a shared helper.
 
-@spec SPECIAL.PATTERNS.METRICS.TARGET_SCOPE
-special patterns --metrics --target PATH limits advisory pattern candidate findings to source items in the requested file or subtree.
+@spec SPECIAL.HEALTH_COMMAND.PATTERNS.TARGET_SCOPE
+special health --metrics --target PATH limits advisory pattern candidate findings to source items in the requested file or subtree.
 
-@spec SPECIAL.PATTERNS.METRICS.SYMBOL_SCOPE
-special patterns --metrics --target PATH --symbol NAME limits advisory pattern candidate findings to source items with that name.
+@spec SPECIAL.HEALTH_COMMAND.PATTERNS.SYMBOL_SCOPE
+special health --metrics --target PATH --symbol NAME limits advisory pattern candidate findings to source items with that name.
 
 @spec SPECIAL.PATTERNS.ARCH_MODULE_VIEW
 special arch MODULE.ID includes the selected module's pattern applications without surfacing pattern definitions that belong in the pattern-centered view.
@@ -568,7 +571,7 @@ fn patterns_metrics_scores_document_applications_as_structured_features() {
             "special health --metrics\n",
             "```\n\n",
             "```text\n",
-            "special health metrics\n",
+            "summary\n",
             "```\n",
         ),
     )
@@ -623,19 +626,20 @@ fn patterns_metrics_use_special_toml_benchmarks() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.METRICS.MISSING_APPLICATIONS
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS
 fn patterns_metrics_reports_possible_missing_applications() {
     let root = temp_repo_dir("special-cli-pattern-missing-applications");
     write_pattern_candidate_fixture(&root);
 
-    let output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
     assert!(output.status.success());
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let candidates = json["metrics"]["possible_missing_applications"]
-        .as_array()
-        .expect("possible missing applications should be an array");
+    let candidates =
+        json["analysis"]["repo_signals"]["possible_missing_pattern_application_details"]
+            .as_array()
+            .expect("possible missing applications should be an array");
     assert!(candidates.iter().any(|candidate| {
         candidate["pattern_id"] == "APP.CACHE.FILL"
             && candidate["item_name"] == "load_third"
@@ -651,19 +655,20 @@ fn patterns_metrics_reports_possible_missing_applications() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.METRICS.HIERARCHICAL_FEATURES
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.HIERARCHICAL_FEATURES
 fn patterns_metrics_uses_child_pattern_applications_as_parent_features() {
     let root = temp_repo_dir("special-cli-pattern-hierarchical-features");
     write_hierarchical_pattern_fixture(&root);
 
-    let output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
     assert!(output.status.success());
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let candidates = json["metrics"]["possible_missing_applications"]
-        .as_array()
-        .expect("possible missing applications should be an array");
+    let candidates =
+        json["analysis"]["repo_signals"]["possible_missing_pattern_application_details"]
+            .as_array()
+            .expect("possible missing applications should be an array");
 
     assert!(candidates.iter().any(|candidate| {
         candidate["pattern_id"] == "DOCS.SURFACE"
@@ -680,7 +685,11 @@ fn patterns_metrics_uses_child_pattern_applications_as_parent_features() {
                 .as_str()
                 .is_some_and(|name| name.starts_with("DOCS."))
     }));
-    let surface_metrics = pattern_metrics_by_id(&json, "DOCS.SURFACE");
+    let pattern_output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    assert!(pattern_output.status.success());
+    let pattern_json: Value =
+        serde_json::from_slice(&pattern_output.stdout).expect("pattern json should be valid");
+    let surface_metrics = pattern_metrics_by_id(&pattern_json, "DOCS.SURFACE");
     assert!(
         surface_metrics["mean_similarity"]
             .as_f64()
@@ -693,7 +702,7 @@ fn patterns_metrics_uses_child_pattern_applications_as_parent_features() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.METRICS.IGNORES_TEST_CODE
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.IGNORES_TEST_CODE
 fn patterns_metrics_ignores_rust_test_modules() {
     let root = temp_repo_dir("special-cli-pattern-ignore-rust-tests");
     write_pattern_candidate_fixture(&root);
@@ -716,14 +725,15 @@ fn patterns_metrics_ignores_rust_test_modules() {
     )
     .expect("rust test module should be written");
 
-    let output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
     assert!(output.status.success());
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let clusters = json["metrics"]["possible_pattern_clusters"]
+    let clusters = json["analysis"]["repo_signals"]["possible_pattern_cluster_details"]
         .as_array()
-        .expect("possible pattern clusters should be an array");
+        .cloned()
+        .unwrap_or_default();
     assert!(!clusters.iter().any(|cluster| {
         cluster["items"].as_array().is_some_and(|items| {
             items.iter().any(|item| item["item_name"] == "helper_alpha")
@@ -735,19 +745,20 @@ fn patterns_metrics_ignores_rust_test_modules() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.METRICS.CLUSTERS.INTERPRETATION
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION
 fn patterns_metrics_reports_possible_pattern_clusters() {
     let root = temp_repo_dir("special-cli-pattern-clusters");
     write_pattern_candidate_fixture(&root);
 
-    let output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
     assert!(output.status.success());
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let clusters = json["metrics"]["possible_pattern_clusters"]
+    let clusters = json["analysis"]["repo_signals"]["possible_pattern_cluster_details"]
         .as_array()
-        .expect("possible pattern clusters should be an array");
+        .cloned()
+        .unwrap_or_default();
     let mapper_cluster = clusters
         .iter()
         .find(|cluster| {
@@ -771,19 +782,20 @@ fn patterns_metrics_reports_possible_pattern_clusters() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.METRICS.CLUSTERS.THIN_DELEGATES
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.THIN_DELEGATES
 fn patterns_metrics_suppresses_thin_delegate_clusters() {
     let root = temp_repo_dir("special-cli-pattern-thin-delegates");
     write_thin_delegate_fixture(&root);
 
-    let output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
     assert!(output.status.success());
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let clusters = json["metrics"]["possible_pattern_clusters"]
+    let clusters = json["analysis"]["repo_signals"]["possible_pattern_cluster_details"]
         .as_array()
-        .expect("possible pattern clusters should be an array");
+        .cloned()
+        .unwrap_or_default();
     assert!(!clusters.iter().any(|cluster| {
         cluster["items"].as_array().is_some_and(|items| {
             items
@@ -799,30 +811,40 @@ fn patterns_metrics_suppresses_thin_delegate_clusters() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.METRICS.TARGET_SCOPE
-fn patterns_metrics_target_limits_candidate_targets() {
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.TARGET_SCOPE
+fn health_metrics_target_limits_pattern_candidate_targets() {
     let root = temp_repo_dir("special-cli-pattern-path-scope");
     write_pattern_candidate_fixture(&root);
 
     let output = run_special(
         &root,
-        &["patterns", "--metrics", "--json", "--target", "cluster.rs"],
+        &[
+            "health",
+            "--metrics",
+            "--verbose",
+            "--json",
+            "--target",
+            "cluster.rs",
+        ],
     );
     assert!(output.status.success());
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let candidates = json["metrics"]["possible_missing_applications"]
-        .as_array()
-        .expect("possible missing applications should be an array");
+    let candidates =
+        json["analysis"]["repo_signals"]["possible_missing_pattern_application_details"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
     assert!(
         !candidates
             .iter()
             .any(|candidate| candidate["item_name"] == "load_third")
     );
-    let clusters = json["metrics"]["possible_pattern_clusters"]
+    let clusters = json["analysis"]["repo_signals"]["possible_pattern_cluster_details"]
         .as_array()
-        .expect("possible pattern clusters should be an array");
+        .cloned()
+        .unwrap_or_default();
     assert!(clusters.iter().any(|cluster| {
         cluster["items"]
             .as_array()
@@ -833,16 +855,17 @@ fn patterns_metrics_target_limits_candidate_targets() {
 }
 
 #[test]
-// @verifies SPECIAL.PATTERNS.METRICS.SYMBOL_SCOPE
-fn patterns_metrics_symbol_limits_candidate_targets() {
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.SYMBOL_SCOPE
+fn health_metrics_symbol_limits_pattern_candidate_targets() {
     let root = temp_repo_dir("special-cli-pattern-symbol-scope");
     write_pattern_candidate_fixture(&root);
 
     let output = run_special(
         &root,
         &[
-            "patterns",
+            "health",
             "--metrics",
+            "--verbose",
             "--json",
             "--target",
             "cache.rs",
@@ -854,15 +877,17 @@ fn patterns_metrics_symbol_limits_candidate_targets() {
 
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let candidates = json["metrics"]["possible_missing_applications"]
-        .as_array()
-        .expect("possible missing applications should be an array");
+    let candidates =
+        json["analysis"]["repo_signals"]["possible_missing_pattern_application_details"]
+            .as_array()
+            .expect("possible missing applications should be an array");
     assert!(candidates.iter().any(|candidate| {
         candidate["pattern_id"] == "APP.CACHE.FILL" && candidate["item_name"] == "load_third"
     }));
-    let clusters = json["metrics"]["possible_pattern_clusters"]
+    let clusters = json["analysis"]["repo_signals"]["possible_pattern_cluster_details"]
         .as_array()
-        .expect("possible pattern clusters should be an array");
+        .cloned()
+        .unwrap_or_default();
     assert!(!clusters.iter().any(|cluster| {
         cluster["items"]
             .as_array()

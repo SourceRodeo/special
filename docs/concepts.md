@@ -57,9 +57,9 @@ Question answered: where is this product surface explained to readers?
 ## Health
 
 `Health` joins
-the other surfaces. It reports repo-wide signals such as unowned implementation,
-unsupported implementation, traceability, duplication, and documentation
-coverage.
+the other surfaces. It reports raw inferred queues such as source outside
+architecture, untraced implementation, duplicate source shapes, possible missing
+pattern applications, and long prose outside docs.
 
 Question answered: what part of the repo is still hard to explain?
 

@@ -82,13 +82,13 @@ Contract details: `special arch` supports
 ## `special patterns`
 
 Use [`special patterns`](documents://spec/SPECIAL.PATTERNS.COMMAND) to inspect
-named repeated implementation structures.
+declared repeated implementation structures and their known applications.
 
 ```sh
 special patterns
 special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
 special patterns --metrics
-special patterns --metrics --target src/cache.ts
+special patterns --metrics
 ```
 
 Representative output:
@@ -100,17 +100,15 @@ CACHE.SINGLE_FLIGHT_FILL
 ```
 
 Decision supported: whether a repeated structure is intentionally named,
-where it is applied, and whether metrics suggest similar unannotated shapes.
+where it is applied, and whether known applications still fit each other.
 
 Contract details: `special patterns` supports
 [id-scoped](documents://spec/SPECIAL.PATTERNS.ID_SCOPE),
 [verbose](documents://spec/SPECIAL.PATTERNS.VERBOSE), and
 [metrics](documents://spec/SPECIAL.PATTERNS.METRICS) views. Metrics report
-[similarity](documents://spec/SPECIAL.PATTERNS.METRICS.SIMILARITY),
-[missing application candidates](documents://spec/SPECIAL.PATTERNS.METRICS.MISSING_APPLICATIONS),
-[clusters](documents://spec/SPECIAL.PATTERNS.METRICS.CLUSTERS.INTERPRETATION),
-[target scope](documents://spec/SPECIAL.PATTERNS.METRICS.TARGET_SCOPE), and
-[symbol scope](documents://spec/SPECIAL.PATTERNS.METRICS.SYMBOL_SCOPE).
+[similarity](documents://spec/SPECIAL.PATTERNS.METRICS.SIMILARITY). Raw
+missing-application and unannotated-cluster queues belong to
+[`special health`](documents://spec/SPECIAL.HEALTH_COMMAND).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DOCS
 @applies DOCS.COMMAND_REFERENCE_ENTRY
@@ -220,15 +218,16 @@ special health --html
 Representative output:
 
 ```text
-special health metrics
-  duplicate items: ...
-  unowned items: ...
-traceability
-  unsupported items: ...
+summary
+  source outside architecture: ...
+  untraced implementation: ...
+  duplicate source shapes: ...
+  possible missing pattern applications: ...
+  long prose outside docs: ...
 ```
 
-Decision supported: what remains unowned, unsupported, duplicated, or hard to
-explain from source structure.
+Decision supported: which raw inferred queues should be promoted into specs,
+architecture, patterns, docs, or test changes.
 
 Contract details: `special health` supports
 [target scoping](documents://spec/SPECIAL.HEALTH_COMMAND.TARGET),
@@ -237,9 +236,12 @@ Contract details: `special health` supports
 [verbose evidence](documents://spec/SPECIAL.HEALTH_COMMAND.VERBOSE),
 [JSON](documents://spec/SPECIAL.HEALTH_COMMAND.JSON), and
 [HTML](documents://spec/SPECIAL.HEALTH_COMMAND.HTML). Metrics cover
-[unowned items](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS),
-[duplication](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION),
-[traceability](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
+[source outside architecture](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS),
+[duplicate source shapes](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION),
+[untraced implementation](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
+[missing pattern applications](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS),
+[pattern clusters](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION),
+[long prose outside docs](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS),
 and [long exact prose assertions](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.MCP
