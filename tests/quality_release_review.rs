@@ -23,6 +23,9 @@ the swarm release-review mode uses DeepSeek V4 Flash through OpenCode with mutat
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_SELECTIVE_CONTEXT
 the swarm release-review mode divides repo text across review agents instead of sending the whole repo to every agent.
 
+@spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_RAW_OUTPUT
+the swarm release-review mode preserves raw OpenCode agent findings as markdown instead of requiring model-authored JSON.
+
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT
 the release-review wrapper validates structured warning output against the review contract.
 
@@ -158,6 +161,12 @@ fn release_review_uses_deepseek_swarm_when_requested() {
         .expect("swarm preview should expose agent prompts");
     assert_eq!(chunks.len(), 2);
     assert_ne!(chunks[0]["files"], chunks[1]["files"]);
+    let prompt = chunks[0]["prompt"].as_str().expect("prompt should be text");
+    assert!(prompt.contains("plain Markdown findings"));
+    assert!(prompt.contains("allowed read-only OpenCode tools"));
+    assert!(prompt.contains("Anchor findings in concrete repo files you inspected."));
+    assert!(!prompt.contains("Return only JSON"));
+    assert!(!prompt.contains("only make findings anchored in file contents included"));
     assert!(
         payload["changed_files"]
             .as_array()
@@ -1018,9 +1027,9 @@ fn release_review_writes_progressive_output_and_status() {
 }
 
 #[test]
-// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.DURABLE_OUTPUT
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_RAW_OUTPUT
 fn release_review_swarm_writes_durable_output() {
-    let output_path = unique_review_temp_repo("swarm-review-output").join("review.json");
+    let output_path = unique_review_temp_repo("swarm-review-output").join("review.md");
     let output = python3_command()
         .arg("scripts/review-rust-release-style.py")
         .arg("--allow-mock")
@@ -1032,32 +1041,22 @@ fn release_review_swarm_writes_durable_output() {
         .env("SPECIAL_RUST_RELEASE_REVIEW_ALLOW_MOCK", "1")
         .env(
             "SPECIAL_RUST_RELEASE_REVIEW_MOCK_OUTPUT",
-            r#"{"baseline":null,"full_scan":true,"summary":"clean","warnings":[]}"#,
+            "## Finding\n\nNo issue in this assigned slice.",
         )
         .output()
         .expect("release review swarm script should run with mocked output");
 
-    let response: Value = serde_json::from_str(
-        &fs::read_to_string(&output_path).expect("swarm durable output file should be written"),
-    )
-    .expect("swarm durable output should be json");
-    assert_eq!(response["complete"], true);
-    assert_eq!(response["completed_chunks"], 2);
-    assert_eq!(response["total_chunks"], 2);
-    assert_eq!(response["full_scan"], true);
-    assert!(
-        response["runner_warnings"]
-            .as_array()
-            .expect("swarm durable output should preserve runner warnings")
-            .iter()
-            .all(|warning| warning
-                .as_str()
-                .expect("runner warning should be text")
-                .contains("swarm prompt"))
-    );
+    let rendered =
+        fs::read_to_string(&output_path).expect("swarm durable markdown should be written");
+    assert!(rendered.contains("# Special"));
+    assert!(rendered.contains("complete: `true`"));
+    assert!(rendered.contains("## Agent 1"));
+    assert!(rendered.contains("## Agent 2"));
+    assert!(rendered.contains("No issue in this assigned slice."));
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("DeepSeek swarm review agent"));
     assert!(stderr.contains("swarm: agent 1/2"));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("Wrote review Markdown to"));
     let _ = fs::remove_dir_all(output_path.parent().unwrap());
 }
 

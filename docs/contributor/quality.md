@@ -33,6 +33,7 @@ spec-owned wrapper,
 structured output,
 DeepSeek swarm mode,
 selective swarm context,
+raw swarm findings,
 code-only surface,
 read-only sandbox,
 no web,
@@ -47,7 +48,10 @@ python3 scripts/review-rust-release-style.py --swarm
 ```
 
 That keeps each DeepSeek/OpenCode prompt selective. Pass an explicit count only
-when you intentionally want a smaller or larger review swarm.
+when you intentionally want a smaller or larger review swarm. The swarm writes
+raw markdown findings so an imperfect model response is still reviewable.
+Agents may use read-only repo inspection tools to check cross-file evidence,
+but mutation, web access, shell execution, and external directories stay denied.
 
 ## Distribution Checks
 

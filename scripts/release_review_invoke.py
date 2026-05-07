@@ -137,9 +137,31 @@ def invoke_opencode(
         raise CodexInvocationError(stderr or f"opencode exited with status {result.returncode}")
 
     try:
-        return validate_response_shape(json.loads(opencode_final_text(result.stdout)))
+        return validate_response_shape(json.loads(extract_json_text(opencode_final_text(result.stdout))))
     except (json.JSONDecodeError, SystemExit) as err:
         raise CodexInvocationError(f"opencode returned invalid structured output: {err}") from err
+
+
+def invoke_opencode_text(root: Path, prompt: str, model: str) -> str:
+    mocked = os.environ.get(MOCK_OUTPUT_ENV)
+    if mocked and os.environ.get(MOCK_ALLOW_ENV) == "1":
+        return mocked
+
+    result = subprocess.run(
+        opencode_run_command(model, root, "Special release swarm review"),
+        cwd=root,
+        input=prompt,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "OPENCODE_CONFIG_CONTENT": opencode_permission_config(),
+        },
+    )
+    if result.returncode != 0:
+        stderr = result.stderr.strip()
+        raise CodexInvocationError(stderr or f"opencode exited with status {result.returncode}")
+    return opencode_final_text(result.stdout)
 
 
 def opencode_final_text(output: str) -> str:
@@ -173,14 +195,14 @@ def opencode_final_text(output: str) -> str:
                 if isinstance(message, str):
                     errors.append(message)
     if parts:
-        return extract_json_text("".join(parts).strip())
+        return "".join(parts).strip()
     if errors:
         raise CodexInvocationError("; ".join(errors))
     if saw_json_event:
         raise CodexInvocationError("opencode produced no text output")
     plain = output.strip()
     if plain:
-        return extract_json_text(plain)
+        return plain
     raise CodexInvocationError("opencode produced no text output")
 
 

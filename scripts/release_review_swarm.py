@@ -14,10 +14,9 @@ from release_review_contract import validate_review_preview
 from release_review_invoke import (
     SWARM_MODEL,
     CodexInvocationError,
-    invoke_opencode,
+    invoke_opencode_text,
     swarm_invocation_config,
 )
-from release_review_merge import merge_pass_responses
 
 DEFAULT_SWARM_COUNT = 3
 MAX_SWARM_COUNT = 12
@@ -81,27 +80,21 @@ def build_swarm_prompt(
 
 Perform an independent implementation-quality release review over your assigned repo slice.
 Focus on correctness, behavioral regressions, parser and graph-model bugs, CLI/MCP/plugin boundary mismatches, release risks, test honesty, and maintainability problems.
-Use the repo manifest to understand where your slice sits, but only make findings anchored in file contents included in this prompt.
+Use the included file contents as your starting slice.
+You may use allowed read-only OpenCode tools to inspect repo-local files when that improves evidence or checks a cross-file relationship.
+Anchor findings in concrete repo files you inspected.
 Do not perform a product strategy, spec-authoring, or architecture-preference review.
 Do not recommend changing intended Special semantics unless the implementation contradicts an existing claim, command behavior, or documented contract.
 
-Return only JSON matching this schema shape:
-{{
-  "baseline": null,
-  "full_scan": true,
-  "summary": "short summary",
-  "warnings": [
-    {{
-      "id": "temporary-id",
-      "category": "api-design|type-design|state-model|error-handling|layering|test-quality|maintainability|rust-idioms|release-risk",
-      "severity": "warn",
-      "title": "specific issue",
-      "why_it_matters": "why this could hurt release quality",
-      "evidence": [{{"path": "repo/path", "line": 1, "detail": "anchored detail"}}],
-      "recommendation": "concrete fix"
-    }}
-  ]
-}}
+Return plain Markdown findings. Do not wrap the response in JSON.
+For each finding, include:
+- title
+- category
+- evidence with file path and line number
+- why it matters
+- concrete recommendation
+
+If you find no issues in your assigned slice, say that plainly.
 
 Repository backend: {backend}
 Review head: {head}
@@ -183,6 +176,55 @@ def swarm_dry_run_preview(
     )
 
 
+def write_swarm_markdown(
+    output_path: Path | None,
+    version: str,
+    backend: str,
+    head: str,
+    files: list[str],
+    agent_outputs: list[dict[str, object]],
+    runner_warnings: list[str],
+    complete: bool,
+) -> str:
+    lines = [
+        f"# Special {version} Release Review Swarm",
+        "",
+        f"- model: `{SWARM_MODEL}`",
+        f"- backend: `{backend}`",
+        f"- head: `{head}`",
+        f"- complete: `{str(complete).lower()}`",
+        f"- reviewed file surface: `{len(files)}` file(s)",
+        f"- completed agents: `{len(agent_outputs)}`",
+        f"- runner warnings: `{len(runner_warnings)}`",
+        "",
+    ]
+    if runner_warnings:
+        lines.extend(["## Runner Warnings", ""])
+        lines.extend(f"- {warning}" for warning in runner_warnings)
+        lines.append("")
+    for output in sorted(agent_outputs, key=lambda item: int(item["index"])):
+        assigned_files = list(output["assigned_files"])
+        lines.extend(
+            [
+                f"## Agent {output['index']}",
+                "",
+                f"- assigned files: `{len(assigned_files)}`",
+                f"- prompt chars: `{output['prompt_chars']}`",
+                "",
+                "<details>",
+                "<summary>Assigned files</summary>",
+                "",
+            ]
+        )
+        lines.extend(f"- `{relative}`" for relative in assigned_files)
+        lines.extend(["", "</details>", "", str(output["text"]).strip() or "No output.", ""])
+    rendered = "\n".join(lines).rstrip() + "\n"
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered, encoding="utf-8")
+    return rendered
+
+
 def run_swarm_review(
     root: Path,
     version: str,
@@ -190,14 +232,17 @@ def run_swarm_review(
     head: str,
     count: int,
     files: list[str],
-    validate_response_shape,
-) -> tuple[dict, list[str], int]:
-    responses: list[tuple[str, int, dict]] = []
+    output_path: Path | None,
+) -> tuple[str, list[str], int]:
+    agent_outputs: list[dict[str, object]] = []
     runner_warnings: list[str] = []
     print(f"swarm: preparing {count} DeepSeek review agent(s)", file=sys.stderr, flush=True)
     assignments = build_swarm_assignments(root, files, count)
+    write_swarm_markdown(output_path, version, backend, head, files, [], [], False)
     with concurrent.futures.ThreadPoolExecutor(max_workers=count) as executor:
         future_to_index = {}
+        future_to_assigned_files = {}
+        future_to_prompt_chars = {}
         future_started_at = {}
         future_last_report = {}
         for index, assigned_files in enumerate(assignments, start=1):
@@ -212,13 +257,14 @@ def run_swarm_review(
                 flush=True,
             )
             future = executor.submit(
-                invoke_opencode,
+                invoke_opencode_text,
                 root,
                 prompt,
                 SWARM_MODEL,
-                validate_response_shape,
             )
             future_to_index[future] = index
+            future_to_assigned_files[future] = assigned_files
+            future_to_prompt_chars[future] = len(prompt)
             future_started_at[future] = time.monotonic()
             future_last_report[future] = future_started_at[future]
         pending = set(future_to_index)
@@ -241,11 +287,28 @@ def run_swarm_review(
                     flush=True,
                 )
                 try:
-                    responses.append(("deepseek_swarm", index, future.result()))
+                    agent_outputs.append(
+                        {
+                            "index": index,
+                            "assigned_files": future_to_assigned_files[future],
+                            "prompt_chars": future_to_prompt_chars[future],
+                            "text": future.result(),
+                        }
+                    )
                 except CodexInvocationError as error:
                     runner_warnings.append(f"review swarm agent {index} failed: {error}")
                 except Exception as error:
                     runner_warnings.append(f"review swarm agent {index} crashed: {error}")
+                write_swarm_markdown(
+                    output_path,
+                    version,
+                    backend,
+                    head,
+                    files,
+                    agent_outputs,
+                    runner_warnings,
+                    False,
+                )
             for future in sorted(pending, key=lambda item: future_to_index[item]):
                 if now - future_last_report[future] >= SWARM_HEARTBEAT_SECONDS:
                     index = future_to_index[future]
@@ -256,5 +319,14 @@ def run_swarm_review(
                         flush=True,
                     )
                     future_last_report[future] = now
-    responses.sort(key=lambda item: item[1])
-    return merge_pass_responses(None, True, responses, runner_warnings), runner_warnings, count
+    rendered = write_swarm_markdown(
+        output_path,
+        version,
+        backend,
+        head,
+        files,
+        agent_outputs,
+        runner_warnings,
+        True,
+    )
+    return rendered, runner_warnings, len(agent_outputs)

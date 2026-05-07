@@ -60,7 +60,7 @@ from release_tooling import package_version
 SCHEMA_PATH = Path(__file__).with_name("rust-release-review.schema.json")
 EXPENSIVE_REVIEW_NOTE = (
     "EXPENSIVE REVIEW PRESERVATION: output is written to disk as chunks complete. "
-    "Do not rerun to recover terminal output; inspect the JSON file instead. "
+    "Do not rerun to recover terminal output; inspect the output file instead. "
     "When launched from Codex, run this script with sandbox escalation because nested codex exec "
     "sessions must access Codex state outside the project sandbox."
 )
@@ -117,7 +117,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         help=(
-            "Write merged review JSON to this path. Full scans and smart-model reviews "
+            "Write review output to this path. Full scans and smart-model reviews "
             "default to _project/release/reviews when this is omitted."
         ),
     )
@@ -163,12 +163,13 @@ def is_expensive_review(args: argparse.Namespace, review_mode: str, model: str) 
 def default_output_path(root: Path, review_mode: str, full_scan: bool) -> Path:
     timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
     scope = "full" if full_scan else "diff"
+    suffix = "md" if review_mode == "swarm" else "json"
     return (
         root
         / "_project"
         / "release"
         / "reviews"
-        / f"rust-release-review-{scope}-{review_mode}-{timestamp}.json"
+        / f"rust-release-review-{scope}-{review_mode}-{timestamp}.{suffix}"
     )
 
 
@@ -326,38 +327,25 @@ def main() -> int:
         status(
             f"planned {swarm_count_value} DeepSeek swarm review agent(s) across {len(review_files)} repo text file(s)"
         )
-        write_review_payload(
-            output_path,
-            merge_pass_responses(None, True, [], []),
-            [],
-            0,
-            swarm_count_value,
-            False,
-        )
-        payload, runner_warnings, completed_agents = run_swarm_review(
+        rendered, runner_warnings, completed_agents = run_swarm_review(
             root,
             version,
             backend,
             head,
             swarm_count_value,
             review_files,
-            validate_response_shape,
-        )
-        output_payload = write_review_payload(
             output_path,
-            payload,
-            runner_warnings,
-            completed_agents,
-            swarm_count_value,
-            True,
         )
         for warning in runner_warnings:
             print(warning, file=sys.stderr)
         if output_path:
-            print(output_payload["summary"])
-            print(f"Wrote review JSON to {output_path}")
+            print(
+                f"Swarm review captured {completed_agents}/{swarm_count_value} agent output(s); "
+                f"{len(runner_warnings)} runner warning(s)."
+            )
+            print(f"Wrote review Markdown to {output_path}")
         else:
-            print(json.dumps(payload, indent=2))
+            print(rendered)
         mock_exit_code = os.environ.get("SPECIAL_RUST_RELEASE_REVIEW_MOCK_EXIT_CODE")
         if mock_exit_code is not None and os.environ.get(MOCK_ALLOW_ENV) == "1":
             return int(mock_exit_code)

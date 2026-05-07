@@ -35,6 +35,7 @@ It should capture durable structured output while staying code-focused:
 [structured output](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT),
 [DeepSeek swarm mode](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_MODEL),
 [selective swarm context](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_SELECTIVE_CONTEXT),
+[raw swarm findings](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_RAW_OUTPUT),
 [code-only surface](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.CODE_ONLY_SURFACE),
 [read-only sandbox](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.READ_ONLY_SANDBOX),
 [no web](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.NO_WEB),
@@ -49,7 +50,10 @@ python3 scripts/review-rust-release-style.py --swarm
 ```
 
 That keeps each DeepSeek/OpenCode prompt selective. Pass an explicit count only
-when you intentionally want a smaller or larger review swarm.
+when you intentionally want a smaller or larger review swarm. The swarm writes
+raw markdown findings so an imperfect model response is still reviewable.
+Agents may use read-only repo inspection tools to check cross-file evidence,
+but mutation, web access, shell execution, and external directories stay denied.
 
 ## Distribution Checks
 
