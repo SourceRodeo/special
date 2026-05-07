@@ -34,6 +34,18 @@ special help text groups examples by user task instead of listing every command 
 
 @spec SPECIAL.VERSION.FLAGS
 special `-v` and `--version` print the current CLI version and exit successfully.
+
+@spec SPECIAL.DIFF_COMMAND
+special diff uses the VCS backend declared in special.toml to report explicit Special relationships whose source or target endpoint intersects the current changed path set.
+
+@spec SPECIAL.DIFF_COMMAND.NO_VCS
+special diff gracefully degrades to a full explicit relationship view when special.toml omits `vcs` or declares `vcs = "none"`.
+
+@spec SPECIAL.DIFF_COMMAND.METRICS
+special diff --metrics reports affected relationship counts by relationship kind, target kind, and source path.
+
+@spec SPECIAL.DIFF_COMMAND.VERBOSE
+special diff --verbose includes current endpoint content for relationship review.
 */
 // @fileimplements SPECIAL.CLI
 use std::env;

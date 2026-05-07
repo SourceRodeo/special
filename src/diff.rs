@@ -19,6 +19,7 @@ use crate::model::{ParsedArchitecture, ParsedRepo, SourceLocation};
 pub(crate) struct RelationshipDiffOptions {
     pub target_paths: Vec<PathBuf>,
     pub changed_paths: Vec<PathBuf>,
+    pub full_view: bool,
     pub id: Option<String>,
     pub symbol: Option<String>,
     pub include_content: bool,
@@ -207,14 +208,18 @@ pub(crate) fn build_relationship_diff_document(
         .iter()
         .map(|path| display_path(root, path))
         .collect::<Vec<_>>();
-    let relationships = current_relationships
-        .into_iter()
-        .filter_map(|mut relationship| {
-            relationship.affected_by_paths =
-                relationship_changed_paths(root, &relationship, &options.changed_paths);
-            (!relationship.affected_by_paths.is_empty()).then_some(relationship)
-        })
-        .collect::<Vec<_>>();
+    let relationships = if options.full_view {
+        current_relationships
+    } else {
+        current_relationships
+            .into_iter()
+            .filter_map(|mut relationship| {
+                relationship.affected_by_paths =
+                    relationship_changed_paths(root, &relationship, &options.changed_paths);
+                (!relationship.affected_by_paths.is_empty()).then_some(relationship)
+            })
+            .collect()
+    };
 
     let source_endpoints = relationships
         .iter()

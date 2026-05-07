@@ -65,6 +65,7 @@ pub(crate) enum ToolchainManager {
 pub(crate) enum VcsKind {
     Git,
     Jj,
+    None,
 }
 
 impl VcsKind {
@@ -72,8 +73,9 @@ impl VcsKind {
         match value {
             "git" => Ok(Self::Git),
             "jj" => Ok(Self::Jj),
+            "none" => Ok(Self::None),
             _ => bail!(
-                "line {} uses unsupported vcs `{}`; expected `git` or `jj`",
+                "line {} uses unsupported vcs `{}`; expected `git`, `jj`, or `none`",
                 line,
                 value
             ),
@@ -510,6 +512,10 @@ mod tests {
         let config = parse_special_toml("vcs = \"jj\"\n").expect("config should parse");
 
         assert_eq!(config.vcs, Some(VcsKind::Jj));
+
+        let config = parse_special_toml("vcs = \"none\"\n").expect("config should parse");
+
+        assert_eq!(config.vcs, Some(VcsKind::None));
     }
 
     #[test]

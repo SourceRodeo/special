@@ -13,7 +13,7 @@ use clap::Args;
 use super::common::{report_cache_stats, resolve_cli_paths};
 use super::status::{CommandStatus, StatusStep};
 use crate::cache::{reset_cache_stats, with_cache_status_notifier};
-use crate::config::{VcsKind, resolve_project_root};
+use crate::config::{RootSource, VcsKind, resolve_project_root};
 use crate::diff::{
     RelationshipDiffOptions, build_relationship_diff_document, render_relationship_diff_json,
     render_relationship_diff_text,
@@ -80,12 +80,20 @@ pub(super) fn execute_diff(args: DiffArgs, current_dir: &Path) -> Result<ExitCod
     if let Some(warning) = resolution.warning() {
         eprintln!("{warning}");
     }
-    let vcs = resolution.vcs.ok_or_else(|| {
-        anyhow::anyhow!("special diff requires `vcs = \"jj\"` or `vcs = \"git\"` in special.toml")
-    })?;
+    let full_relationship_view = resolution.vcs.is_none() || resolution.vcs == Some(VcsKind::None);
+    if resolution.vcs.is_none() && resolution.source == RootSource::SpecialToml {
+        status
+            .note("no `vcs` declared in special.toml; showing the full explicit relationship view");
+    } else if resolution.vcs == Some(VcsKind::None) {
+        status.note("`vcs = \"none\"`; showing the full explicit relationship view");
+    }
 
     status.phase("fingerprinting explicit relationships");
-    let changed_paths = changed_paths_for_vcs(vcs, &resolution.root)?;
+    let changed_paths = match (full_relationship_view, resolution.vcs) {
+        (true, _) => Vec::new(),
+        (false, Some(vcs)) => changed_paths_for_vcs(vcs, &resolution.root)?,
+        (false, None) => unreachable!("full view handles missing vcs"),
+    };
     let document = with_cache_status_notifier(status.notifier(), || {
         build_relationship_diff_document(
             &resolution.root,
@@ -94,6 +102,7 @@ pub(super) fn execute_diff(args: DiffArgs, current_dir: &Path) -> Result<ExitCod
             RelationshipDiffOptions {
                 target_paths: resolve_cli_paths(current_dir, &args.targets),
                 changed_paths,
+                full_view: full_relationship_view,
                 id: args.id.clone(),
                 symbol: args.symbol.clone(),
                 include_content: args.verbose,
@@ -118,6 +127,7 @@ fn changed_paths_for_vcs(vcs: VcsKind, root: &Path) -> Result<Vec<PathBuf>> {
     match vcs {
         VcsKind::Jj => changed_paths_from_jj(root),
         VcsKind::Git => changed_paths_from_git(root),
+        VcsKind::None => Ok(Vec::new()),
     }
 }
 
