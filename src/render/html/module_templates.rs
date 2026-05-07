@@ -72,12 +72,12 @@ impl ModuleNodeHtmlTemplate<'_> {
 
     fn counts_section(&self) -> String {
         let mut counts = vec![HtmlCount {
-            label: "implements",
+            label: "implements".to_string(),
             value: self.node.implements.len().to_string(),
         }];
         if !self.node.pattern_applications.is_empty() {
             counts.push(HtmlCount {
-                label: "pattern applications",
+                label: "pattern applications".to_string(),
                 value: self.node.pattern_applications.len().to_string(),
             });
         }

@@ -16,7 +16,8 @@ mod spec;
 pub(super) use self::module::project_module_document;
 pub(super) use self::pattern::project_pattern_document;
 pub(super) use self::repo::{
-    project_repo_document, project_repo_document_json, project_repo_health_summary_counts,
+    ProjectedRepoMetricSection, project_repo_document, project_repo_document_json,
+    project_repo_health_metric_sections,
 };
 pub(super) use self::spec::project_document;
 

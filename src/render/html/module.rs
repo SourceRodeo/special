@@ -39,35 +39,35 @@ fn format_arch_metrics_html(metrics: &ArchitectureMetricsSummary) -> String {
         "special arch metrics",
         &[
             HtmlCount {
-                label: "total modules",
+                label: "total modules".to_string(),
                 value: metrics.total_modules.to_string(),
             },
             HtmlCount {
-                label: "total areas",
+                label: "total areas".to_string(),
                 value: metrics.total_areas.to_string(),
             },
             HtmlCount {
-                label: "unimplemented modules",
+                label: "unimplemented modules".to_string(),
                 value: metrics.unimplemented_modules.to_string(),
             },
             HtmlCount {
-                label: "file-scoped implements",
+                label: "file-scoped implements".to_string(),
                 value: metrics.file_scoped_implements.to_string(),
             },
             HtmlCount {
-                label: "item-scoped implements",
+                label: "item-scoped implements".to_string(),
                 value: metrics.item_scoped_implements.to_string(),
             },
             HtmlCount {
-                label: "owned lines",
+                label: "owned lines".to_string(),
                 value: metrics.owned_lines.to_string(),
             },
             HtmlCount {
-                label: "public items",
+                label: "public items".to_string(),
                 value: metrics.public_items.to_string(),
             },
             HtmlCount {
-                label: "internal items",
+                label: "internal items".to_string(),
                 value: metrics.internal_items.to_string(),
             },
         ],
@@ -76,23 +76,23 @@ fn format_arch_metrics_html(metrics: &ArchitectureMetricsSummary) -> String {
         "complexity totals",
         &[
             HtmlCount {
-                label: "complexity functions",
+                label: "complexity functions".to_string(),
                 value: metrics.complexity_functions.to_string(),
             },
             HtmlCount {
-                label: "total cyclomatic",
+                label: "total cyclomatic".to_string(),
                 value: metrics.total_cyclomatic.to_string(),
             },
             HtmlCount {
-                label: "max cyclomatic",
+                label: "max cyclomatic".to_string(),
                 value: metrics.max_cyclomatic.to_string(),
             },
             HtmlCount {
-                label: "total cognitive",
+                label: "total cognitive".to_string(),
                 value: metrics.total_cognitive.to_string(),
             },
             HtmlCount {
-                label: "max cognitive",
+                label: "max cognitive".to_string(),
                 value: metrics.max_cognitive.to_string(),
             },
         ],
@@ -101,27 +101,27 @@ fn format_arch_metrics_html(metrics: &ArchitectureMetricsSummary) -> String {
         "quality totals",
         &[
             HtmlCount {
-                label: "quality public functions",
+                label: "quality public functions".to_string(),
                 value: metrics.quality_public_functions.to_string(),
             },
             HtmlCount {
-                label: "quality parameters",
+                label: "quality parameters".to_string(),
                 value: metrics.quality_parameters.to_string(),
             },
             HtmlCount {
-                label: "quality bool params",
+                label: "quality bool params".to_string(),
                 value: metrics.quality_bool_params.to_string(),
             },
             HtmlCount {
-                label: "quality raw string params",
+                label: "quality raw string params".to_string(),
                 value: metrics.quality_raw_string_params.to_string(),
             },
             HtmlCount {
-                label: "quality panic sites",
+                label: "quality panic sites".to_string(),
                 value: metrics.quality_panic_sites.to_string(),
             },
             HtmlCount {
-                label: "unreached items",
+                label: "unreached items".to_string(),
                 value: metrics.unreached_items.to_string(),
             },
         ],

@@ -5,7 +5,7 @@ Renders projected specs and modules into HTML views with shared styling and best
 // @fileimplements SPECIAL.RENDER.HTML
 use askama::Template;
 
-use crate::model::{GroupedCount, RepoTraceabilityMetrics, SpecMetricsSummary};
+use crate::model::{GroupedCount, SpecMetricsSummary};
 
 use super::html_common::escape_html;
 pub(super) use super::labels::{attest_label, implementation_label, verify_label};
@@ -28,7 +28,7 @@ pub(super) use self::spec::render_spec_html;
 
 #[derive(Clone)]
 pub(super) struct HtmlCount {
-    pub(super) label: &'static str,
+    pub(super) label: String,
     pub(super) value: String,
 }
 
@@ -58,6 +58,20 @@ pub(super) struct HtmlExplanationSection {
 #[template(path = "render/counts_section.html")]
 pub(super) struct CountsSectionHtmlTemplate<'a> {
     pub(super) counts: &'a [HtmlCount],
+}
+
+#[derive(Template)]
+#[template(path = "render/metrics_section.html")]
+pub(super) struct MetricsSectionHtmlTemplate {
+    pub(super) title: String,
+    pub(super) counts_html: String,
+}
+
+#[derive(Template)]
+#[template(path = "render/grouped_metrics_section.html")]
+pub(super) struct GroupedMetricsSectionHtmlTemplate {
+    pub(super) title: String,
+    pub(super) lines_html: String,
 }
 
 #[derive(Template)]
@@ -95,6 +109,13 @@ pub(super) struct ModuleVerboseHtmlTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "render/repo_page.html")]
+pub(super) struct RepoPageHtmlTemplate {
+    pub(super) style: &'static str,
+    pub(super) body_html: String,
+}
+
+#[derive(Template)]
 #[template(path = "render/coverage_section.html")]
 pub(super) struct CoverageSectionHtmlTemplate<'a> {
     pub(super) counts_html: String,
@@ -113,27 +134,27 @@ pub(super) fn format_spec_metrics_html(metrics: &SpecMetricsSummary) -> String {
         "special specs metrics",
         &[
             HtmlCount {
-                label: "total specs",
+                label: "total specs".to_string(),
                 value: metrics.total_specs.to_string(),
             },
             HtmlCount {
-                label: "unverified specs",
+                label: "unverified specs".to_string(),
                 value: metrics.unverified_specs.to_string(),
             },
             HtmlCount {
-                label: "planned specs",
+                label: "planned specs".to_string(),
                 value: metrics.planned_specs.to_string(),
             },
             HtmlCount {
-                label: "deprecated specs",
+                label: "deprecated specs".to_string(),
                 value: metrics.deprecated_specs.to_string(),
             },
             HtmlCount {
-                label: "verifies",
+                label: "verifies".to_string(),
                 value: metrics.verifies.to_string(),
             },
             HtmlCount {
-                label: "attests",
+                label: "attests".to_string(),
                 value: metrics.attests.to_string(),
             },
         ],
@@ -142,35 +163,35 @@ pub(super) fn format_spec_metrics_html(metrics: &SpecMetricsSummary) -> String {
         "spec support buckets",
         &[
             HtmlCount {
-                label: "verified specs",
+                label: "verified specs".to_string(),
                 value: metrics.verified_specs.to_string(),
             },
             HtmlCount {
-                label: "attested specs",
+                label: "attested specs".to_string(),
                 value: metrics.attested_specs.to_string(),
             },
             HtmlCount {
-                label: "specs with both supports",
+                label: "specs with both supports".to_string(),
                 value: metrics.specs_with_both_supports.to_string(),
             },
             HtmlCount {
-                label: "item-scoped verifies",
+                label: "item-scoped verifies".to_string(),
                 value: metrics.item_scoped_verifies.to_string(),
             },
             HtmlCount {
-                label: "file-scoped verifies",
+                label: "file-scoped verifies".to_string(),
                 value: metrics.file_scoped_verifies.to_string(),
             },
             HtmlCount {
-                label: "unattached verifies",
+                label: "unattached verifies".to_string(),
                 value: metrics.unattached_verifies.to_string(),
             },
             HtmlCount {
-                label: "block attests",
+                label: "block attests".to_string(),
                 value: metrics.block_attests.to_string(),
             },
             HtmlCount {
-                label: "file attests",
+                label: "file attests".to_string(),
                 value: metrics.file_attests.to_string(),
             },
         ],
@@ -188,10 +209,10 @@ pub(super) fn format_spec_metrics_html(metrics: &SpecMetricsSummary) -> String {
 
 pub(super) fn render_metrics_section_html(title: &str, counts: &[HtmlCount]) -> String {
     let counts_html = render_template(&CountsSectionHtmlTemplate { counts });
-    format!(
-        "<section class=\"node\"><div class=\"node-header\"><span class=\"node-id\">{}</span></div><div class=\"meta counts\">{}</div></section>",
-        title, counts_html
-    )
+    render_template(&MetricsSectionHtmlTemplate {
+        title: title.to_string(),
+        counts_html,
+    })
 }
 
 pub(super) fn render_grouped_metrics_section_html(title: &str, counts: &[GroupedCount]) -> String {
@@ -206,62 +227,10 @@ pub(super) fn render_grouped_metrics_section_html(title: &str, counts: &[Grouped
         })
         .collect::<Vec<_>>();
     let lines_html = render_template(&MetaLinesHtmlTemplate { lines: &lines });
-    format!(
-        "<section class=\"node\"><div class=\"node-header\"><span class=\"node-id\">{}</span></div>{}</section>",
-        title, lines_html
-    )
-}
-
-pub(super) fn format_repo_traceability_metrics_html(metrics: &RepoTraceabilityMetrics) -> String {
-    render_metrics_section_html(
-        "health traceability context",
-        &[
-            HtmlCount {
-                label: "analyzed implementation items",
-                value: metrics.analyzed_items.to_string(),
-            },
-            HtmlCount {
-                label: "current-spec traced implementation",
-                value: metrics.current_spec_items.to_string(),
-            },
-            HtmlCount {
-                label: "statically mediated implementation",
-                value: metrics.statically_mediated_items.to_string(),
-            },
-            HtmlCount {
-                label: "test-covered unlinked implementation",
-                value: metrics.unverified_test_items.to_string(),
-            },
-            HtmlCount {
-                label: "untraced implementation",
-                value: metrics.unexplained_items.to_string(),
-            },
-            HtmlCount {
-                label: "untraced review-surface implementation",
-                value: metrics.unexplained_review_surface_items.to_string(),
-            },
-            HtmlCount {
-                label: "untraced public implementation",
-                value: metrics.unexplained_public_items.to_string(),
-            },
-            HtmlCount {
-                label: "untraced internal implementation",
-                value: metrics.unexplained_internal_items.to_string(),
-            },
-            HtmlCount {
-                label: "untraced module-backed implementation",
-                value: metrics.unexplained_module_backed_items.to_string(),
-            },
-            HtmlCount {
-                label: "untraced module-connected implementation",
-                value: metrics.unexplained_module_connected_items.to_string(),
-            },
-            HtmlCount {
-                label: "untraced module-isolated implementation",
-                value: metrics.unexplained_module_isolated_items.to_string(),
-            },
-        ],
-    )
+    render_template(&GroupedMetricsSectionHtmlTemplate {
+        title: title.to_string(),
+        lines_html,
+    })
 }
 
 pub(super) fn format_repo_signals_html(coverage: &ProjectedRepoSignals) -> String {
@@ -360,7 +329,7 @@ pub(super) fn format_repo_traceability_html(
 
 pub(super) fn projected_count(count: &ProjectedCount) -> HtmlCount {
     HtmlCount {
-        label: count.label,
+        label: count.label.to_string(),
         value: count.value.clone(),
     }
 }

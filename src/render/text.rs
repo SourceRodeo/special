@@ -5,7 +5,7 @@ Renders projected specs, modules, repo health, overviews, and lint diagnostics i
 // @fileimplements SPECIAL.RENDER.TEXT
 use crate::model::{
     ArchitectureMetricsSummary, GroupedCount, PatternDocument, PatternNode, RepoMetricsSummary,
-    RepoTraceabilityMetrics, SpecMetricsSummary,
+    SpecMetricsSummary,
 };
 
 mod analysis;
@@ -194,52 +194,13 @@ pub(super) fn render_spec_metrics_text(metrics: &SpecMetricsSummary) -> String {
 }
 
 pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
-    let mut output = String::from("summary\n");
-    for count in crate::render::projection::project_repo_health_summary_counts(metrics) {
-        output.push_str(&format!("  {}: {}\n", count.label, count.value));
-    }
-    let mut details = String::new();
-    append_grouped_counts_text(
-        &mut details,
-        "source outside architecture by file",
-        &metrics.architecture.source_outside_architecture_by_file,
-    );
-    append_grouped_counts_text(
-        &mut details,
-        "untraced implementation by file",
-        &metrics.specs.untraced_implementation_by_file,
-    );
-    append_grouped_counts_text(
-        &mut details,
-        "untraced review-surface implementation by file",
-        &metrics.specs.untraced_review_surface_by_file,
-    );
-    append_grouped_counts_text(
-        &mut details,
-        "duplicate source shapes by file",
-        &metrics.patterns.duplicate_source_shapes_by_file,
-    );
-    append_grouped_counts_text(
-        &mut details,
-        "possible missing pattern applications by file",
-        &metrics.patterns.possible_missing_applications_by_file,
-    );
-    append_grouped_counts_text(
-        &mut details,
-        "long prose outside docs by file",
-        &metrics.docs.long_prose_outside_docs_by_file,
-    );
-    append_grouped_counts_text(
-        &mut details,
-        "exact long-prose test assertions by file",
-        &metrics.tests.exact_long_prose_assertions_by_file,
-    );
-    if !details.is_empty() {
-        output.push_str("details\n");
-        output.push_str(&details);
-    }
-    if let Some(traceability) = &metrics.traceability {
-        append_repo_traceability_metrics_text(&mut output, traceability);
+    let mut output = String::new();
+    for section in crate::render::projection::project_repo_health_metric_sections(metrics) {
+        output.push_str(section.title);
+        output.push('\n');
+        for count in section.counts {
+            output.push_str(&format!("  {}: {}\n", count.label, count.value));
+        }
     }
     output
 }
@@ -339,54 +300,6 @@ pub(super) fn render_arch_metrics_text(metrics: &ArchitectureMetricsSummary) -> 
         &metrics.external_dependency_targets_by_module,
     );
     output
-}
-
-fn append_repo_traceability_metrics_text(output: &mut String, metrics: &RepoTraceabilityMetrics) {
-    output.push_str("context\n");
-    output.push_str(&format!(
-        "  analyzed implementation items: {}\n",
-        metrics.analyzed_items
-    ));
-    output.push_str(&format!(
-        "  current-spec traced implementation: {}\n",
-        metrics.current_spec_items
-    ));
-    output.push_str(&format!(
-        "  statically mediated implementation: {}\n",
-        metrics.statically_mediated_items
-    ));
-    output.push_str(&format!(
-        "  test-covered unlinked implementation: {}\n",
-        metrics.unverified_test_items
-    ));
-    output.push_str(&format!(
-        "  untraced implementation: {}\n",
-        metrics.unexplained_items
-    ));
-    output.push_str(&format!(
-        "  untraced review-surface implementation: {}\n",
-        metrics.unexplained_review_surface_items
-    ));
-    output.push_str(&format!(
-        "  untraced public implementation: {}\n",
-        metrics.unexplained_public_items
-    ));
-    output.push_str(&format!(
-        "  untraced internal implementation: {}\n",
-        metrics.unexplained_internal_items
-    ));
-    output.push_str(&format!(
-        "  untraced module-backed implementation: {}\n",
-        metrics.unexplained_module_backed_items
-    ));
-    output.push_str(&format!(
-        "  untraced module-connected implementation: {}\n",
-        metrics.unexplained_module_connected_items
-    ));
-    output.push_str(&format!(
-        "  untraced module-isolated implementation: {}\n",
-        metrics.unexplained_module_isolated_items
-    ));
 }
 
 fn append_grouped_counts_text(output: &mut String, label: &str, counts: &[GroupedCount]) {
