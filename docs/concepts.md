@@ -2,19 +2,28 @@
 
 ## Cognitive Debt
 
-Special is about reducing cognitive debt inside a repository. Cognitive debt
-shows up when the repo has behavior, tests, architecture, repeated
-implementation structures, and docs, but nobody can quickly connect them.
+Special is about making repo work easier to understand before a change and
+easier to review after a change. It does that with two complementary jobs:
 
-Special does not replace tests, docs, or review. It adds a repo-native graph over
-them so the important connections can be inspected.
+1. It scans the repo for signals worth reviewing: source outside declared
+   ownership, implementation with no visible proof path, repeated source shapes,
+   possible missing pattern applications, long prose outside docs, exact prose
+   assertions in tests, and changed relationships.
+2. It lets you connect the important facts directly in source: product claims,
+   tests and attestations, architecture ownership, adopted implementation
+   patterns, and docs claims.
+
+Cognitive debt shows up when a repo has behavior, tests, architecture, repeated
+implementation structures, and docs, but nobody can quickly say how they fit
+together. Special does not replace tests, docs, or review. It gives those
+existing artifacts small source-level connections that can be inspected.
 
 For example, a CSV export feature can have one spec for the header behavior, one
 test that verifies it, one module that owns the export code, one pattern for
 label-to-value column maps, one docs sentence linked to the spec, and one health
 report showing whether anything around that slice is still unexplained. Each
-piece stays small, but the repo can answer why the code exists and what proves
-it.
+piece stays small, but the repo can answer why the code exists, what proves it,
+and what changed relationships need review.
 
 The adoption path depends on what kind of repo you have. In a new project, write
 specs and architecture as the behavior appears, then use docs and health to keep

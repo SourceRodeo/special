@@ -5,8 +5,8 @@
 
 Health is Special's cross-surface analysis layer. Use
 [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) when explicit Special
-relationships do not yet answer the practical maintenance question: which code,
-prose, repeated shape, or proof path needs attention next?
+relationships do not yet answer the practical question: which code, prose,
+repeated shape, or proof path needs attention next?
 
 Health is usually the best first command in an existing repository because it
 can read plain source before the repo has many Special annotations.

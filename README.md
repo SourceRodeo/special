@@ -2,11 +2,14 @@
 
 ## What Special Is
 
-Special keeps repo knowledge close to the code that
-depends on it. It is for teams and agents who need to know what a repository
-claims, what proves those claims, where the implementation belongs, which
-implementation structures are intentional, and whether generated docs still
-cover the product surface.
+Special does two things: it scans a repository for
+signals worth reviewing, and it lets you connect important claims, tests, code,
+patterns, and docs directly in source.
+
+Those connections let teams and agents answer practical questions: what the
+repository claims, what proves those claims, where the implementation belongs,
+which repeated structures are intentional, which docs depend on repo facts, and
+which changed relationships need review.
 
 The first-class surfaces are:
 
@@ -14,7 +17,8 @@ The first-class surfaces are:
 - Arch: areas, modules, and implementation ownership.
 - Patterns: named repeated implementation structures.
 - Docs: generated reader docs tied back to repo truth.
-- Health: cross-surface analysis that shows what is still hard to explain.
+- Health: repo analysis that shows which source, docs, tests, and repeated
+  structures deserve attention.
 - Diff: VCS-scoped relationship review for changed source and docs.
 
 ## Install It
