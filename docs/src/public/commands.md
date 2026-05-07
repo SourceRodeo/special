@@ -131,7 +131,11 @@ Representative output:
 
 ```text
 special docs metrics
-  total references: ...
+  relationship inventory
+    total references: ...
+  target coverage
+    specs: ...
+  generated docs graph
   generated pages: ...
   reachable from entrypoints: ...
 ```
@@ -144,13 +148,14 @@ special docs --metrics --verbose
 ```
 
 Decision supported: whether docs links resolve, whether generated docs pages are
-connected, whether documented targets have support, and whether docs output can
-be built safely.
+connected, which declared targets have docs evidence, whether documented targets
+have support, and whether docs output can be built safely.
 
 Contract details: `special docs` supports
 [target scoping](documents://spec/SPECIAL.DOCS_COMMAND.TARGET),
 [metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS),
-[relationship metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS), and
+[relationship metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS),
+[target coverage](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE), and
 [configured output builds](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG).
 Generated output
 [rewrites document links](documents://spec/SPECIAL.DOCS.LINKS.OUTPUT),
@@ -201,7 +206,7 @@ endpoint content for review.
 ## `special health`
 
 Use [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) for repo-wide
-signals that connect specs, arch, patterns, and docs.
+signals that go deeper than explicit graph edges or sit outside the graph.
 
 ```sh
 special health
@@ -215,14 +220,15 @@ special health --html
 Representative output:
 
 ```text
-documentation coverage
-  specs: ...
+special health metrics
+  duplicate items: ...
+  unowned items: ...
 traceability
   unsupported items: ...
 ```
 
-Decision supported: what remains unowned, unsupported, duplicated, or
-undocumented.
+Decision supported: what remains unowned, unsupported, duplicated, or hard to
+explain from source structure.
 
 Contract details: `special health` supports
 [target scoping](documents://spec/SPECIAL.HEALTH_COMMAND.TARGET),
@@ -234,7 +240,6 @@ Contract details: `special health` supports
 [unowned items](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS),
 [duplication](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION),
 [traceability](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
-[documentation coverage](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE),
 and [long exact prose assertions](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.MCP

@@ -45,7 +45,7 @@ Use the signal to choose the next command:
 | unowned implementation | `special arch --unimplemented` | Add or adjust module ownership. |
 | unsupported implementation | `special specs --verbose` | Move behavior behind a tested module or add direct proof. |
 | duplicate items | `special patterns --metrics` | Extract a helper or name a real repeated pattern. |
-| undocumented targets | `special health --metrics` | Add generated docs links or confirm the target is internal. |
+| undocumented targets | `special docs --metrics` | Add generated docs links or confirm the target is internal. |
 
 Health is the broad investigation command. Once it identifies a concrete
 question, move to the surface command that owns the fix: `specs` for claims and
@@ -69,7 +69,7 @@ special health --metrics
 ```
 
 Use `special docs --metrics` for docs graph and relationship inventory. Use
-`special health --metrics` for cross-surface documentation coverage.
+`special health --metrics` for inferred source signals and off-graph gaps.
 
 ## Introduce a Pattern
 

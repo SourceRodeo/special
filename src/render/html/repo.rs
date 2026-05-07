@@ -74,31 +74,6 @@ fn format_repo_metrics_html(metrics: &RepoMetricsSummary) -> String {
         "long exact prose assertions by file",
         &metrics.long_exact_prose_assertions_by_file,
     ));
-    if let Some(documentation) = &metrics.documentation {
-        let documented = documentation
-            .target_kinds
-            .iter()
-            .map(|kind| kind.documented)
-            .sum::<usize>();
-        let undocumented = documentation
-            .target_kinds
-            .iter()
-            .map(|kind| kind.undocumented)
-            .sum::<usize>();
-        html.push_str(&render_metrics_section_html(
-            "documentation coverage",
-            &[
-                HtmlCount {
-                    label: "documented targets",
-                    value: documented.to_string(),
-                },
-                HtmlCount {
-                    label: "undocumented targets",
-                    value: undocumented.to_string(),
-                },
-            ],
-        ));
-    }
     if let Some(traceability) = &metrics.traceability {
         html.push_str(&format_repo_traceability_metrics_html(traceability));
     }

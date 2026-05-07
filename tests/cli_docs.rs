@@ -247,8 +247,9 @@ fn docs_metrics_reports_documentation_relationship_inventory() {
     );
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("special docs metrics"));
+    assert!(stdout.contains("relationship inventory"));
     assert!(stdout.contains("specs: 2 reference(s)"));
-    assert!(stdout.contains("2 documented target(s)"));
+    assert!(stdout.contains("2 referenced target(s)"));
     assert!(stdout.contains("1 internal-only"));
     assert!(stdout.contains("modules: 1 reference(s)"));
     assert!(stdout.contains("patterns: 1 reference(s)"));
@@ -263,6 +264,94 @@ fn docs_metrics_reports_documentation_relationship_inventory() {
     assert!(verbose_stdout.contains("relationship audit"));
     assert!(verbose_stdout.contains("EXPORT.CSV.HEADERS"));
     assert!(verbose_stdout.contains("current_spec_without_support"));
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+fn docs_metrics_text_surfaces_target_coverage() {
+    let root = temp_repo_dir("special-cli-docs-target-coverage");
+    write_docs_metrics_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics"]);
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("target coverage"));
+    assert!(stdout.contains("specs: 2 total"));
+    assert!(stdout.contains("2 documented"));
+    assert!(stdout.contains("0 undocumented"));
+    assert!(stdout.contains("groups: 1 total"));
+    assert!(stdout.contains("1 undocumented"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+fn docs_metrics_json_includes_target_coverage() {
+    let root = temp_repo_dir("special-cli-docs-target-coverage-json");
+    write_docs_metrics_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics", "--json"]);
+    assert!(output.status.success());
+
+    let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    let specs = json["metrics"]["coverage"]["target_kinds"]
+        .as_array()
+        .expect("target kinds should be an array")
+        .iter()
+        .find(|kind| kind["kind"] == "spec")
+        .expect("spec coverage should exist");
+    assert_eq!(specs["total"], Value::from(2));
+    assert_eq!(specs["documented"], Value::from(2));
+    assert_eq!(specs["undocumented"], Value::from(0));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE.DOCS_SOURCE_DECLARATIONS
+fn docs_metrics_target_coverage_excludes_docs_source_architecture_targets() {
+    let root = temp_repo_dir("special-cli-docs-source-target-coverage");
+    write_docs_source_target_coverage_fixture(&root);
+
+    let output = run_special(&root, &["docs", "--metrics", "--json"]);
+    assert!(output.status.success());
+
+    let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    let target_kinds = json["metrics"]["coverage"]["target_kinds"]
+        .as_array()
+        .expect("target kinds should be an array");
+    let modules = target_kinds
+        .iter()
+        .find(|kind| kind["kind"] == "module")
+        .expect("module coverage should exist");
+    let areas = target_kinds
+        .iter()
+        .find(|kind| kind["kind"] == "area")
+        .expect("area coverage should exist");
+    let patterns = target_kinds
+        .iter()
+        .find(|kind| kind["kind"] == "pattern")
+        .expect("pattern coverage should exist");
+
+    assert_eq!(modules["total"], Value::from(1));
+    assert_eq!(
+        modules["undocumented_ids"],
+        Value::Array(vec![Value::from("APP.PARSER")])
+    );
+    assert_eq!(areas["total"], Value::from(1));
+    assert_eq!(
+        areas["undocumented_ids"],
+        Value::Array(vec![Value::from("APP")])
+    );
+    assert_eq!(patterns["total"], Value::from(1));
+    assert_eq!(
+        patterns["undocumented_ids"],
+        Value::Array(vec![Value::from("CACHE.SINGLE_FLIGHT_FILL")])
+    );
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
@@ -344,7 +433,10 @@ fn docs_metrics_json_exposes_structured_counts() {
     assert_eq!(specs["documented_targets"], 2);
     assert_eq!(specs["generated"], 1);
     assert_eq!(specs["internal_only"], 1);
-    assert!(specs["undocumented"].is_null());
+    assert_eq!(
+        json["metrics"]["coverage"]["target_kinds"][0]["kind"],
+        "spec"
+    );
     let audit = json["metrics"]["target_audit"]
         .as_array()
         .expect("target audit should be an array");
@@ -771,4 +863,71 @@ fn write_docs_metrics_fixture(root: &std::path::Path) {
         ),
     )
     .expect("docs guide should be written");
+}
+
+fn write_docs_source_target_coverage_fixture(root: &std::path::Path) {
+    fs::write(
+        root.join("special.toml"),
+        concat!(
+            "version = \"1\"\n",
+            "root = \".\"\n",
+            "[docs]\n",
+            "entrypoints = [\"README.md\"]\n",
+            "\n",
+            "[[docs.outputs]]\n",
+            "source = \"docs/src/README.md\"\n",
+            "output = \"README.md\"\n",
+        ),
+    )
+    .expect("special.toml should be written");
+    fs::write(
+        root.join("specs.md"),
+        concat!(
+            "### `@group EXPORT`\n",
+            "Exports.\n\n",
+            "### `@spec EXPORT.CSV.HEADERS`\n",
+            "CSV headers.\n\n",
+            "### `@spec EXPORT.INTERNAL`\n",
+            "Internal export.\n",
+        ),
+    )
+    .expect("specs should be written");
+    fs::write(
+        root.join("architecture.md"),
+        "### `@area APP`\nApp.\n\n### `@module APP.PARSER`\nParser.\n",
+    )
+    .expect("architecture should be written");
+    fs::write(
+        root.join("src.rs"),
+        "// @fileimplements APP.PARSER\npub fn parse() {}\n",
+    )
+    .expect("source should be written");
+    fs::write(
+        root.join("patterns.md"),
+        "### `@pattern CACHE.SINGLE_FLIGHT_FILL`\nCache fill.\n",
+    )
+    .expect("patterns should be written");
+    fs::write(
+        root.join("docs-architecture.md"),
+        concat!(
+            "### `@area DOCS`\n",
+            "Docs architecture.\n\n",
+            "### `@module DOCS.README`\n",
+            "README docs section.\n\n",
+            "### `@pattern DOCS.TRACEABLE_EXAMPLE`\n",
+            "Traceable docs example.\n",
+        ),
+    )
+    .expect("docs architecture should be written");
+    fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
+    fs::write(
+        root.join("docs/src/README.md"),
+        concat!(
+            "@implements DOCS.README\n",
+            "@applies DOCS.TRACEABLE_EXAMPLE\n",
+            "## README\n",
+            "[CSV](documents://spec/EXPORT.CSV.HEADERS)\n",
+        ),
+    )
+    .expect("docs source should be written");
 }

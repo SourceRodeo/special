@@ -139,8 +139,6 @@ special health surfaces repo-wide unowned item indicators so code outside declar
 @spec SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS
 special health reports long human-prose string literals used as exact assertion targets in recognized test and fixture source files as non-blocking repo-wide quality data.
 
-@spec SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE
-special health --metrics reports cross-surface documentation coverage for specs, groups, modules, areas, and patterns.
 */
 // @fileimplements SPECIAL.TESTS.CLI_REPO
 #[path = "support/cli.rs"]
@@ -367,98 +365,6 @@ fn repo_metrics_text_surfaces_repo_health_counts() {
 }
 
 #[test]
-// @verifies SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE
-fn repo_metrics_text_surfaces_documentation_coverage() {
-    let root = temp_repo_dir("special-cli-repo-doc-coverage");
-    write_health_docs_coverage_fixture(&root);
-
-    let output = run_special(&root, &["health", "-m"]);
-    assert!(output.status.success());
-
-    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("documentation coverage"));
-    assert!(stdout.contains("specs: 2 total"));
-    assert!(stdout.contains("1 documented"));
-    assert!(stdout.contains("1 undocumented"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
-}
-
-#[test]
-// @verifies SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE
-fn repo_metrics_json_includes_documentation_coverage() {
-    let root = temp_repo_dir("special-cli-repo-doc-coverage-json");
-    write_health_docs_coverage_fixture(&root);
-
-    let output = run_special(&root, &["health", "-m", "--json"]);
-    assert!(output.status.success());
-
-    let json: Value =
-        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let specs = json["metrics"]["documentation"]["target_kinds"]
-        .as_array()
-        .expect("target kinds should be an array")
-        .iter()
-        .find(|kind| kind["kind"] == "spec")
-        .expect("spec coverage should exist");
-    assert_eq!(specs["total"], Value::from(2));
-    assert_eq!(specs["documented"], Value::from(1));
-    assert_eq!(specs["undocumented"], Value::from(1));
-    assert_eq!(
-        specs["undocumented_ids"],
-        Value::Array(vec![Value::from("EXPORT.INTERNAL")])
-    );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
-}
-
-#[test]
-// @verifies SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE.DOCS_SOURCE_DECLARATIONS
-fn repo_metrics_documentation_coverage_excludes_docs_source_architecture_targets() {
-    let root = temp_repo_dir("special-cli-repo-doc-coverage-docs-source-targets");
-    write_health_docs_coverage_fixture(&root);
-
-    let output = run_special(&root, &["health", "-m", "--json"]);
-    assert!(output.status.success());
-
-    let json: Value =
-        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    let target_kinds = json["metrics"]["documentation"]["target_kinds"]
-        .as_array()
-        .expect("target kinds should be an array");
-    let modules = target_kinds
-        .iter()
-        .find(|kind| kind["kind"] == "module")
-        .expect("module coverage should exist");
-    let areas = target_kinds
-        .iter()
-        .find(|kind| kind["kind"] == "area")
-        .expect("area coverage should exist");
-    let patterns = target_kinds
-        .iter()
-        .find(|kind| kind["kind"] == "pattern")
-        .expect("pattern coverage should exist");
-
-    assert_eq!(modules["total"], Value::from(1));
-    assert_eq!(
-        modules["undocumented_ids"],
-        Value::Array(vec![Value::from("APP.PARSER")])
-    );
-    assert_eq!(areas["total"], Value::from(1));
-    assert_eq!(
-        areas["undocumented_ids"],
-        Value::Array(vec![Value::from("APP")])
-    );
-    assert_eq!(patterns["total"], Value::from(1));
-    assert_eq!(
-        patterns["undocumented_ids"],
-        Value::Array(vec![Value::from("CACHE.SINGLE_FLIGHT_FILL")])
-    );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
-}
-
-#[test]
 fn repo_metrics_json_includes_structured_metrics() {
     let root = temp_repo_dir("special-cli-repo-metrics-json");
     write_duplicate_item_signals_module_analysis_fixture(&root);
@@ -479,73 +385,6 @@ fn repo_metrics_json_includes_structured_metrics() {
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
-}
-
-fn write_health_docs_coverage_fixture(root: &std::path::Path) {
-    fs::write(
-        root.join("special.toml"),
-        concat!(
-            "version = \"1\"\n",
-            "root = \".\"\n",
-            "[docs]\n",
-            "entrypoints = [\"README.md\"]\n",
-            "\n",
-            "[[docs.outputs]]\n",
-            "source = \"docs/src/README.md\"\n",
-            "output = \"README.md\"\n",
-        ),
-    )
-    .expect("special.toml should be written");
-    fs::write(
-        root.join("specs.md"),
-        concat!(
-            "### `@group EXPORT`\n",
-            "Exports.\n\n",
-            "### `@spec EXPORT.CSV.HEADERS`\n",
-            "CSV headers.\n\n",
-            "### `@spec EXPORT.INTERNAL`\n",
-            "Internal export.\n",
-        ),
-    )
-    .expect("specs should be written");
-    fs::write(
-        root.join("architecture.md"),
-        "### `@area APP`\nApp.\n\n### `@module APP.PARSER`\nParser.\n",
-    )
-    .expect("architecture should be written");
-    fs::write(
-        root.join("src.rs"),
-        "// @fileimplements APP.PARSER\npub fn parse() {}\n",
-    )
-    .expect("source should be written");
-    fs::write(
-        root.join("patterns.md"),
-        "### `@pattern CACHE.SINGLE_FLIGHT_FILL`\nCache fill.\n",
-    )
-    .expect("patterns should be written");
-    fs::write(
-        root.join("docs-architecture.md"),
-        concat!(
-            "### `@area DOCS`\n",
-            "Docs architecture.\n\n",
-            "### `@module DOCS.README`\n",
-            "README docs section.\n\n",
-            "### `@pattern DOCS.TRACEABLE_EXAMPLE`\n",
-            "Traceable docs example.\n",
-        ),
-    )
-    .expect("docs architecture should be written");
-    fs::create_dir_all(root.join("docs/src")).expect("docs source dir should be created");
-    fs::write(
-        root.join("docs/src/README.md"),
-        concat!(
-            "@implements DOCS.README\n",
-            "@applies DOCS.TRACEABLE_EXAMPLE\n",
-            "## README\n",
-            "[CSV](documents://spec/EXPORT.CSV.HEADERS)\n",
-        ),
-    )
-    .expect("docs source should be written");
 }
 
 #[test]

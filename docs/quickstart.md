@@ -155,15 +155,14 @@ Representative output shape:
 ```text
 special health metrics
   unowned items: ...
-  documentation coverage
-    specs: ...
   traceability
     unsupported items: ...
 ```
 
 Use this output to choose the next cleanup: add missing ownership, move behavior
-behind a clearer implementation module, add proof to a current spec, document an
-exposed surface, or name a repeated implementation structure as a pattern.
+behind a clearer implementation module, add proof to a current spec, or name a
+repeated implementation structure as a pattern. Use `special docs --metrics` for
+documentation coverage.
 
 That loop is the point of the fresh-project path: write the claim, attach proof,
 own the implementation, name repeated structures, document reader-facing facts,

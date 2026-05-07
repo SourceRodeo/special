@@ -96,12 +96,12 @@ when the repository already has code, tests, and docs.
 | Arch | [`special arch`](documents://spec/SPECIAL.MODULE_COMMAND) | You need to see module ownership and implementation boundaries. |
 | Patterns | [`special patterns`](documents://spec/SPECIAL.PATTERNS.COMMAND) | You need to review intentional repeated implementation structures. |
 | Docs | [`special docs`](documents://spec/SPECIAL.DOCS_COMMAND) | You need to validate docs links or build generated docs output. |
-| Health | [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) | You need repo-wide traceability, ownership, duplication, and documentation coverage signals. |
+| Health | [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) | You need repo-wide signals that go beyond explicit graph edges. |
 | Diff | [`special diff`](documents://spec/SPECIAL.DIFF_COMMAND) | You changed files and need the relationship review queue affected by that VCS diff. |
 
-The commands are meant to be used together. `health` shows the missing
-connections, `patterns` finds repeated source shapes, `specs` records behavior
-and proof, `arch` records ownership, `docs` makes reader-facing claims
+The commands are meant to be used together. `health` shows inferred signals and
+off-graph gaps, `patterns` finds repeated source shapes, `specs` records
+behavior and proof, `arch` records ownership, `docs` makes reader-facing claims
 traceable, `diff` focuses review on changed relationships, and `lint` checks
 that the graph still holds together.
 

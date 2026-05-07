@@ -42,10 +42,13 @@ special docs build SOURCE OUTPUT refuses to write docs output over the input pat
 special docs build uses `[[docs.outputs]]` mappings from special.toml to write configured generated docs outputs without repeating paths on the command line.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS
-special docs --metrics reports documentation relationship inventory and generated docs graph metrics without writing files.
+special docs --metrics reports documentation relationship inventory, target coverage, and generated docs graph metrics without writing files.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS
-special docs --metrics counts documentation relationships by target kind, source shape, and generated/internal source placement.
+special docs --metrics counts documentation relationship inventory by target kind, source shape, and generated/internal source placement without claiming cross-surface documentation coverage.
+
+@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+special docs --metrics reports which specs, groups, modules, areas, and patterns have documentation evidence from generated docs, internal docs, or no docs evidence.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
 special docs --metrics reports configured generated docs pages, markdown links among those pages, broken local docs links, orphan pages, and configured-entrypoint reachability.
@@ -53,8 +56,8 @@ special docs --metrics reports configured generated docs pages, markdown links a
 @spec SPECIAL.DOCS_COMMAND.METRICS.TARGET_AUDIT
 special docs --metrics --verbose reports documented target support, including planned specs, current specs without verifies or attests, current modules without implementations, and patterns without applications.
 
-@spec SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE.DOCS_SOURCE_DECLARATIONS
-special health --metrics documentation coverage excludes module, area, and pattern targets that are declared, implemented, or applied by configured docs output source paths.
+@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE.DOCS_SOURCE_DECLARATIONS
+special docs --metrics target coverage excludes module, area, and pattern targets that are declared, implemented, or applied by configured docs output source paths.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -175,6 +178,7 @@ pub(crate) struct DocsMetricsSummary {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entrypoint_pages: Option<usize>,
     pub target_kinds: Vec<DocsTargetKindMetrics>,
+    pub coverage: DocumentationCoverageSummary,
     pub broken_local_doc_link_details: Vec<DocsLocalLinkIssue>,
     pub orphan_page_paths: Vec<String>,
     pub target_audit: Vec<DocsTargetAudit>,
@@ -306,22 +310,6 @@ pub(crate) fn build_docs_metrics_document(
         generated_graph,
     );
     Ok((DocsMetricsDocument { metrics }, report))
-}
-
-pub(crate) fn build_documentation_coverage_summary(
-    root: &Path,
-    ignore_patterns: &[String],
-    version: SpecialVersion,
-    outputs: &[DocsOutputConfig],
-) -> Result<DocumentationCoverageSummary> {
-    let (document, _) = build_docs_document(root, ignore_patterns, version, &[])?;
-    let targets = DocumentTargets::load(root, ignore_patterns, version)?;
-    let generated_sources = configured_output_sources(root, outputs);
-    Ok(documentation_coverage_summary(
-        &document,
-        &targets,
-        &generated_sources,
-    ))
 }
 
 pub(crate) fn write_docs_path(
@@ -476,25 +464,26 @@ pub(crate) fn render_docs_json(document: &DocsDocument) -> Result<String> {
 pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: bool) -> String {
     let metrics = &document.metrics;
     let mut output = String::from("special docs metrics\n");
+    output.push_str("  relationship inventory\n");
     output.push_str(&format!(
-        "  total references: {}\n",
+        "    total references: {}\n",
         metrics.total_references
     ));
     output.push_str(&format!(
-        "    link references: {}\n",
+        "      link references: {}\n",
         metrics.link_references
     ));
     output.push_str(&format!(
-        "    @documents references: {}\n",
+        "      @documents references: {}\n",
         metrics.documents_line_references
     ));
     output.push_str(&format!(
-        "    @filedocuments references: {}\n",
+        "      @filedocuments references: {}\n",
         metrics.file_documents_line_references
     ));
     for kind in &metrics.target_kinds {
         output.push_str(&format!(
-            "  {}: {} reference(s), {} documented target(s), {} generated, {} internal-only\n",
+            "    {}: {} reference(s), {} referenced target(s), {} generated, {} internal-only\n",
             kind.plural_label(),
             kind.references,
             kind.documented_targets,
@@ -503,17 +492,36 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
         ));
         if verbose {
             output.push_str(&format!(
-                "    sources: {} link, {} @documents, {} @filedocuments\n",
+                "      sources: {} link, {} @documents, {} @filedocuments\n",
                 kind.link_references,
                 kind.documents_line_references,
                 kind.file_documents_line_references
             ));
         }
     }
-    output.push_str(&format!("  generated pages: {}\n", metrics.generated_pages));
-    output.push_str(&format!("  local doc links: {}\n", metrics.local_doc_links));
+    output.push_str("  target coverage\n");
+    for kind in &metrics.coverage.target_kinds {
+        output.push_str(&format!(
+            "    {}s: {} total, {} documented, {} generated, {} internal-only, {} undocumented\n",
+            kind.kind,
+            kind.total,
+            kind.documented,
+            kind.generated,
+            kind.internal_only,
+            kind.undocumented
+        ));
+    }
+    output.push_str("  generated docs graph\n");
     output.push_str(&format!(
-        "  broken local doc links: {}\n",
+        "    generated pages: {}\n",
+        metrics.generated_pages
+    ));
+    output.push_str(&format!(
+        "    local doc links: {}\n",
+        metrics.local_doc_links
+    ));
+    output.push_str(&format!(
+        "    broken local doc links: {}\n",
         metrics.broken_local_doc_links
     ));
     for issue in metrics
@@ -526,7 +534,7 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
             issue.source, issue.line, issue.target
         ));
     }
-    output.push_str(&format!("  orphan pages: {}\n", metrics.orphan_pages));
+    output.push_str(&format!("    orphan pages: {}\n", metrics.orphan_pages));
     for path in metrics
         .orphan_page_paths
         .iter()
@@ -539,10 +547,10 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
         metrics.entrypoint_pages,
     ) {
         (Some(reachable), Some(entrypoints)) => output.push_str(&format!(
-            "  reachable from entrypoints: {}/{} page(s), {} entrypoint(s)\n",
+            "    reachable from entrypoints: {}/{} page(s), {} entrypoint(s)\n",
             reachable, metrics.generated_pages, entrypoints
         )),
-        _ => output.push_str("  reachable from entrypoints: not configured\n"),
+        _ => output.push_str("    reachable from entrypoints: not configured\n"),
     }
     if verbose && !metrics.target_audit.is_empty() {
         output.push_str("  relationship audit:\n");
@@ -661,6 +669,7 @@ fn docs_metrics_summary(
             .into_iter()
             .map(|kind| target_kind_metrics(kind, document, generated_sources))
             .collect(),
+        coverage: documentation_coverage_summary(document, targets, generated_sources),
         broken_local_doc_link_details: generated_graph.broken_links,
         orphan_page_paths: generated_graph.orphan_pages,
         target_audit: docs_target_audit(root, document, targets, generated_sources),

@@ -1,7 +1,7 @@
 # Health
 
 Health is Special's cross-surface analysis layer. Use it when the question is not
-just "what did we declare?" but "what is still hard to explain?"
+answered by explicit graph edges: "what is still hard to explain?"
 
 Primary command:
 
@@ -15,8 +15,6 @@ Representative output shape:
 special health metrics
   duplicate items: ...
   unowned items: ...
-  documentation coverage
-    specs: ...
   traceability
     unsupported items: ...
 ```
@@ -35,9 +33,6 @@ missing or hidden behind a
 boundary
 Special deliberately does not treat as the preferred proof path.
 
-`documentation coverage`
-counts which declared specs, groups, modules, areas, and patterns are connected
-to docs evidence. Architecture and pattern targets delivered by configured docs
-output sources are treated as docs structure, not as separate targets that must
-be documented again. Use coverage gaps to inspect the specific target with
-`special specs`, `special arch`, or `special patterns`.
+Docs coverage is explicit relationship accounting, so it belongs to
+`special docs --metrics`,
+not health.
