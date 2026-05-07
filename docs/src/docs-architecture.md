@@ -226,17 +226,20 @@ The cache, single-flight, lock, and invalidation behavior that keeps expensive a
 ### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.QUALITY
 The release review, clippy, distribution, docs, and Special self-check gates maintainers run before shipping.
 
+### @module SPECIAL.DOCUMENTATION.CONTRIBUTOR.PATTERNS
+The source pattern catalog, application review loop, and maintenance workflow for Special's own implementation patterns.
+
 ### @pattern DOCS.SURFACE_OVERVIEW_PAGE
 @strictness low
-A page-level structure for one first-class Special surface: the question it answers, the primary annotations or config, the primary command, a runnable example, representative output, and the next related surface.
+A page-level structure for one first-class Special surface: the reader question it answers, the product concept behind it, the primary annotations or config, the primary command, a realistic runnable example, representative output, how to interpret that output, and the next related surface.
 
 ### @pattern DOCS.GETTING_STARTED_SEQUENCE
 @strictness low
-A page- or multi-section tutorial structure that moves from installation to one claim, one proof, one module, one pattern, one docs link, and one health pass.
+A tutorial sequence that teaches by doing: installation, one claim, one proof, one module, one pattern, one docs link, one health pass, and the concrete decision each command output supports.
 
 ### @pattern DOCS.COMMAND_REFERENCE_ENTRY
 @strictness low
-A command-reference section structure: command purpose, common invocation shapes, representative output excerpt, interpretation, and related commands.
+A command-reference section structure: command purpose, common invocation shapes, realistic output excerpt, interpretation, when to use the command, when not to use it, and related commands.
 
 ### @pattern DOCS.ANNOTATION_REFERENCE_ENTRY
 @strictness low
@@ -244,7 +247,7 @@ An annotation-reference section structure: purpose, valid placement, minimal sni
 
 ### @pattern DOCS.METRIC_REFERENCE_ENTRY
 @strictness low
-A metrics-reference section structure: metric name, exact count definition, interpretation, what it does not prove, and the next investigation command.
+A metrics-reference section structure: metric name, exact count definition, realistic example, interpretation, what it does not prove, acceptable reasons to leave the signal visible, and the next investigation command.
 
 ### @pattern DOCS.TRACEABLE_DOCS_EXAMPLE
 @strictness low
@@ -252,7 +255,7 @@ A docs-as-code section structure: docs source with `documents://`, build command
 
 ### @pattern DOCS.CROSS_SURFACE_WORKFLOW
 @strictness low
-A section- or page-level workflow structure that moves one concrete task across two or more Special surfaces, such as specs to verifies, modules to implements, patterns to applies, or docs links to health coverage.
+A workflow structure that moves one concrete task across two or more Special surfaces, explains why each surface is used, shows the output that changes the reader's decision, and stops before turning the whole repo into abstract taxonomy work.
 
 ### @pattern DOCS.CONFIG_REFERENCE_BLOCK
 @strictness low
@@ -264,23 +267,23 @@ An agent setup section structure: native binary requirement, plugin or skill pat
 
 ### @pattern DOCS.PRODUCT_ENTRYPOINT_PAGE
 @strictness low
-A product entrypoint page structure: short problem frame, install path, smallest runnable start, map of the main surfaces, and a reading path into task and reference docs.
+A product entrypoint page structure: short maintenance problem frame, install path, smallest runnable start, realistic first output, map of the main surfaces, and a reading path that separates tutorials from reference material.
 
 ### @pattern DOCS.CONCEPTUAL_OVERVIEW_PAGE
 @strictness low
-A concept page structure: the maintenance problem, the product's mental model, the first-class concepts, the question each concept answers, and links from concepts to operational guides.
+A concept page structure: the maintenance problem, the product's mental model, the first-class concepts, the question each concept answers, a small concrete example, and links from concepts to operational guides.
 
 ### @pattern DOCS.SURFACE_GUIDE_PAGE
 @strictness low
-A first-class surface guide structure: what the surface is for, primary command, primary annotations or config, one runnable example, representative output, and handoff to the adjacent surface.
+A first-class surface guide structure: what the surface is for, how it relates to adjacent surfaces, primary command, primary annotations or config, one realistic runnable example, representative output, output interpretation, and handoff to the adjacent surface.
 
 ### @pattern DOCS.TASK_RECIPE_PAGE
 @strictness low
-A how-to page structure: one concrete maintenance task, prerequisites, command sequence, expected signal, decision point, and the next corrective action.
+A how-to page structure: one concrete maintenance task, prerequisites, command sequence, realistic expected signal, decision point, tradeoff, and the next corrective action.
 
 ### @pattern DOCS.REFERENCE_CATALOG_PAGE
 @strictness low
-A reference catalog page structure: stable lookup entries grouped by user question, each with command or syntax shape, output or validation signal, and the decision the entry supports.
+A reference catalog page structure: stable lookup entries grouped by user question, each with command or syntax shape, realistic output or validation signal, interpretation, and the decision the entry supports.
 
 ### @pattern DOCS.CONTRIBUTOR_RUNBOOK_PAGE
 @strictness low

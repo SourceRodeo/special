@@ -12,26 +12,43 @@ special patterns
 Primary annotations:
 
 ```text
-@pattern CACHE.SINGLE_FLIGHT_FILL
-Use one in-flight fill per cache key when concurrent callers request the same
-expensive value.
+@pattern EXPORT.LABEL_VALUE_COLUMNS
+Build export rows from an ordered label-to-value column map before serialization.
 ```
 
 Apply the pattern where the structure appears:
 
 ```ts
-// @applies CACHE.SINGLE_FLIGHT_FILL
-async function loadOrFillCache(key: string): Promise<Value> {
-  return fills.getOrCreate(key, () => rebuildValue(key));
+// @applies EXPORT.LABEL_VALUE_COLUMNS
+function invoiceColumns(invoice: Invoice): Record<string, string> {
+  return {
+    "Invoice ID": invoice.id,
+    "Customer": invoice.customerName,
+    "Total": formatCents(invoice.totalCents),
+  };
 }
 ```
 
 Inspect usage:
 
 ```sh
-special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
+special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
 special patterns --metrics
 ```
+
+Representative output:
+
+```text
+EXPORT.LABEL_VALUE_COLUMNS
+  Build export rows from an ordered label-to-value column map before serialization.
+  applications: 3
+  modules: APP.EXPORT
+```
+
+That output answers whether the repeated structure has been intentionally named
+and where it appears. If health reports a similar repeated source shape but
+`special patterns` has no pattern for it, decide whether the shape deserves a
+helper extraction, an adopted pattern, or no action.
 
 Pattern metrics are advisory fit checks for declared applications. Raw repeated
 source shapes and possible missing applications appear in

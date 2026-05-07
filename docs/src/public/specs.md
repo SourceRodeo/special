@@ -38,6 +38,19 @@ special specs EXPORT.CSV.HEADERS --verbose
 special specs --unverified
 ```
 
+Representative output:
+
+```text
+EXPORT.CSV.HEADERS
+  CSV exports include a header row with the selected column names.
+  verifies: 1
+  attests: 0
+```
+
+That output answers a narrow question: the claim exists and has direct verifying
+evidence. If `special specs --unverified` lists `EXPORT.CSV.HEADERS`, either the
+claim is ahead of implementation or the proof attachment is missing.
+
 Use specs when the question is: what does this repo claim, and what evidence is
 attached to that claim? Use [health](health.md) when the question is whether the
 implementation graph reaches those claims.

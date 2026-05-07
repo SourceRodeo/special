@@ -30,6 +30,24 @@ Check the relationship inventory and generated-docs graph:
 special docs --metrics
 ```
 
+Representative output:
+
+```text
+special docs metrics
+  relationship inventory
+    total references: 42
+      link references: 42
+  target coverage
+    specs: 18 total, 14 documented, 14 generated, 0 internal-only, 4 undocumented
+  generated docs graph
+    generated pages: 7
+    broken local doc links: 0
+    reachable from entrypoints: 7/7 page(s), 1 entrypoint(s)
+```
+
+That output answers whether docs links resolve, whether the generated docs graph
+is connected, and which Special targets still lack docs evidence.
+
 Use `--verbose` when you need the
 relationship inventory.
 It shows each documented target, where docs refer to it, and whether the target

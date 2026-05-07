@@ -39,6 +39,14 @@ needs repo setup, configuration review, or validation.
    special patterns --metrics
    ```
 
+   Use the first health report to pick one narrow slice. For example, if
+   duplicate source shapes and untraced implementation both cluster under
+   `src/billing`, inspect that path before adding repo-wide annotations:
+
+   ```sh
+   special health --metrics --verbose --target src/billing
+   ```
+
    For a fresh project or new slice, start with the first claim and ownership
    boundary:
 

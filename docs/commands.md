@@ -19,6 +19,7 @@ Representative output:
 
 ```text
 EXPORT.CSV.HEADERS
+  CSV exports include a header row with the selected column names.
   verifies: 1
   attests: 0
 ```
@@ -79,17 +80,17 @@ declared repeated implementation structures and their known applications.
 
 ```sh
 special patterns
-special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
-special patterns --metrics
+special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
 special patterns --metrics
 ```
 
 Representative output:
 
 ```text
-CACHE.SINGLE_FLIGHT_FILL
+EXPORT.LABEL_VALUE_COLUMNS
+  Export tables should build columns as ordered label/value pairs.
   applications: 3
-  modules: APP.CACHE
+  modules: APP.EXPORT
 ```
 
 Decision supported: whether a repeated structure is intentionally named,
@@ -121,12 +122,19 @@ Representative output:
 ```text
 special docs metrics
   relationship inventory
-    total references: ...
+    total references: 42
+      link references: 42
+      @documents references: 0
+      @filedocuments references: 0
   target coverage
-    specs: ...
+    specs: 18 total, 14 documented, 14 generated, 0 internal-only, 4 undocumented
+    modules: 6 total, 3 documented, 3 generated, 0 internal-only, 3 undocumented
   generated docs graph
-  generated pages: ...
-  reachable from entrypoints: ...
+    generated pages: 7
+    local doc links: 11
+    broken local doc links: 0
+    orphan pages: 0
+    reachable from entrypoints: 7/7 page(s), 1 entrypoint(s)
 ```
 
 Verbose metrics include the
@@ -205,12 +213,18 @@ special health --html
 Representative output:
 
 ```text
+special health
 summary
-  source outside architecture: ...
-  untraced implementation: ...
-  duplicate source shapes: ...
-  possible missing pattern applications: ...
-  long prose outside docs: ...
+  source outside architecture: 12
+  untraced implementation: 34
+  duplicate source shapes: 7
+  possible pattern clusters: 2
+  possible missing pattern applications: 1
+  long prose outside docs: 3
+  exact long-prose test assertions: 0
+duplicate source shapes by file
+  src/billing/export.ts: 4
+  src/billing/refunds.ts: 3
 ```
 
 Decision supported: which raw inferred queues should be promoted into specs,

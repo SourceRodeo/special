@@ -5,10 +5,9 @@
 @applies DOCS.CROSS_SURFACE_WORKFLOW
 ## Adopt Special in an Existing Repo
 
-Start by reading the repository before adding annotations. Special can inspect a
-plain source tree and give useful signals from `health` and `patterns`; deeper
-traceability improves once the repo declares its toolchain and starts adding
-durable Special ids.
+Start by reading the repository before adding annotations. Special can inspect
+plain source and show useful health and pattern signals before the repo has a
+complete Special graph.
 
 ```sh
 special init
@@ -16,47 +15,72 @@ special health --metrics
 special patterns --metrics
 ```
 
-Use the first reports to choose one narrow slice:
+The first report should choose a small slice, not a modeling campaign. A useful
+starting point is a file or directory that appears in two or more signals:
 
 | Signal | First durable move |
 | --- | --- |
-| repeated source shapes | decide whether to extract a helper or declare an adopted pattern |
-| source outside architecture | declare a module and attach the code it owns |
-| untraced implementation | add a spec only when the behavior is a real product claim, then attach proof |
-| undocumented public surface | add a docs link to the smallest relevant spec, module, area, or pattern |
+| `source outside architecture` in `src/billing` | declare a billing module and attach the implementation it owns |
+| `duplicate source shapes` in export code | extract a helper or name an adopted export pattern |
+| `untraced implementation` near business logic | move behavior behind a tested module facade or add direct proof for a real product claim |
+| `long prose outside docs` in policy code | move reader-facing explanation into generated docs source and link it to the relevant claim |
 
 Then run the loop around that slice:
 
 ```sh
-special specs --unverified
+special health --metrics --verbose --target src/billing
 special arch --unimplemented
-special docs --metrics
-special health --metrics
 special lint
 ```
 
-Do not model the whole repo on day one. Let the first `health` and `patterns`
-reports tell you where the repo is already asking for a clearer boundary, proof,
-pattern, or docs claim.
+Make one improvement, then rerun the same scoped health command. The goal is to
+make the remaining signal explainable. A duplicate shape can stay if the local
+parallelism is clearer than an abstraction. An untraced command handler can stay
+visible if it is only an I/O boundary and the underlying behavior is directly
+tested.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.HOW_TO.INVESTIGATE_HEALTH
 @applies DOCS.CROSS_SURFACE_WORKFLOW
 ## Investigate Health Output
 
-Use the signal to choose the next command:
+Use the signal to choose the next command. Keep the first investigation scoped;
+`--target` is usually the difference between a useful report and an intimidating
+repo-wide list.
 
 | Health signal | Next command | Typical fix |
 | --- | --- | --- |
 | source outside architecture | `special arch --unimplemented` | Add or adjust module ownership. |
 | untraced implementation | `special specs --verbose` | Move behavior behind a tested module or add direct proof. |
-| duplicate source shapes | `special patterns --metrics` | Extract a helper or name a real repeated pattern. |
+| duplicate source shapes | `special health --metrics --verbose --target PATH` | Decide whether to extract a helper, name a pattern, or leave local parallelism visible. |
+| possible pattern clusters | `special patterns --metrics` | Promote a real repeated structure into `@pattern`, or do no action. |
 | possible missing pattern applications | `special health --metrics --target PATH --verbose` | Add `@applies` where the pattern is really present. |
 | long prose outside docs | `special docs --metrics` | Promote, link, or remove the prose deliberately. |
+| exact long-prose test assertions | focused test review | Assert smaller contractual pieces or test a structured representation. |
 
 Health is the broad investigation command. Once it identifies a concrete
 question, move to the surface command that owns the fix: `specs` for claims and
 proof, `arch` for ownership, `patterns` for declared structures, and `docs` for
 reader-facing claims.
+
+Example scoped pass:
+
+```text
+special health
+summary
+  source outside architecture: 8
+  untraced implementation: 23
+  duplicate source shapes: 6
+  possible pattern clusters: 2
+  possible missing pattern applications: 1
+  long prose outside docs: 3
+duplicate source shapes by file
+  src/billing/export.ts: 4
+  src/billing/refunds.ts: 2
+```
+
+That output supports a concrete decision: inspect billing export code first. It
+does not say to annotate everything. It says billing export shape, ownership,
+and proof are the current review queue.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.HOW_TO.WRITE_TRACEABLE_DOCS
 @applies DOCS.TRACEABLE_DOCS_EXAMPLE

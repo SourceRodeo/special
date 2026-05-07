@@ -3,46 +3,219 @@
 @applies DOCS.SURFACE_OVERVIEW_PAGE
 # Health
 
-Health is Special's cross-surface analysis layer. Use it when the question is not
-answered by explicit graph edges: "what is still hard to explain?"
+Health is Special's cross-surface analysis layer. Use
+[`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) when explicit Special
+relationships do not yet answer the practical maintenance question: which code,
+prose, repeated shape, or proof path needs attention next?
 
-Primary command:
+Health is usually the best first command in an existing repository because it
+can read plain source before the repo has many Special annotations.
 
 ```sh
 special health --metrics
 ```
 
-Representative output shape:
+A realistic early report for a TypeScript service might look like this:
 
 ```text
+special health
 summary
-  source outside architecture: ...
-  untraced implementation: ...
-  duplicate source shapes: ...
-  possible missing pattern applications: ...
-  long prose outside docs: ...
+  source outside architecture: 41
+  untraced implementation: 128
+  duplicate source shapes: 17
+  possible pattern clusters: 6
+  possible missing pattern applications: 3
+  long prose outside docs: 9
+  exact long-prose test assertions: 2
+duplicate source shapes by file
+  src/billing/invoices.ts: 5
+  src/billing/refunds.ts: 4
+  src/admin/export.ts: 3
+possible missing pattern applications: 3
+long prose outside docs by file
+  src/billing/rules.ts: 4
+  src/admin/export.ts: 2
 ```
+
+Read this as an investigation list, not as a failure list. The report says the
+repo has repeated billing/export shapes, a few pattern candidates, prose that
+may belong in docs, and implementation paths Special cannot yet connect to
+current proof.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.METRICS
 @applies DOCS.METRIC_REFERENCE_ENTRY
-## Metric Interpretation
+## Source Outside Architecture
 
-[`source outside architecture`](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS) counts
-analyzable implementation outside declared module
-ownership. It does not prove the code is wrong; it shows that the architecture
-graph cannot explain that code yet.
+[`source outside architecture`](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS)
+counts analyzable implementation that is not inside declared module ownership.
 
-[`untraced implementation`](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY) counts
-implementation that language-pack traceability cannot connect back to current
-spec support. It does not mean the code is unused. It means the proof path is
-missing or hidden behind a
-[boundary](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY.BOUNDARY_NON_PENETRATION)
-Special deliberately does not treat as the preferred proof path.
+That usually means one of three things:
+
+- the repo has useful code that needs an `@module` and `@implements`
+- a module boundary is too narrow
+- generated or fixture-heavy paths should be excluded from the relevant review
+
+It does not prove the code is wrong or unused. It says the architecture graph
+cannot explain that code yet. Use `special arch --unimplemented` when the next
+move is to add or repair ownership.
+
+@applies DOCS.METRIC_REFERENCE_ENTRY
+## Untraced Implementation
+
+[`untraced implementation`](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY)
+counts implementation that language-pack traceability cannot connect back to
+current spec support.
+
+This is most useful when you are trying to separate proven behavior from code
+that is only exercised indirectly, manually, or not at all. It does not mean the
+code is dead. It means Special cannot see a preferred proof path from a current
+spec through a verifying test to that implementation.
+
+Special intentionally does not treat process, command, route, or framework
+boundaries as proof edges. If a command handler owns the only call into important
+business logic, the healthy move is usually to move that logic behind a module
+facade and test the facade directly. The
+[boundary rule](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY.BOUNDARY_NON_PENETRATION)
+keeps outside-in command execution visible as a design smell instead of hiding
+it as proof.
+
+Use `special specs --unverified`, `special specs --verbose`, and scoped health
+to decide whether the next move is proof, refactoring, or a better module
+boundary.
+
+@applies DOCS.METRIC_REFERENCE_ENTRY
+## Duplicate Source Shapes
 
 [`duplicate source shapes`](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION)
-counts repeated implementation shapes found through concrete parser structure
-or normalized source projections, such as repeated label-to-field mappings.
+counts owned implementation items whose concrete parser shape or normalized
+source projection is substantively similar.
+
+Concrete shape catches near-copy code. Normalized shape catches repeated ideas
+that survive small syntax differences, such as label-to-field mappings:
+
+```ts
+const invoiceColumns = {
+  "Invoice ID": invoice.id,
+  "Customer": invoice.customerName,
+  "Total": invoice.totalCents,
+};
+
+const refundColumns = {
+  "Refund ID": refund.id,
+  "Customer": refund.customerName,
+  "Total": refund.totalCents,
+};
+```
+
+That signal might mean:
+
+- extract a helper because two implementations are doing the same job
+- declare a real `@pattern` because repeated structure is intentional
+- leave it alone because two small shapes are clearer when kept separate
+
+Do not silence this by adding annotations. First decide whether the repeated
+shape is accidental duplication, an intentional pattern, or acceptable local
+parallelism. Use `special health --metrics --verbose --target PATH` for evidence
+and `special patterns --metrics` when you are reviewing declared patterns.
+
+@applies DOCS.METRIC_REFERENCE_ENTRY
+## Pattern Signals
+
+[`possible pattern clusters`](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION)
+are candidate repeated structures Special found before you named a pattern.
+[`possible missing pattern applications`](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS)
+are places that look similar to an existing pattern application but do not yet
+carry `@applies`.
+
+Use these as review queues:
+
+- a cluster can become a helper extraction, a new `@pattern`, or no action
+- a missing application can become `@applies` only after the surrounding code
+  actually follows the pattern
+- a weak cluster can remain visible until enough real examples exist
+
+Patterns are for repeated implementation or documentation structures. They are
+not style rules or broad principles.
+
+@applies DOCS.METRIC_REFERENCE_ENTRY
+## Long Prose and Test Assertions
+
+[`long prose outside docs`](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS)
+reports natural-language blocks outside configured docs sources when the block
+has no docs evidence link or docs annotation. This catches policy prose,
+workflow explanations, and copied documentation that can drift inside source
+comments.
+
+The right move depends on the prose:
+
+- product-facing explanation usually belongs in generated docs source with
+  `documents://` links
+- maintainer-only explanation may belong in contributor docs
+- short local implementation context can stay near the code
+- obsolete prose should be deleted
+
+[`exact long-prose test assertions`](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS)
+reports tests that assert long human prose as one exact string. Prefer checking
+the smallest contractual pieces of human output, or expose a structured result
+and test that structure.
+
+@applies DOCS.CROSS_SURFACE_WORKFLOW
+## A Health-First Existing-Repo Pass
+
+Start broad:
+
+```sh
+special init
+special health --metrics
+```
+
+Choose one file cluster from the output. If `src/billing/invoices.ts` has five
+duplicate shapes and a few untraced items, inspect just that slice:
+
+```sh
+special health --metrics --verbose --target src/billing
+special patterns --metrics --target src/billing
+special arch --unimplemented
+```
+
+Then make one durable improvement:
+
+- add or adjust a module if billing code is outside architecture
+- extract a shared billing export helper if duplicate shapes are accidental
+- define `@pattern BILLING.TABLE_EXPORT` if the repeated export structure is
+  intentional across invoices, refunds, and adjustments
+- add a spec and direct test only when the behavior is a real product claim
+- move reader-facing billing rules into generated docs source and link them to
+  the relevant specs or modules
+
+Run the same scoped health command again. The goal is not to make every number
+zero. The goal is to make the remaining numbers explainable.
+
+@applies DOCS.COMMAND_REFERENCE_ENTRY
+## Scoping and Output Modes
+
+Use scoping to keep health useful while you work:
+
+```sh
+special health --metrics --target src/billing
+special health --metrics --within src/billing
+special health --metrics --target src/billing/export.ts --symbol exportInvoices
+special health --metrics --verbose --target src/billing
+special health --json --metrics --target src/billing
+special health --html --metrics --target src/billing
+```
+
+[`--target`](documents://spec/SPECIAL.HEALTH_COMMAND.TARGET) narrows the current
+view. [`--within`](documents://spec/SPECIAL.HEALTH_COMMAND.WITHIN) narrows the
+analysis corpus. [`--symbol`](documents://spec/SPECIAL.HEALTH_COMMAND.SYMBOL)
+inspects one item in one target file. Use
+[`--verbose`](documents://spec/SPECIAL.HEALTH_COMMAND.VERBOSE) when you need item
+names and evidence, [`--json`](documents://spec/SPECIAL.HEALTH_COMMAND.JSON) when
+a script or self-check needs stable data, and
+[`--html`](documents://spec/SPECIAL.HEALTH_COMMAND.HTML) when the review benefits
+from a browsable report.
 
 Docs coverage is explicit relationship accounting, so it belongs to
-[`special docs --metrics`](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE),
-not health.
+[`special docs --metrics`](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE).
+Health can still report prose that is outside docs, because that prose is not
+yet part of the docs graph.

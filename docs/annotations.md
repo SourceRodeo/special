@@ -105,14 +105,18 @@ Purpose: declare a repeated implementation structure and attach concrete
 applications.
 
 ```text
-@pattern CACHE.SINGLE_FLIGHT_FILL
-Use one in-flight fill per cache key.
+@pattern EXPORT.LABEL_VALUE_COLUMNS
+Build export rows from an ordered label-to-value column map before serialization.
 ```
 
 ```ts
-// @applies CACHE.SINGLE_FLIGHT_FILL
-async function loadOrFillCache(key: string): Promise<Value> {
-  return fills.getOrCreate(key, () => rebuildValue(key));
+// @applies EXPORT.LABEL_VALUE_COLUMNS
+function invoiceColumns(invoice: Invoice): Record<string, string> {
+  return {
+    "Invoice ID": invoice.id,
+    "Customer": invoice.customerName,
+    "Total": formatCents(invoice.totalCents),
+  };
 }
 ```
 
@@ -129,7 +133,7 @@ when the entire markdown file is one pattern application.
 Validate with:
 
 ```sh
-special patterns CACHE.SINGLE_FLIGHT_FILL --verbose
+special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
 special patterns --metrics
 special lint
 ```

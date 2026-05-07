@@ -23,4 +23,5 @@ Core references:
 - [Traceability and Kernel](traceability.md)
 - [Rendering and Docs Output](rendering.md)
 - [Cache Behavior](cache.md)
+- [Implementation Patterns](patterns.md)
 - [Quality Gates](quality.md)

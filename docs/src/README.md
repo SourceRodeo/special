@@ -60,7 +60,7 @@ test("export writes headers", () => {
 });
 ```
 
-Representative output shape:
+Representative output:
 
 ```text
 EXPORT.CSV.HEADERS
@@ -82,8 +82,22 @@ special patterns --metrics
 special diff --metrics
 ```
 
-Use those reports to choose the first behavior, module, repeated structure, or
-docs claim worth making durable. Continue with the
+An early health report might show billing export code in several queues:
+
+```text
+summary
+  source outside architecture: 12
+  untraced implementation: 34
+  duplicate source shapes: 7
+  possible pattern clusters: 2
+  long prose outside docs: 3
+duplicate source shapes by file
+  src/billing/export.ts: 4
+  src/billing/refunds.ts: 3
+```
+
+That output supports one concrete next step: inspect billing export code before
+trying to model the whole repository. Continue with the
 [existing-project tutorial](docs/how-to.md#adopt-special-in-an-existing-repo)
 when the repository already has code, tests, and docs.
 
@@ -100,10 +114,10 @@ when the repository already has code, tests, and docs.
 | Diff | [`special diff`](documents://spec/SPECIAL.DIFF_COMMAND) | You changed files and need the relationship review queue affected by that VCS diff. |
 
 The commands are meant to be used together. `health` shows inferred signals and
-off-graph gaps, `patterns` finds repeated source shapes, `specs` records
+off-graph gaps, `patterns` reviews repeated source shapes, `specs` records
 behavior and proof, `arch` records ownership, `docs` makes reader-facing claims
 traceable, `diff` focuses review on changed relationships, and `lint` checks
-that the graph still holds together.
+that the explicit graph still holds together.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.README.NEXT_STEPS
 ## Read Next

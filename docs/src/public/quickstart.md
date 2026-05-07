@@ -94,23 +94,27 @@ Name a repeated implementation structure only when the structure is real enough
 to recognize in multiple places:
 
 ```text
-@pattern EXPORT.ROW_NORMALIZER
-Normalize external row shapes before formatting output.
+@pattern EXPORT.LABEL_VALUE_COLUMNS
+Export tables should build columns as ordered label/value pairs.
 ```
 
 Apply it where the implementation uses that structure:
 
 ```ts
-// @applies EXPORT.ROW_NORMALIZER
-function normalizeExportRow(row: Record<string, string>): ExportRow {
-  return { name: row.name.trim() };
+// @applies EXPORT.LABEL_VALUE_COLUMNS
+export function invoiceColumns(invoice: Invoice) {
+  return [
+    ["Invoice", invoice.number],
+    ["Customer", invoice.customerName],
+    ["Balance", formatCurrency(invoice.balanceCents)],
+  ];
 }
 ```
 
 Inspect pattern usage:
 
 ```sh
-special patterns EXPORT.ROW_NORMALIZER --verbose
+special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
 special patterns --metrics
 ```
 
@@ -159,20 +163,26 @@ Use health after the first spec, module, pattern, and docs link exist:
 special health --metrics
 ```
 
-Representative output shape:
+Representative output:
 
 ```text
 summary
-  source outside architecture: ...
-  untraced implementation: ...
-  possible missing pattern applications: ...
-  long prose outside docs: ...
+  source outside architecture: 0
+  untraced implementation: 1
+  duplicate source shapes: 0
+  possible pattern clusters: 0
+  possible missing pattern applications: 0
+  long prose outside docs: 0
+  exact long-prose test assertions: 0
+untraced implementation by file
+  src/export.ts: 1
 ```
 
-Use this output to choose the next cleanup: add missing ownership, move behavior
-behind a clearer implementation module, add proof to a current spec, or name a
-repeated implementation structure as a pattern. Use `special docs --metrics` for
-explicit documentation graph coverage.
+Use this output to choose the next cleanup. In this example the architecture,
+pattern, docs, and test-prose queues are clean, but one implementation item is
+still not connected to proof. The next move is to inspect `src/export.ts`, not to
+invent more annotations. Use `special docs --metrics` for explicit documentation
+graph coverage.
 
 That loop is the point of the fresh-project path: write the claim, attach proof,
 own the implementation, name repeated structures, document reader-facing facts,

@@ -17,6 +17,7 @@ ignore = [
   "docs/contributor/traceability.md",
   "docs/contributor/rendering.md",
   "docs/contributor/cache.md",
+  "docs/contributor/patterns.md",
   "docs/contributor/quality.md",
   "docs/docs.md",
   "docs/health.md",
