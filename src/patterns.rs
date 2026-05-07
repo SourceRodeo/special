@@ -366,6 +366,7 @@ struct SourceFeatureItem {
     item_name: String,
     location: SourceLocation,
     features: PatternApplicationFeatures,
+    contained_pattern_ids: BTreeSet<String>,
 }
 
 fn collect_source_feature_items(root: &Path, files: &[PathBuf]) -> Result<Vec<SourceFeatureItem>> {
@@ -387,6 +388,7 @@ fn collect_source_feature_items(root: &Path, files: &[PathBuf]) -> Result<Vec<So
                 item_name: item.name.clone(),
                 location,
                 features: source_item_features(&item),
+                contained_pattern_ids: BTreeSet::new(),
             });
         }
     }
@@ -410,13 +412,48 @@ fn collect_document_feature_items(
             if !file_lookup.contains(&location.path) {
                 return None;
             }
+            let contained_pattern_ids =
+                contained_pattern_ids_for_body(parsed, implementation, body);
+            let mut features = document_body_features(&implementation.module_id, body);
+            enrich_features_with_contained_patterns(&mut features, &contained_pattern_ids);
             Some(SourceFeatureItem {
                 item_name: implementation.module_id.clone(),
                 location,
-                features: document_body_features(&implementation.module_id, body),
+                features,
+                contained_pattern_ids,
             })
         })
         .collect()
+}
+
+fn contained_pattern_ids_for_body(
+    parsed: &ParsedArchitecture,
+    implementation: &ImplementRef,
+    body: &str,
+) -> BTreeSet<String> {
+    contained_pattern_ids(
+        parsed,
+        implementation.body_location.as_ref(),
+        &implementation.location,
+        body,
+    )
+}
+
+fn enrich_features_with_contained_patterns(
+    features: &mut PatternApplicationFeatures,
+    pattern_ids: &BTreeSet<String>,
+) {
+    if pattern_ids.is_empty() {
+        return;
+    }
+    features
+        .marker_terms
+        .insert("contains:pattern_application".to_string());
+    features.calls.extend(
+        pattern_ids
+            .iter()
+            .map(|pattern_id| format!("pattern:{pattern_id}")),
+    );
 }
 
 #[derive(Debug, Default)]
@@ -460,7 +497,9 @@ fn possible_missing_applications(
             .iter()
             .filter(|application| application.pattern_id == definition.pattern_id)
             .filter(|application| path_matches_scope(&application.location.path, comparison_paths))
-            .filter_map(pattern_application_features)
+            .filter_map(|application| {
+                pattern_application_features_with_context(parsed, application)
+            })
             .collect::<Vec<_>>();
         let Some(profile) = PatternProfile::from_applications(
             &definition.pattern_id,
@@ -477,6 +516,7 @@ fn possible_missing_applications(
                 .get(&definition.pattern_id)
                 .is_some_and(|locations| locations.contains(&location_key))
                 || annotated.file_scoped_paths.contains(&item.location.path)
+                || item.contained_pattern_ids.contains(&definition.pattern_id)
             {
                 continue;
             }
@@ -823,7 +863,7 @@ fn pattern_similarity_metrics(
         .pattern_applications
         .iter()
         .filter(|application| application.pattern_id == pattern_id)
-        .filter_map(pattern_application_features)
+        .filter_map(|application| pattern_application_features_with_context(parsed, application))
         .collect::<Vec<_>>();
     let pair_scores = pairwise_similarities(&features);
     let expected_similarity = expected_similarity(strictness, benchmark_config);
@@ -892,6 +932,54 @@ fn pattern_application_features(
         return Some(source_item_features(item));
     }
     Some(document_body_features(&application.pattern_id, body))
+}
+
+fn pattern_application_features_with_context(
+    parsed: &ParsedArchitecture,
+    application: &PatternApplication,
+) -> Option<PatternApplicationFeatures> {
+    let body = application.body.as_ref()?;
+    let mut features = pattern_application_features(application)?;
+    let contained_pattern_ids =
+        contained_pattern_ids_for_application_body(parsed, application, body);
+    enrich_features_with_contained_patterns(&mut features, &contained_pattern_ids);
+    Some(features)
+}
+
+fn contained_pattern_ids_for_application_body(
+    parsed: &ParsedArchitecture,
+    owner: &PatternApplication,
+    body: &str,
+) -> BTreeSet<String> {
+    contained_pattern_ids(parsed, owner.body_location.as_ref(), &owner.location, body)
+}
+
+fn contained_pattern_ids(
+    parsed: &ParsedArchitecture,
+    owner_body_location: Option<&SourceLocation>,
+    owner_location: &SourceLocation,
+    body: &str,
+) -> BTreeSet<String> {
+    let owner_start = owner_body_location.unwrap_or(owner_location);
+    parsed
+        .pattern_applications
+        .iter()
+        .filter_map(|application| {
+            let application_start = application
+                .body_location
+                .as_ref()
+                .unwrap_or(&application.location);
+            if owner_start == application_start
+                || owner_start.path != application_start.path
+                || owner_start.line >= application_start.line
+            {
+                return None;
+            }
+            let application_body = application.body.as_ref()?;
+            body.contains(application_body)
+                .then(|| application.pattern_id.clone())
+        })
+        .collect()
 }
 
 fn source_item_features(item: &SourceItem) -> PatternApplicationFeatures {

@@ -59,6 +59,9 @@ special patterns --metrics reads optional pattern metric benchmark decimals from
 @spec SPECIAL.PATTERNS.METRICS.MISSING_APPLICATIONS
 special patterns --metrics reports advisory possible missing pattern applications from unannotated source code without making them lint failures.
 
+@spec SPECIAL.PATTERNS.METRICS.HIERARCHICAL_FEATURES
+special patterns --metrics treats contained child pattern applications as structured detector features for larger containing bodies without duplicating the child pattern as a missing application on the parent body.
+
 @spec SPECIAL.PATTERNS.METRICS.IGNORES_TEST_CODE
 special patterns --metrics does not report advisory pattern candidates from recognized test files.
 
@@ -648,6 +651,40 @@ fn patterns_metrics_reports_possible_missing_applications() {
 }
 
 #[test]
+// @verifies SPECIAL.PATTERNS.METRICS.HIERARCHICAL_FEATURES
+fn patterns_metrics_uses_child_pattern_applications_as_parent_features() {
+    let root = temp_repo_dir("special-cli-pattern-hierarchical-features");
+    write_hierarchical_pattern_fixture(&root);
+
+    let output = run_special(&root, &["patterns", "--metrics", "--json"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let candidates = json["metrics"]["possible_missing_applications"]
+        .as_array()
+        .expect("possible missing applications should be an array");
+
+    assert!(candidates.iter().any(|candidate| {
+        candidate["pattern_id"] == "DOCS.SURFACE"
+            && candidate["item_name"] == "DOCS.THREE"
+            && candidate["matched_terms"].as_array().is_some_and(|terms| {
+                terms
+                    .iter()
+                    .any(|term| term == "call:pattern:DOCS.TRACEABLE")
+            })
+    }));
+    assert!(!candidates.iter().any(|candidate| {
+        candidate["pattern_id"] == "DOCS.TRACEABLE"
+            && candidate["item_name"]
+                .as_str()
+                .is_some_and(|name| name.starts_with("DOCS."))
+    }));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.PATTERNS.METRICS.IGNORES_TEST_CODE
 fn patterns_metrics_ignores_rust_test_modules() {
     let root = temp_repo_dir("special-cli-pattern-ignore-rust-tests");
@@ -986,6 +1023,59 @@ fn write_pattern_candidate_fixture(root: &std::path::Path) {
         ),
     )
     .expect("cluster source should be written");
+}
+
+fn write_hierarchical_pattern_fixture(root: &std::path::Path) {
+    write_special_toml(root);
+    fs::write(
+        root.join("architecture.md"),
+        concat!(
+            "### `@area DOCS`\n",
+            "Docs area.\n\n",
+            "### `@module DOCS.ONE`\n",
+            "First page.\n\n",
+            "### `@module DOCS.ONE.TRACE`\n",
+            "First traceable section.\n\n",
+            "### `@module DOCS.TWO`\n",
+            "Second page.\n\n",
+            "### `@module DOCS.TWO.TRACE`\n",
+            "Second traceable section.\n\n",
+            "### `@module DOCS.THREE`\n",
+            "Third page.\n\n",
+            "### `@module DOCS.THREE.TRACE`\n",
+            "Third traceable section.\n\n",
+            "### `@pattern DOCS.SURFACE`\n",
+            "@strictness low\n",
+            "A guide page with command and traceable section.\n\n",
+            "### `@pattern DOCS.TRACEABLE`\n",
+            "@strictness low\n",
+            "A section with source docs, output, and checks.\n",
+        ),
+    )
+    .expect("architecture should be written");
+    write_hierarchical_pattern_doc(root, "one", "DOCS.ONE", true);
+    write_hierarchical_pattern_doc(root, "two", "DOCS.TWO", true);
+    write_hierarchical_pattern_doc(root, "three", "DOCS.THREE", false);
+}
+
+fn write_hierarchical_pattern_doc(
+    root: &std::path::Path,
+    slug: &str,
+    module_id: &str,
+    apply_surface: bool,
+) {
+    let surface_apply = if apply_surface {
+        "@applies DOCS.SURFACE\n"
+    } else {
+        ""
+    };
+    fs::write(
+        root.join(format!("{slug}.md")),
+        format!(
+            "@implements {module_id}\n{surface_apply}# Guide {slug}\n\nPrimary command:\n\n```sh\nspecial docs --metrics\n```\n\n@implements {module_id}.TRACE\n@applies DOCS.TRACEABLE\n## Traceable Example\n\nDocs source link:\n\n```markdown\n[CSV headers](documents://spec/EXPORT.CSV.HEADERS).\n```\n\nBuild docs:\n\n```sh\nspecial docs build\n```\n\nGenerated markdown keeps text.\n",
+        ),
+    )
+    .expect("docs should be written");
 }
 
 fn write_thin_delegate_fixture(root: &std::path::Path) {
