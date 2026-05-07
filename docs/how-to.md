@@ -2,9 +2,9 @@
 
 ## Adopt Special in an Existing Repo
 
-Start by reading the repository before adding annotations. Special can inspect
-plain source and show useful health and pattern signals before the repo has a
-complete Special graph.
+Start with the scanning side of Special before adding annotations. Health and
+pattern metrics can inspect plain source and show useful signals before the repo
+has many explicit connections.
 
 ```sh
 special init
@@ -12,8 +12,8 @@ special health --metrics
 special patterns --metrics
 ```
 
-The first report should choose a small slice, not a modeling campaign. A useful
-starting point is a file or directory that appears in two or more signals:
+The first report should choose a small slice, not a modeling campaign. Use the
+signals to find one place where an explicit connection would clarify the repo:
 
 | Signal | First durable move |
 | --- | --- |
@@ -31,10 +31,10 @@ special lint
 ```
 
 Make one improvement, then rerun the same scoped health command. The goal is to
-make the remaining signal explainable. A duplicate shape can stay if the local
-parallelism is clearer than an abstraction. An untraced command handler can stay
-visible if it is only an I/O boundary and the underlying behavior is directly
-tested.
+connect the important fact or make the remaining signal explainable. A duplicate
+shape can stay if the local parallelism is clearer than an abstraction. An
+untraced command handler can stay visible if it is only an I/O boundary and the
+underlying behavior is directly tested.
 
 ## Investigate Health Output
 
@@ -52,8 +52,8 @@ repo-wide list.
 | long prose outside docs | `special docs --metrics` | Promote, link, or remove the prose deliberately. |
 | exact long-prose test assertions | focused test review | Assert smaller contractual pieces or test a structured representation. |
 
-Health is the broad investigation command. Once it identifies a concrete
-question, move to the surface command that owns the fix: `specs` for claims and
+Health is the broad scanning command. Once it identifies a concrete question,
+move to the surface command that owns the connection: `specs` for claims and
 proof, `arch` for ownership, `patterns` for declared structures, and `docs` for
 reader-facing claims.
 
@@ -94,7 +94,8 @@ special health --metrics
 ```
 
 Use `special docs --metrics` for docs graph and relationship inventory. Use
-`special health --metrics` for inferred source signals and off-graph gaps.
+`special health --metrics` for source and prose signals that are not yet part of
+an explicit connection.
 
 ## Introduce a Pattern
 

@@ -3,7 +3,9 @@
 ## Install and Initialize
 
 Start in the repository where the code will live. Install the binary, initialize
-config, then add one small contract that Special can inspect.
+config, then add one small contract that Special can inspect. In a fresh
+project, you usually create the explicit connections first and use health as the
+scan that checks what you missed.
 
 ```sh
 brew install sourcerodeo/homebrew-tap/special
@@ -169,12 +171,12 @@ untraced implementation by file
   src/export.ts: 1
 ```
 
-Use this output to choose the next cleanup. In this example the architecture,
+Use this output to choose the next review. In this example the architecture,
 pattern, docs, and test-prose queues are clean, but one implementation item is
 still not connected to proof. The next move is to inspect `src/export.ts`, not to
 invent more annotations. Use `special docs --metrics` for explicit documentation
 graph coverage.
 
-That loop is the point of the fresh-project path: write the claim, attach proof,
-own the implementation, name repeated structures, document reader-facing facts,
-then let health show what is still weak.
+That loop is the point of the fresh-project path: connect the claim, proof,
+implementation, repeated structure, and reader-facing docs, then let health scan
+for what still deserves attention.

@@ -2,6 +2,8 @@
 
 Docs are Special's generated reader surface. Author markdown in docs source,
 connect factual claims to Special ids, then build scrubbed output for readers.
+The source stays connected to specs, modules, areas, and patterns; the generated
+output stays readable.
 
 Primary command:
 

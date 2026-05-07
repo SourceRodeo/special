@@ -3,8 +3,9 @@
 @applies DOCS.SURFACE_OVERVIEW_PAGE
 # Patterns
 
-Patterns are Special's surface for adopted repeated implementation structures.
-Use them for shapes the project wants to recognize and review across the codebase.
+Patterns are Special's surface for connecting adopted repeated implementation
+structures. Health can scan for repeated shapes before you name them; patterns
+record the shapes the project intentionally wants to recognize and review.
 
 Primary command:
 
@@ -50,7 +51,7 @@ EXPORT.LABEL_VALUE_COLUMNS
 
 That output answers whether the repeated structure has been intentionally named
 and where it appears. If health reports a similar repeated source shape but
-`special patterns` has no pattern for it, decide whether the shape deserves a
+`special patterns` has no pattern for it, decide whether the signal deserves a
 helper extraction, an adopted pattern, or no action.
 
 Pattern metrics are advisory fit checks for declared applications. Raw repeated

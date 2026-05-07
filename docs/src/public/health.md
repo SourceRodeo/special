@@ -3,7 +3,7 @@
 @applies DOCS.SURFACE_OVERVIEW_PAGE
 # Health
 
-Health is Special's cross-surface analysis layer. Use
+Health is Special's broad scan of source, tests, docs, and repeated structures. Use
 [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND) when explicit Special
 relationships do not yet answer the practical question: which code, prose,
 repeated shape, or proof path needs attention next?
@@ -37,7 +37,7 @@ long prose outside docs by file
   src/admin/export.ts: 2
 ```
 
-Read this as an investigation list, not as a failure list. The report says the
+Read this as a signal list, not as a failure list. The report says the
 repo has repeated billing/export shapes, a few pattern candidates, prose that
 may belong in docs, and implementation paths Special cannot yet connect to
 current proof.
@@ -189,7 +189,8 @@ Then make one durable improvement:
   the relevant specs or modules
 
 Run the same scoped health command again. The goal is not to make every number
-zero. The goal is to make the remaining numbers explainable.
+zero. The goal is to connect the important facts and make the remaining signals
+explainable.
 
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## Scoping and Output Modes
