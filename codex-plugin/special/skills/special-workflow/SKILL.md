@@ -24,7 +24,11 @@ traceability. Use the surfaces as one workflow, not as independent checkboxes.
 4. Use `special_patterns` when a repeated implementation shape appears; do not
    turn broad style advice into a pattern.
 5. Use `special_docs` when public or contributor docs make claims about specs,
-   modules, areas, or patterns.
+   modules, areas, or patterns. For docs relationship audits, use Special's
+   parsed relationship view as the inventory: run `special_docs` with
+   `metrics`, `verbose`, and a narrow `target` for the file or subtree being
+   reviewed. Then check each linked target with the matching surface:
+   `special_specs`, `special_arch`, or `special_patterns` with `verbose`.
 6. Run `special_lint` after edits to catch broken ids, misplaced annotations,
    and graph errors.
 
@@ -48,6 +52,10 @@ the input tree, and no overwrite of files that still contain docs evidence.
 - When changing reader-facing or contributor docs, prefer dense `documents://`
   links in docs source, then check docs metrics. Use `@documents` only when an
   entire natural block documents one target.
+- When auditing docs claims, do not build the inventory with raw text search.
+  Start from `special_docs` metrics plus verbose target detail so ignored files,
+  docs-source rules, generated-output rules, and parsed relationship semantics
+  match Special's product behavior.
 - For existing repos, do not model the whole project on day one. Let health and
   pattern metrics identify one narrow slice worth making durable. Prefer a file
   or subsystem that appears in multiple queues, then rerun the same scoped

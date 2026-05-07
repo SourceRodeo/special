@@ -28,8 +28,9 @@ Clippy is pinned through the quality test surface:
 
 ## Release Review
 
-The release-review wrapper is manual, local, and warn-only. It should capture
-durable structured output while staying code-focused:
+The release-review wrapper is manual, local, and
+[warn-only](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.WARN_ONLY).
+It should capture durable structured output while staying code-focused:
 [spec-owned wrapper](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SPEC_OWNED),
 [structured output](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT),
 [code-only surface](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.CODE_ONLY_SURFACE),
@@ -42,7 +43,8 @@ durable structured output while staying code-focused:
 ## Distribution Checks
 
 Distribution tests protect the package, release, Homebrew, parser dependency,
-Lean kernel embedding, and plugin layout:
+[Lean kernel embedding](documents://spec/SPECIAL.DISTRIBUTION.GITHUB_RELEASES.LEAN_KERNEL),
+and plugin layout:
 [Cargo package name](documents://spec/SPECIAL.DISTRIBUTION.CRATES_IO.PACKAGE_NAME),
 [binary name](documents://spec/SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME),
 [GitHub release workflow](documents://spec/SPECIAL.DISTRIBUTION.GITHUB_RELEASES.WORKFLOW),

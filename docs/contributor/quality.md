@@ -26,8 +26,9 @@ deny warnings.
 
 ## Release Review
 
-The release-review wrapper is manual, local, and warn-only. It should capture
-durable structured output while staying code-focused:
+The release-review wrapper is manual, local, and
+warn-only.
+It should capture durable structured output while staying code-focused:
 spec-owned wrapper,
 structured output,
 code-only surface,
@@ -40,7 +41,8 @@ manual only.
 ## Distribution Checks
 
 Distribution tests protect the package, release, Homebrew, parser dependency,
-Lean kernel embedding, and plugin layout:
+Lean kernel embedding,
+and plugin layout:
 Cargo package name,
 binary name,
 GitHub release workflow,

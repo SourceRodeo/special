@@ -235,16 +235,19 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_docs",
-            "Check traceable docs links, docs graph reachability, and public documentation coverage metrics.",
+            "Audit docs relationships from Special's parsed docs graph. Use metrics plus verbose target scope before raw file search when checking whether docs claims match specs, architecture, or patterns.",
             object_schema(vec![
-                string_array_property("target", "Optional docs file or subtree paths to validate."),
+                string_array_property(
+                    "target",
+                    "Optional docs file or subtree paths to validate; use narrow targets for relationship trace audits.",
+                ),
                 bool_property(
                     "metrics",
-                    "Include docs relationship and generated docs graph metrics.",
+                    "Include docs relationship inventory, target coverage, and generated docs graph metrics.",
                 ),
                 bool_property(
                     "verbose",
-                    "Show relationship source counts and full graph detail.",
+                    "Show relationship source counts and full graph detail for target-side semantic review.",
                 ),
                 text_or_json_property(),
             ]),

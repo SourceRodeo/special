@@ -63,6 +63,11 @@ needs repo setup, configuration review, or validation.
    special docs --metrics
    ```
 
+   For docs claim audits, prefer MCP `special_docs` when available. Use
+   `metrics`, `verbose`, and a narrow `target` to enumerate parsed
+   `documents://` relationships, then inspect the linked specs, architecture
+   nodes, or patterns with their matching Special surface.
+
 6. If Codex MCP integration is needed, verify the server through the plugin or
    with a minimal JSON-RPC client. The server command is:
 
