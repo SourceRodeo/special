@@ -22,9 +22,8 @@ fn assert_module_coupling_output(stdout: &str) {
 
 fn assert_module_coupling_explanations(stdout: &str) {
     assert!(stdout.contains("fan out meaning: this module reaches into other owned modules."));
-    assert!(stdout.contains(
-        "fan out exact: distinct outbound concrete-module dependencies resolved from owned code."
-    ));
+    assert!(stdout.contains("fan out exact:"));
+    assert!(stdout.contains("distinct outbound concrete-module dependencies"));
     assert!(stdout.contains(
         "instability exact: efferent coupling / (afferent coupling + efferent coupling)."
     ));

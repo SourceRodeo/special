@@ -20,6 +20,7 @@ use crate::syntax::{ParsedSourceGraph, SourceLanguage};
 #[path = "python/analyze.rs"]
 mod analyze;
 
+// @applies REGISTRY.PROVIDER_DESCRIPTOR
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("python"),
     matches_path: is_python_path,

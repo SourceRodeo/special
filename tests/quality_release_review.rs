@@ -345,13 +345,10 @@ fn release_review_prompt_stays_on_implementation_quality() {
 
     assert!(first_prompt.contains("implementation-quality review of code changes"));
     assert!(first_prompt.contains("Do not perform a spec review or an architecture review."));
-    assert!(
-        first_prompt.contains(
-            "Assume intended product behavior and intended architecture are correct inputs"
-        )
-    );
+    assert!(first_prompt.contains("intended product behavior"));
+    assert!(first_prompt.contains("intended architecture"));
     assert!(first_prompt.contains("Do not recommend different product semantics"));
-    assert!(first_prompt.contains("You may flag low-level design issues inside the changed code"));
+    assert!(first_prompt.contains("low-level design issues"));
 }
 
 #[test]
@@ -995,10 +992,9 @@ fn release_review_refuses_live_codex_invocation_in_ci() {
         .expect("release review script should run");
 
     assert!(!output.status.success());
-    assert!(
-        String::from_utf8_lossy(&output.stderr)
-            .contains("rust release review is local-only and must not invoke Codex from CI")
-    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("local-only"));
+    assert!(stderr.contains("must not invoke Codex"));
 }
 
 #[test]

@@ -24,6 +24,7 @@ use crate::syntax::{ParsedSourceGraph, SourceLanguage};
 #[path = "go/analyze.rs"]
 pub(crate) mod analyze;
 
+// @applies REGISTRY.PROVIDER_DESCRIPTOR
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("go"),
     matches_path: is_go_path,

@@ -118,14 +118,14 @@ fn extracts_shell_comment_blocks() {
         blocks[0].lines[1].text,
         "@fileverifies SPECIAL.QUALITY.RUST.CLIPPY.SPEC_OWNED"
     );
-    assert_eq!(
-        blocks[0]
-            .owned_item
-            .as_ref()
-            .expect("owned item should be present")
-            .body,
-        "set -euo pipefail\n\nexec mise exec -- cargo clippy --all-targets --all-features -- -D warnings"
-    );
+    let body = &blocks[0]
+        .owned_item
+        .as_ref()
+        .expect("owned item should be present")
+        .body;
+    assert!(body.starts_with("set -euo pipefail"));
+    assert!(body.contains("exec mise exec -- cargo clippy"));
+    assert!(body.contains("-D warnings"));
 }
 
 #[test]

@@ -296,6 +296,16 @@ mod tests {
     }
 
     #[test]
+    fn markdown_does_not_materialize_fenced_declaration_examples() {
+        let parsed = parse_markdown_fixture(
+            "```text\n@group APP\nApp.\n\n@spec APP.EXAMPLE\nExample.\n```\n",
+        );
+
+        assert!(parsed.specs.is_empty());
+        assert!(parsed.diagnostics.is_empty());
+    }
+
+    #[test]
     fn markdown_rejects_duplicate_inline_and_adjacent_planned_markers() {
         let parsed = parse_markdown_fixture(
             "### `@spec APP.BAD @planned 0.4.0`\n### `@planned 0.5.0`\nPlanned.\n",

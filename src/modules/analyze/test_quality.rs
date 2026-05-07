@@ -1,3 +1,8 @@
+/**
+@module SPECIAL.MODULES.ANALYZE.TEST_QUALITY
+Surfaces test-source quality signals that are visible at repo health level but should remain non-blocking review data.
+*/
+// @fileimplements SPECIAL.MODULES.ANALYZE.TEST_QUALITY
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -395,12 +400,12 @@ fn rust_string_literals(text: &str) -> Vec<String> {
     let bytes = text.as_bytes();
     let mut index = 0;
     while index < bytes.len() {
-        if bytes[index] == b'"' {
-            if let Some((literal, next)) = quoted_literal(text, index) {
-                literals.push(literal);
-                index = next;
-                continue;
-            }
+        if bytes[index] == b'"'
+            && let Some((literal, next)) = quoted_literal(text, index)
+        {
+            literals.push(literal);
+            index = next;
+            continue;
         }
         if bytes[index] == b'r'
             && let Some((literal, next)) = raw_rust_literal(text, index)

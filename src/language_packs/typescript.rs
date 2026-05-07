@@ -24,6 +24,7 @@ use crate::syntax::{ParsedSourceGraph, SourceLanguage};
 #[path = "typescript/analyze.rs"]
 mod analyze;
 
+// @applies REGISTRY.PROVIDER_DESCRIPTOR
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("typescript"),
     matches_path: is_typescript_path,

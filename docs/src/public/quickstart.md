@@ -2,7 +2,6 @@
 # Start a Fresh Project With Special
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.QUICKSTART.INSTALL
-@applies DOCS.GETTING_STARTED_SEQUENCE
 ## Install and Initialize
 
 Start in the repository where the code will live. Install the binary, initialize

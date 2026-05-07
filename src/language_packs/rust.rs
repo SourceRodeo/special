@@ -24,6 +24,7 @@ use crate::syntax::{ParsedSourceGraph, SourceLanguage};
 #[path = "rust/analyze.rs"]
 pub(crate) mod analyze;
 
+// @applies REGISTRY.PROVIDER_DESCRIPTOR
 pub(crate) const DESCRIPTOR: LanguagePackDescriptor = LanguagePackDescriptor {
     language: SourceLanguage::new("rust"),
     matches_path: is_rust_path,

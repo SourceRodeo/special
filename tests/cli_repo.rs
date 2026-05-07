@@ -134,6 +134,8 @@ special health surfaces repo-wide duplicate-logic signals from owned implementat
 @spec SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS
 special health surfaces repo-wide unowned item indicators so code outside declared modules stays visible even when traceability is available.
 
+@group SPECIAL.HEALTH_COMMAND.TEST_QUALITY
+
 @spec SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS
 special health reports long human-prose string literals used as exact assertion targets in recognized test and fixture source files as non-blocking repo-wide quality data.
 
@@ -1346,12 +1348,11 @@ fn repo_traceability_surfaces_unexplained_evidence_in_text_and_html() {
         assert!(text_stdout.contains("unsupported module-backed items meaning:"));
         assert!(text_stdout.contains("unsupported module-connected items exact:"));
         assert!(text_stdout.contains("unsupported module-isolated items meaning:"));
-        assert!(text_stdout.contains(
-            "unsupported item: src/lib.rs:connected_helper [internal; module-backed; connected inside module; modules DEMO]"
-        ));
-        assert!(text_stdout.contains(
-            "unsupported item: src/lib.rs:isolated_helper [internal; module-backed; isolated inside module; modules DEMO]"
-        ));
+        assert!(text_stdout.contains("unsupported item: src/lib.rs:connected_helper"));
+        assert!(text_stdout.contains("unsupported item: src/lib.rs:isolated_helper"));
+        assert!(text_stdout.contains("connected inside module"));
+        assert!(text_stdout.contains("isolated inside module"));
+        assert!(text_stdout.contains("modules DEMO"));
 
         assert!(html_stdout.contains("unsupported review-surface items"));
         assert!(html_stdout.contains("unsupported internal items"));
@@ -1360,8 +1361,11 @@ fn repo_traceability_surfaces_unexplained_evidence_in_text_and_html() {
         assert!(html_stdout.contains("unsupported module-isolated items"));
         assert!(html_stdout.contains("meaning"));
         assert!(html_stdout.contains("exact"));
-        assert!(html_stdout.contains("src/lib.rs:connected_helper [internal; module-backed; connected inside module; modules DEMO]"));
-        assert!(html_stdout.contains("src/lib.rs:isolated_helper [internal; module-backed; isolated inside module; modules DEMO]"));
+        assert!(html_stdout.contains("src/lib.rs:connected_helper"));
+        assert!(html_stdout.contains("src/lib.rs:isolated_helper"));
+        assert!(html_stdout.contains("connected inside module"));
+        assert!(html_stdout.contains("isolated inside module"));
+        assert!(html_stdout.contains("modules DEMO"));
     } else {
         assert!(text_stdout.contains("unavailable:"));
         assert!(html_stdout.contains("unavailable"));

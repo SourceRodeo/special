@@ -2,7 +2,6 @@
 # Agents
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.AGENTS.MCP
-@applies DOCS.AGENT_SETUP_PATH
 ## MCP
 
 Agents should use Special through controlled tools when possible and the native
@@ -25,7 +24,6 @@ special lint
 ```
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.AGENTS.PLUGIN
-@applies DOCS.AGENT_SETUP_PATH
 ## Codex Plugin
 
 Install the SourceRodeo marketplace, then install the Special plugin from that
@@ -40,7 +38,6 @@ the native binary; plugin setup should still guide users to Homebrew or Cargo
 when `special` is missing.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.AGENTS.SKILLS
-@applies DOCS.AGENT_SETUP_PATH
 ## Bundled Skills
 
 When the plugin path is unavailable, use the bundled skills surface:

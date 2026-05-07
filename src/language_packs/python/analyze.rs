@@ -222,6 +222,7 @@ fn narrow_scoped_traceability_inputs_for_python(
         .filter(|item| projected_files.contains(&item.path))
         .map(|item| item.stable_id.clone())
         .collect::<BTreeSet<_>>();
+    // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     let reference =
         build_projected_traceability_reference_from_projected_items(projected_item_ids, &inputs.graph)
             .map_err(anyhow::Error::msg)?;

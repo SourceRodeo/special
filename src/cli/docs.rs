@@ -227,6 +227,7 @@ pub(super) fn execute_docs(args: DocsArgs, current_dir: &Path) -> Result<ExitCod
     })
 }
 
+// @applies COMMAND.PROJECTION_PIPELINE
 fn execute_docs_build(
     args: DocsBuildArgs,
     current_dir: &Path,
