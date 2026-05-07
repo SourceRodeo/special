@@ -195,74 +195,49 @@ pub(super) fn render_spec_metrics_text(metrics: &SpecMetricsSummary) -> String {
 
 pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
     let mut output = String::from("summary\n");
-    output.push_str(&format!(
-        "  raw investigation queues: {}\n",
-        metrics.global.raw_investigation_queues
-    ));
-    output.push_str(&format!(
-        "  source outside architecture: {}\n",
-        metrics.architecture.source_outside_architecture
-    ));
-    output.push_str(&format!(
-        "  untraced implementation: {}\n",
-        metrics.specs.untraced_implementation
-    ));
-    output.push_str(&format!(
-        "  duplicate source shapes: {}\n",
-        metrics.patterns.duplicate_source_shapes
-    ));
-    output.push_str(&format!(
-        "  possible pattern clusters: {}\n",
-        metrics.patterns.possible_pattern_clusters
-    ));
-    output.push_str(&format!(
-        "  possible missing pattern applications: {}\n",
-        metrics.patterns.possible_missing_applications
-    ));
-    output.push_str(&format!(
-        "  long prose outside docs: {}\n",
-        metrics.docs.long_prose_outside_docs
-    ));
-    output.push_str(&format!(
-        "  exact long-prose test assertions: {}\n",
-        metrics.tests.exact_long_prose_assertions
-    ));
-    output.push_str("investigation queues\n");
+    for count in crate::render::projection::project_repo_health_summary_counts(metrics) {
+        output.push_str(&format!("  {}: {}\n", count.label, count.value));
+    }
+    let mut details = String::new();
     append_grouped_counts_text(
-        &mut output,
+        &mut details,
         "source outside architecture by file",
         &metrics.architecture.source_outside_architecture_by_file,
     );
     append_grouped_counts_text(
-        &mut output,
+        &mut details,
         "untraced implementation by file",
         &metrics.specs.untraced_implementation_by_file,
     );
     append_grouped_counts_text(
-        &mut output,
+        &mut details,
         "untraced review-surface implementation by file",
         &metrics.specs.untraced_review_surface_by_file,
     );
     append_grouped_counts_text(
-        &mut output,
+        &mut details,
         "duplicate source shapes by file",
         &metrics.patterns.duplicate_source_shapes_by_file,
     );
     append_grouped_counts_text(
-        &mut output,
+        &mut details,
         "possible missing pattern applications by file",
         &metrics.patterns.possible_missing_applications_by_file,
     );
     append_grouped_counts_text(
-        &mut output,
+        &mut details,
         "long prose outside docs by file",
         &metrics.docs.long_prose_outside_docs_by_file,
     );
     append_grouped_counts_text(
-        &mut output,
+        &mut details,
         "exact long-prose test assertions by file",
         &metrics.tests.exact_long_prose_assertions_by_file,
     );
+    if !details.is_empty() {
+        output.push_str("details\n");
+        output.push_str(&details);
+    }
     if let Some(traceability) = &metrics.traceability {
         append_repo_traceability_metrics_text(&mut output, traceability);
     }

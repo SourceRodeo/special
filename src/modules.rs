@@ -18,8 +18,8 @@ use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureKind, ArchitectureMetricsSummary, GroupedCount,
     LintReport, ModuleAnalysisOptions, ModuleDocument, ModuleFilter, ModuleNode,
     ParsedArchitecture, PatternFilter, RepoArchitectureHealthMetrics, RepoDocsHealthMetrics,
-    RepoDocument, RepoGlobalHealthMetrics, RepoMetricsSummary, RepoPatternHealthMetrics,
-    RepoSpecHealthMetrics, RepoTestHealthMetrics, RepoTraceabilityMetrics,
+    RepoDocument, RepoMetricsSummary, RepoPatternHealthMetrics, RepoSpecHealthMetrics,
+    RepoTestHealthMetrics, RepoTraceabilityMetrics,
 };
 
 pub(crate) mod analyze;
@@ -459,23 +459,7 @@ fn build_repo_metrics(
             .unwrap_or_default(),
         exact_long_prose_assertions_by_file,
     };
-    let raw_investigation_queues = [
-        architecture.source_outside_architecture,
-        specs.untraced_implementation,
-        patterns.duplicate_source_shapes,
-        patterns.possible_pattern_clusters,
-        patterns.possible_missing_applications,
-        docs.long_prose_outside_docs,
-        tests.exact_long_prose_assertions,
-    ]
-    .into_iter()
-    .filter(|count| *count > 0)
-    .count();
-
     Ok(RepoMetricsSummary {
-        global: RepoGlobalHealthMetrics {
-            raw_investigation_queues,
-        },
         specs,
         architecture,
         patterns,

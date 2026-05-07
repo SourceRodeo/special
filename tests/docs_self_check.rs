@@ -186,10 +186,6 @@ fn docs_self_check_health_metrics_keep_docs_scope_clean() {
     ]);
 
     assert_eq!(
-        number_at(&json, &["metrics", "global", "raw_investigation_queues"]),
-        0
-    );
-    assert_eq!(
         number_at(
             &json,
             &["metrics", "architecture", "source_outside_architecture"]

@@ -5,7 +5,9 @@ Renders repo-wide health documents into HTML pages and metric sections.
 // @fileimplements SPECIAL.RENDER.HTML.REPO
 use crate::model::{RepoDocument, RepoMetricsSummary};
 use crate::render::html_common::SPEC_HTML_STYLE;
-use crate::render::projection::{project_repo_signals_view, project_repo_traceability_view};
+use crate::render::projection::{
+    project_repo_health_summary_counts, project_repo_signals_view, project_repo_traceability_view,
+};
 
 use super::{
     HtmlCount, format_repo_signals_html, format_repo_traceability_html,
@@ -45,43 +47,14 @@ pub(in crate::render) fn render_repo_html(document: &RepoDocument, verbose: bool
 }
 
 fn format_repo_metrics_html(metrics: &RepoMetricsSummary) -> String {
-    let mut html = render_metrics_section_html(
-        "health summary",
-        &[
-            HtmlCount {
-                label: "raw investigation queues",
-                value: metrics.global.raw_investigation_queues.to_string(),
-            },
-            HtmlCount {
-                label: "source outside architecture",
-                value: metrics.architecture.source_outside_architecture.to_string(),
-            },
-            HtmlCount {
-                label: "untraced implementation",
-                value: metrics.specs.untraced_implementation.to_string(),
-            },
-            HtmlCount {
-                label: "duplicate source shapes",
-                value: metrics.patterns.duplicate_source_shapes.to_string(),
-            },
-            HtmlCount {
-                label: "possible pattern clusters",
-                value: metrics.patterns.possible_pattern_clusters.to_string(),
-            },
-            HtmlCount {
-                label: "possible missing pattern applications",
-                value: metrics.patterns.possible_missing_applications.to_string(),
-            },
-            HtmlCount {
-                label: "long prose outside docs",
-                value: metrics.docs.long_prose_outside_docs.to_string(),
-            },
-            HtmlCount {
-                label: "exact long-prose test assertions",
-                value: metrics.tests.exact_long_prose_assertions.to_string(),
-            },
-        ],
-    );
+    let summary_counts = project_repo_health_summary_counts(metrics)
+        .into_iter()
+        .map(|count| HtmlCount {
+            label: count.label,
+            value: count.value.to_string(),
+        })
+        .collect::<Vec<_>>();
+    let mut html = render_metrics_section_html("health summary", &summary_counts);
     html.push_str(&render_grouped_metrics_section_html(
         "source outside architecture by file",
         &metrics.architecture.source_outside_architecture_by_file,

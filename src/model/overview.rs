@@ -100,7 +100,6 @@ pub struct SpecMetricsSummary {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct RepoMetricsSummary {
-    pub global: RepoGlobalHealthMetrics,
     pub specs: RepoSpecHealthMetrics,
     pub architecture: RepoArchitectureHealthMetrics,
     pub patterns: RepoPatternHealthMetrics,
@@ -108,11 +107,6 @@ pub struct RepoMetricsSummary {
     pub tests: RepoTestHealthMetrics,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub traceability: Option<RepoTraceabilityMetrics>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct RepoGlobalHealthMetrics {
-    pub raw_investigation_queues: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]

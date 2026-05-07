@@ -34,8 +34,8 @@ pub use overview::{
     ArchitectureMetricsSummary, DocumentationCoverageSummary, DocumentationTargetCoverage,
     GroupedCount, LintReport, ModuleDocument, OverviewArchSummary, OverviewDocument,
     OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary,
-    RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument, RepoGlobalHealthMetrics,
-    RepoMetricsSummary, RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
+    RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument, RepoMetricsSummary,
+    RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
     RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary,
 };
 pub use spec::{
