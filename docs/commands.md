@@ -148,6 +148,43 @@ rewrites document links,
 removes authoring annotations,
 and refuses to overwrite docs evidence-bearing sources by accident.
 
+## `special diff`
+
+Use `special diff` after editing a
+repo to review explicit Special relationships touched by the current VCS
+changes.
+
+```sh
+special diff
+special diff --metrics
+special diff --target src/export.ts --verbose
+special diff --id APP.EXPORT
+```
+
+Representative output:
+
+```text
+relationship diff
+  changed paths: 2
+  affected relationships: 6
+  current relationships: 84
+  @verifies spec APP.EXPORT.CSV at tests/export.test.ts:12 [affected by tests/export.test.ts]
+```
+
+Decision supported: which specs, modules, patterns, or docs relationships need
+review because their source or target endpoint is inside the current VCS change.
+Use your VCS for the old/new file diff; use Special to find the relationship
+review queue.
+
+Contract details: `special diff` uses the
+declared VCS backend and
+gracefully falls back to a full explicit relationship view when
+`vcs` is omitted or disabled.
+`--metrics` reports affected
+relationship counts by relationship kind, target kind, and source path.
+`--verbose` includes current
+endpoint content for review.
+
 ## `special health`
 
 Use `special health` for repo-wide

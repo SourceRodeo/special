@@ -84,6 +84,35 @@ special docs build
 special docs --metrics
 ```
 
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.VCS
+@applies DOCS.CONFIG_REFERENCE_BLOCK
+## VCS Backend
+
+[`vcs`](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.VCS) declares the backend
+used by VCS-aware review commands:
+
+```toml
+vcs = "git"
+```
+
+Use `"jj"` for Jujutsu repositories and `"none"` when a project should not ask a
+VCS for changed paths.
+
+Behavior enabled: `special diff` can ask the declared backend for changed paths,
+then show the explicit Special relationships whose source or target endpoint is
+inside that change. With `vcs = "none"` or no `vcs` setting, `special diff`
+shows the full explicit relationship view instead.
+
+Related contracts: config parsing accepts
+[`git`, `jj`, and `none`](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.VCS), and
+rejects [unsupported VCS values](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.VCS.UNKNOWN_REJECTED).
+
+Observe with:
+
+```sh
+special diff --metrics
+```
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.HEALTH_IGNORE
 @applies DOCS.CONFIG_REFERENCE_BLOCK
 ## Health Ignore

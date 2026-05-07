@@ -15,6 +15,7 @@ The first-class surfaces are:
 - Patterns: named repeated implementation structures.
 - Docs: generated reader docs tied back to repo truth.
 - Health: cross-surface analysis that shows what is still hard to explain.
+- Diff: VCS-scoped relationship review for changed source and docs.
 
 ## Install It
 
@@ -72,6 +73,7 @@ annotations:
 special init
 special health --metrics
 special patterns --metrics
+special diff --metrics
 ```
 
 Use those reports to choose the first behavior, module, repeated structure, or
@@ -88,11 +90,13 @@ when the repository already has code, tests, and docs.
 | Patterns | `special patterns` | You need to review intentional repeated implementation structures. |
 | Docs | `special docs` | You need to validate docs links or build generated docs output. |
 | Health | `special health` | You need repo-wide traceability, ownership, duplication, and documentation coverage signals. |
+| Diff | `special diff` | You changed files and need the relationship review queue affected by that VCS diff. |
 
 The commands are meant to be used together. `health` shows the missing
 connections, `patterns` finds repeated source shapes, `specs` records behavior
 and proof, `arch` records ownership, `docs` makes reader-facing claims
-traceable, and `lint` checks that the graph still holds together.
+traceable, `diff` focuses review on changed relationships, and `lint` checks
+that the graph still holds together.
 
 ## Read Next
 

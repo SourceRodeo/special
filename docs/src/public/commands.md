@@ -157,6 +157,45 @@ Generated output
 [removes authoring annotations](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES),
 and refuses to overwrite docs evidence-bearing sources by accident.
 
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DIFF
+@applies DOCS.COMMAND_REFERENCE_ENTRY
+## `special diff`
+
+Use [`special diff`](documents://spec/SPECIAL.DIFF_COMMAND) after editing a
+repo to review explicit Special relationships touched by the current VCS
+changes.
+
+```sh
+special diff
+special diff --metrics
+special diff --target src/export.ts --verbose
+special diff --id APP.EXPORT
+```
+
+Representative output:
+
+```text
+relationship diff
+  changed paths: 2
+  affected relationships: 6
+  current relationships: 84
+  @verifies spec APP.EXPORT.CSV at tests/export.test.ts:12 [affected by tests/export.test.ts]
+```
+
+Decision supported: which specs, modules, patterns, or docs relationships need
+review because their source or target endpoint is inside the current VCS change.
+Use your VCS for the old/new file diff; use Special to find the relationship
+review queue.
+
+Contract details: `special diff` uses the
+[declared VCS backend](documents://spec/SPECIAL.CONFIG.SPECIAL_TOML.VCS) and
+gracefully falls back to a full explicit relationship view when
+[`vcs` is omitted or disabled](documents://spec/SPECIAL.DIFF_COMMAND.NO_VCS).
+[`--metrics`](documents://spec/SPECIAL.DIFF_COMMAND.METRICS) reports affected
+relationship counts by relationship kind, target kind, and source path.
+[`--verbose`](documents://spec/SPECIAL.DIFF_COMMAND.VERBOSE) includes current
+endpoint content for review.
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.HEALTH
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special health`

@@ -128,17 +128,18 @@ fn top_level_help_lists_command_summaries() {
     assert_eq!(
         command_names,
         vec![
-            "specs", "arch", "patterns", "health", "docs", "mcp", "lint", "init", "skills"
+            "specs", "arch", "patterns", "health", "docs", "diff", "mcp", "lint", "init", "skills"
         ]
     );
 
     let summaries: BTreeMap<_, _> = top_level_help_commands(&stdout).into_iter().collect();
-    let expectations: [(&str, &[&str]); 9] = [
+    let expectations: [(&str, &[&str]); 10] = [
         ("specs", &["claims", "proof"]),
         ("arch", &["ownership", "boundaries"]),
         ("patterns", &["patterns", "candidates"]),
         ("health", &["gaps", "traceability"]),
         ("docs", &["links", "metrics"]),
+        ("diff", &["relationships", "vcs", "changes"]),
         ("mcp", &["agents"]),
         ("lint", &["broken", "errors"]),
         ("init", &["special.toml"]),
@@ -196,6 +197,7 @@ fn top_level_help_groups_examples_by_user_task() {
     for heading in [
         "Start a fresh project:",
         "Understand an existing project:",
+        "Review changed relationships:",
         "Work one surface:",
         "Use with agents and skills:",
     ] {
@@ -206,6 +208,7 @@ fn top_level_help_groups_examples_by_user_task() {
         "special init",
         "special health --metrics",
         "special patterns --metrics",
+        "special diff --metrics",
         "special specs --unverified",
         "special arch --unimplemented",
         "special docs --metrics",

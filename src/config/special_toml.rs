@@ -7,6 +7,12 @@ special.toml accepts `[[docs.outputs]]` entries with `source = "PATH"` and `outp
 
 @spec SPECIAL.CONFIG.SPECIAL_TOML.DOCS_ENTRYPOINTS
 special.toml accepts `[docs] entrypoints = ["PATH"]` as generated docs entrypoints for docs reachability metrics.
+
+@spec SPECIAL.CONFIG.SPECIAL_TOML.VCS
+special.toml accepts `vcs = "git"`, `vcs = "jj"`, or `vcs = "none"` as the declared backend for VCS-aware review commands.
+
+@spec SPECIAL.CONFIG.SPECIAL_TOML.VCS.UNKNOWN_REJECTED
+special.toml rejects unsupported `vcs` values.
 */
 // @fileimplements SPECIAL.CONFIG.SPECIAL_TOML
 use std::fs;
@@ -508,6 +514,7 @@ mod tests {
     }
 
     #[test]
+    // @verifies SPECIAL.CONFIG.SPECIAL_TOML.VCS
     fn parses_supported_vcs() {
         let config = parse_special_toml("vcs = \"jj\"\n").expect("config should parse");
 
@@ -519,6 +526,7 @@ mod tests {
     }
 
     #[test]
+    // @verifies SPECIAL.CONFIG.SPECIAL_TOML.VCS.UNKNOWN_REJECTED
     fn rejects_unknown_vcs() {
         let err = parse_special_toml("vcs = \"svn\"\n").expect_err("unknown vcs should fail");
 

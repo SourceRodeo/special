@@ -130,6 +130,9 @@ The `special patterns` command reference entry.
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DOCS
 The `special docs` command reference entry.
 
+### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DIFF
+The `special diff` command reference entry.
+
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.HEALTH
 The `special health` command reference entry.
 
@@ -174,6 +177,9 @@ The ignore path config reference entry.
 
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.DOCS_OUTPUTS
 The docs output mapping config reference entry.
+
+### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.VCS
+The VCS backend config reference entry.
 
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.CONFIGURATION.HEALTH_IGNORE
 The health ignore config reference entry.
