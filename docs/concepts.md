@@ -16,7 +16,7 @@ first, then annotate the small parts that are worth making durable.
 
 ## Specs
 
-Specs are
+`Specs` are
 durable product claims. A spec says what the repo currently promises, plans, or
 deprecates. A claim becomes useful when it has direct evidence through
 `@verifies` or
@@ -26,7 +26,7 @@ Question answered: what does this repo claim, and what supports that claim?
 
 ## Arch
 
-Arch declares
+`Arch` declares
 implementation ownership. Areas organize the tree. Modules own real code or
 planned architecture intent. Ownership attachments make the boundary inspectable
 instead of relying on directory names alone.
@@ -35,26 +35,28 @@ Question answered: where should this implementation live, and what owns it?
 
 ## Patterns
 
-Patterns
+`Patterns`
 name repeated implementation structures that the project intentionally uses.
 They are not writing principles or styleguide slogans. A useful pattern has a
-recognizable implementation shape and concrete applications.
+recognizable implementation shape and concrete
+applications.
 
 Question answered: which repeated structures are intentional, and where are they
 applied?
 
 ## Docs
 
-Docs are
+`Docs` are
 generated reader surfaces authored from traceable source markdown. A
-`documents://` link connects a docs claim to the smallest relevant Special id,
-then `special docs build` strips the authoring link from generated output.
+`documents://` link can
+target a spec, group, module, area, or pattern. In generated output,
+`special docs build` strips the authoring link.
 
 Question answered: where is this product surface explained to readers?
 
 ## Health
 
-Health joins
+`Health` joins
 the other surfaces. It reports repo-wide signals such as unowned implementation,
 unsupported implementation, traceability, duplication, and documentation
 coverage.

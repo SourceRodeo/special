@@ -26,6 +26,16 @@ EXPORT.CSV.HEADERS
 Decision supported: whether a claim exists, whether it is current or planned,
 and whether direct support is attached.
 
+Contract details: `special specs` supports
+current-only,
+planned-only,
+unverified,
+id-scoped,
+verbose,
+metrics,
+JSON, and
+HTML views.
+
 ## `special arch`
 
 Use `special arch` to inspect declared
@@ -47,6 +57,20 @@ APP.EXPORT
 
 Decision supported: whether code has an explicit architecture owner and whether
 declared modules are still only aspirational.
+
+Contract details: `special arch` supports
+current-only,
+planned-only,
+unimplemented,
+id-scoped,
+verbose,
+metrics,
+JSON, and
+HTML views. Metrics include
+complexity explanations,
+coupling,
+quality, and
+item-signal explanations.
 
 ## `special patterns`
 
@@ -70,6 +94,16 @@ CACHE.SINGLE_FLIGHT_FILL
 
 Decision supported: whether a repeated structure is intentionally named,
 where it is applied, and whether metrics suggest similar unannotated shapes.
+
+Contract details: `special patterns` supports
+id-scoped,
+verbose, and
+metrics views. Metrics report
+similarity,
+missing application candidates,
+clusters,
+target scope, and
+symbol scope.
 
 ## `special docs`
 
@@ -104,6 +138,16 @@ Decision supported: whether docs links resolve, whether generated docs pages are
 connected, whether documented targets have support, and whether docs output can
 be built safely.
 
+Contract details: `special docs` supports
+target scoping,
+metrics,
+relationship metrics, and
+configured output builds.
+Generated output
+rewrites document links,
+removes authoring annotations,
+and refuses to overwrite docs evidence-bearing sources by accident.
+
 ## `special health`
 
 Use `special health` for repo-wide
@@ -130,6 +174,19 @@ traceability
 Decision supported: what remains unowned, unsupported, duplicated, or
 undocumented.
 
+Contract details: `special health` supports
+target scoping,
+symbol scoping,
+within scoping,
+verbose evidence,
+JSON, and
+HTML. Metrics cover
+unowned items,
+duplication,
+traceability,
+documentation coverage,
+and long exact prose assertions.
+
 ## `special mcp`
 
 Use `special mcp` to run the stdio MCP
@@ -142,6 +199,12 @@ special mcp
 Decision supported: whether an agent should access Special through bounded tools
 instead of scraping arbitrary repo files first.
 
+Contract details: `special mcp` exposes
+bounded Special tools,
+docs output, and a
+plugin version notice
+when the plugin and binary versions differ.
+
 ## `special lint`
 
 Use `special lint` before committing
@@ -151,8 +214,18 @@ annotation changes.
 special lint
 ```
 
-Decision supported: whether ids, references, lifecycle markers, and docs links
-are structurally valid.
+Decision supported: whether ids, references, and lifecycle markers are
+structurally valid.
+
+Contract details: lint catches
+duplicate ids,
+unknown verify refs,
+unknown attest refs,
+unknown implements refs,
+orphan verifies,
+intermediate specs,
+intermediate modules,
+and invalid planned-scope usage.
 
 ## `special init`
 
@@ -167,6 +240,12 @@ special init
 Decision supported: whether the repo has an explicit Special root and generated
 starter policy.
 
+Contract details: `special init`
+creates starter config,
+does not overwrite existing config,
+rejects nested active config, and
+surfaces discovery errors.
+
 ## `special skills`
 
 Use `special skills` to print or
@@ -180,3 +259,11 @@ special skills install ship-product-change --destination project
 
 Decision supported: which local skill surface an agent should use for a
 Special-aware workflow.
+
+Contract details: `special skills` can
+print one bundled skill,
+install one skill,
+install all skills,
+install to a project destination,
+install to a global destination,
+and preserve bundled references.

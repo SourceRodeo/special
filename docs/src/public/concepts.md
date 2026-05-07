@@ -20,7 +20,7 @@ first, then annotate the small parts that are worth making durable.
 @implements SPECIAL.DOCUMENTATION.PUBLIC.CONCEPTS.SPECS
 ## Specs
 
-Specs are
+[`Specs`](documents://spec/SPECIAL.SPEC_COMMAND) are
 durable product claims. A spec says what the repo currently promises, plans, or
 deprecates. A claim becomes useful when it has direct evidence through
 [`@verifies`](documents://spec/SPECIAL.PARSE.VERIFIES) or
@@ -31,7 +31,7 @@ Question answered: what does this repo claim, and what supports that claim?
 @implements SPECIAL.DOCUMENTATION.PUBLIC.CONCEPTS.ARCH
 ## Arch
 
-Arch declares
+[`Arch`](documents://spec/SPECIAL.MODULE_COMMAND) declares
 implementation ownership. Areas organize the tree. Modules own real code or
 planned architecture intent. Ownership attachments make the boundary inspectable
 instead of relying on directory names alone.
@@ -41,10 +41,11 @@ Question answered: where should this implementation live, and what owns it?
 @implements SPECIAL.DOCUMENTATION.PUBLIC.CONCEPTS.PATTERNS
 ## Patterns
 
-Patterns
+[`Patterns`](documents://spec/SPECIAL.PATTERNS.COMMAND)
 name repeated implementation structures that the project intentionally uses.
 They are not writing principles or styleguide slogans. A useful pattern has a
-recognizable implementation shape and concrete applications.
+recognizable implementation shape and concrete
+[applications](documents://spec/SPECIAL.PATTERNS.SOURCE_APPLICATIONS).
 
 Question answered: which repeated structures are intentional, and where are they
 applied?
@@ -52,17 +53,18 @@ applied?
 @implements SPECIAL.DOCUMENTATION.PUBLIC.CONCEPTS.DOCS
 ## Docs
 
-Docs are
+[`Docs`](documents://spec/SPECIAL.DOCS_COMMAND) are
 generated reader surfaces authored from traceable source markdown. A
-`documents://` link connects a docs claim to the smallest relevant Special id,
-then `special docs build` strips the authoring link from generated output.
+[`documents://`](documents://spec/SPECIAL.DOCS.LINKS.POLYMORPHIC) link can
+target a spec, group, module, area, or pattern. In generated output,
+[`special docs build` strips the authoring link](documents://spec/SPECIAL.DOCS.LINKS.OUTPUT).
 
 Question answered: where is this product surface explained to readers?
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.CONCEPTS.HEALTH
 ## Health
 
-Health joins
+[`Health`](documents://spec/SPECIAL.HEALTH_COMMAND) joins
 the other surfaces. It reports repo-wide signals such as unowned implementation,
 unsupported implementation, traceability, duplication, and documentation
 coverage.

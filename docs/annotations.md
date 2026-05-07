@@ -22,7 +22,11 @@ special specs
 special lint
 ```
 
-Groups organize. Specs make claims. Child specs do not prove parent specs.
+`@group` organizes.
+`@spec`
+makes a claim. Child specs do not prove parent specs. Lifecycle markers can
+mark specs as planned or
+deprecated.
 
 ## Verifies and Attests
 
@@ -35,10 +39,14 @@ test("export writes headers", () => {
 });
 ```
 
-Use `@fileverifies` when the whole
-file is the proof artifact. Use
+Use `@fileverifies` when
+the whole file is the proof artifact. Use
 `@attests` for manual or external
-evidence with review metadata.
+evidence with review metadata. Special accepts
+file-scoped attests and
+requires attestation
+metadata fields in a
+supported date format.
 
 Validate with:
 
@@ -66,16 +74,23 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 }
 ```
 
-An area can stay structural. A current module needs implementation ownership
-unless it is explicitly planned.
+An `@area` can stay
+structural. A `@module`
+declares an architecture owner. A
+current module needs implementation ownership
+unless it uses the module
+planned marker.
 
 In markdown, headings are the addressable units, like functions or classes in
 code. `@implements`
 attaches to a heading-bounded section. Put it immediately before the heading you
 want to own, or inside an existing section to attach that containing section. It
 does not attach to an individual paragraph, list item, table row, or arbitrary
-markdown element. Use `@fileimplements` when the whole file is the ownership
-unit.
+markdown element. Use
+`@fileimplements`
+when the whole file is the ownership unit, and
+`@implements` for
+item-scoped ownership.
 
 Validate with:
 
@@ -101,7 +116,10 @@ async function loadOrFillCache(key: string): Promise<Value> {
 }
 ```
 
-In markdown, `@applies`
+`@pattern` declares the shape.
+`@applies` attaches
+source applications. In markdown,
+`@applies`
 uses the same heading-section rule as `@implements`: the applied body is the
 matching heading section, not a single paragraph, list item, table, or code
 fence. Use
@@ -124,9 +142,11 @@ Purpose: connect docs prose to the smallest relevant Special id.
 [CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).
 ```
 
-`special docs build` rewrites that link to normal reader text in generated
-output. Use `@documents` only when a natural block really documents one target
-and an inline link would be awkward.
+`special docs build`
+rewrites that link to normal
+reader text in generated output. Use
+`@documents` only when a
+natural block really documents one target and an inline link would be awkward.
 
 Validate with:
 

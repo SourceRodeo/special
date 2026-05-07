@@ -64,7 +64,7 @@ reader-facing claims.
 Link factual docs claims to the smallest relevant Special id:
 
 ```markdown
-[Pattern metrics are advisory](documents://spec/SPECIAL.PATTERNS.METRICS).
+[Pattern similarity is advisory](documents://spec/SPECIAL.PATTERNS.METRICS.SIMILARITY).
 ```
 
 Build and check:

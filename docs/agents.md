@@ -13,6 +13,10 @@ special mcp
 
 The server exposes bounded tools
 for status, overview, specs, architecture, patterns, docs, lint, and health.
+It can also return docs output
+and report a
+plugin version notice
+when the installed plugin and binary disagree.
 
 Verify the native binary first:
 
@@ -30,9 +34,12 @@ marketplace:
 codex plugin marketplace add SourceRodeo/codex-marketplace
 ```
 
-The plugin supplies workflow skills and MCP configuration. It does not replace
-the native binary; plugin setup should still guide users to Homebrew or Cargo
-when `special` is missing.
+The plugin source
+supplies workflow skills and MCP configuration. It does not replace the native
+binary; plugin setup should still guide users to
+Homebrew or
+Cargo when
+`special` is missing.
 
 ## Bundled Skills
 
@@ -45,3 +52,8 @@ special skills install --destination project
 
 Repo-local installs write `.agents/skills/<skill-id>/SKILL.md`. Global installs
 write to `$CODEX_HOME/skills` or `~/.codex/skills`.
+The bundled command supports
+project destinations,
+global destinations,
+custom destinations,
+and progressive-disclosure references.

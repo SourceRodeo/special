@@ -29,6 +29,16 @@ EXPORT.CSV.HEADERS
 Decision supported: whether a claim exists, whether it is current or planned,
 and whether direct support is attached.
 
+Contract details: `special specs` supports
+[current-only](documents://spec/SPECIAL.SPEC_COMMAND.CURRENT_ONLY),
+[planned-only](documents://spec/SPECIAL.SPEC_COMMAND.PLANNED_ONLY),
+[unverified](documents://spec/SPECIAL.SPEC_COMMAND.UNVERIFIED),
+[id-scoped](documents://spec/SPECIAL.SPEC_COMMAND.ID_SCOPE),
+[verbose](documents://spec/SPECIAL.SPEC_COMMAND.VERBOSE),
+[metrics](documents://spec/SPECIAL.SPEC_COMMAND.METRICS),
+[JSON](documents://spec/SPECIAL.SPEC_COMMAND.JSON), and
+[HTML](documents://spec/SPECIAL.SPEC_COMMAND.HTML) views.
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.ARCH
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special arch`
@@ -52,6 +62,20 @@ APP.EXPORT
 
 Decision supported: whether code has an explicit architecture owner and whether
 declared modules are still only aspirational.
+
+Contract details: `special arch` supports
+[current-only](documents://spec/SPECIAL.MODULE_COMMAND.CURRENT_ONLY),
+[planned-only](documents://spec/SPECIAL.MODULE_COMMAND.PLANNED_ONLY),
+[unimplemented](documents://spec/SPECIAL.MODULE_COMMAND.UNIMPLEMENTED),
+[id-scoped](documents://spec/SPECIAL.MODULE_COMMAND.ID_SCOPE),
+[verbose](documents://spec/SPECIAL.MODULE_COMMAND.VERBOSE),
+[metrics](documents://spec/SPECIAL.MODULE_COMMAND.METRICS),
+[JSON](documents://spec/SPECIAL.MODULE_COMMAND.JSON), and
+[HTML](documents://spec/SPECIAL.MODULE_COMMAND.HTML) views. Metrics include
+[complexity explanations](documents://spec/SPECIAL.MODULE_COMMAND.METRICS.COMPLEXITY.EXPLANATIONS),
+[coupling](documents://spec/SPECIAL.MODULE_COMMAND.METRICS.COUPLING),
+[quality](documents://spec/SPECIAL.MODULE_COMMAND.METRICS.QUALITY), and
+[item-signal explanations](documents://spec/SPECIAL.MODULE_COMMAND.METRICS.ITEM_SIGNALS.EXPLANATIONS).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.PATTERNS
 @applies DOCS.COMMAND_REFERENCE_ENTRY
@@ -77,6 +101,16 @@ CACHE.SINGLE_FLIGHT_FILL
 
 Decision supported: whether a repeated structure is intentionally named,
 where it is applied, and whether metrics suggest similar unannotated shapes.
+
+Contract details: `special patterns` supports
+[id-scoped](documents://spec/SPECIAL.PATTERNS.ID_SCOPE),
+[verbose](documents://spec/SPECIAL.PATTERNS.VERBOSE), and
+[metrics](documents://spec/SPECIAL.PATTERNS.METRICS) views. Metrics report
+[similarity](documents://spec/SPECIAL.PATTERNS.METRICS.SIMILARITY),
+[missing application candidates](documents://spec/SPECIAL.PATTERNS.METRICS.MISSING_APPLICATIONS),
+[clusters](documents://spec/SPECIAL.PATTERNS.METRICS.CLUSTERS.INTERPRETATION),
+[target scope](documents://spec/SPECIAL.PATTERNS.METRICS.TARGET_SCOPE), and
+[symbol scope](documents://spec/SPECIAL.PATTERNS.METRICS.SYMBOL_SCOPE).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DOCS
 @applies DOCS.COMMAND_REFERENCE_ENTRY
@@ -113,6 +147,16 @@ Decision supported: whether docs links resolve, whether generated docs pages are
 connected, whether documented targets have support, and whether docs output can
 be built safely.
 
+Contract details: `special docs` supports
+[target scoping](documents://spec/SPECIAL.DOCS_COMMAND.TARGET),
+[metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS),
+[relationship metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS), and
+[configured output builds](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG).
+Generated output
+[rewrites document links](documents://spec/SPECIAL.DOCS.LINKS.OUTPUT),
+[removes authoring annotations](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES),
+and refuses to overwrite docs evidence-bearing sources by accident.
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.HEALTH
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special health`
@@ -141,6 +185,19 @@ traceability
 Decision supported: what remains unowned, unsupported, duplicated, or
 undocumented.
 
+Contract details: `special health` supports
+[target scoping](documents://spec/SPECIAL.HEALTH_COMMAND.TARGET),
+[symbol scoping](documents://spec/SPECIAL.HEALTH_COMMAND.SYMBOL),
+[within scoping](documents://spec/SPECIAL.HEALTH_COMMAND.WITHIN),
+[verbose evidence](documents://spec/SPECIAL.HEALTH_COMMAND.VERBOSE),
+[JSON](documents://spec/SPECIAL.HEALTH_COMMAND.JSON), and
+[HTML](documents://spec/SPECIAL.HEALTH_COMMAND.HTML). Metrics cover
+[unowned items](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS),
+[duplication](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION),
+[traceability](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
+[documentation coverage](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE),
+and [long exact prose assertions](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS).
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.MCP
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special mcp`
@@ -155,6 +212,12 @@ special mcp
 Decision supported: whether an agent should access Special through bounded tools
 instead of scraping arbitrary repo files first.
 
+Contract details: `special mcp` exposes
+[bounded Special tools](documents://spec/SPECIAL.MCP_COMMAND.TOOLS),
+[docs output](documents://spec/SPECIAL.MCP_COMMAND.DOCS_OUTPUT), and a
+[plugin version notice](documents://spec/SPECIAL.MCP_COMMAND.PLUGIN_VERSION_NOTICE)
+when the plugin and binary versions differ.
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.LINT
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special lint`
@@ -166,8 +229,18 @@ annotation changes.
 special lint
 ```
 
-Decision supported: whether ids, references, lifecycle markers, and docs links
-are structurally valid.
+Decision supported: whether ids, references, and lifecycle markers are
+structurally valid.
+
+Contract details: lint catches
+[duplicate ids](documents://spec/SPECIAL.LINT_COMMAND.DUPLICATE_IDS),
+[unknown verify refs](documents://spec/SPECIAL.LINT_COMMAND.UNKNOWN_VERIFY_REFS),
+[unknown attest refs](documents://spec/SPECIAL.LINT_COMMAND.UNKNOWN_ATTEST_REFS),
+[unknown implements refs](documents://spec/SPECIAL.LINT_COMMAND.UNKNOWN_IMPLEMENTS_REFS),
+[orphan verifies](documents://spec/SPECIAL.LINT_COMMAND.ORPHAN_VERIFIES),
+[intermediate specs](documents://spec/SPECIAL.LINT_COMMAND.INTERMEDIATE_SPECS),
+[intermediate modules](documents://spec/SPECIAL.LINT_COMMAND.INTERMEDIATE_MODULES),
+and invalid planned-scope usage.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.INIT
 @applies DOCS.COMMAND_REFERENCE_ENTRY
@@ -184,6 +257,12 @@ special init
 Decision supported: whether the repo has an explicit Special root and generated
 starter policy.
 
+Contract details: `special init`
+[creates starter config](documents://spec/SPECIAL.INIT.CREATES_SPECIAL_TOML),
+[does not overwrite existing config](documents://spec/SPECIAL.INIT.DOES_NOT_OVERWRITE_SPECIAL_TOML),
+[rejects nested active config](documents://spec/SPECIAL.INIT.REJECTS_NESTED_ACTIVE_CONFIG), and
+[surfaces discovery errors](documents://spec/SPECIAL.INIT.SURFACES_DISCOVERY_ERRORS).
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.SKILLS
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special skills`
@@ -199,3 +278,11 @@ special skills install ship-product-change --destination project
 
 Decision supported: which local skill surface an agent should use for a
 Special-aware workflow.
+
+Contract details: `special skills` can
+[print one bundled skill](documents://spec/SPECIAL.SKILLS.COMMAND.EMITS_SKILL_TO_STDOUT),
+[install one skill](documents://spec/SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.ONE_SKILL),
+[install all skills](documents://spec/SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.ALL_SKILLS_DEFAULT),
+[install to a project destination](documents://spec/SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.PROJECT_DESTINATION),
+[install to a global destination](documents://spec/SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.GLOBAL_DESTINATION),
+and [preserve bundled references](documents://spec/SPECIAL.SKILLS.COMMAND.BUNDLES_REFERENCES_FOR_PROGRESSIVE_DISCLOSURE).

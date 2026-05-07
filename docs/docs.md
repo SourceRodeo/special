@@ -17,7 +17,8 @@ Docs source can link to a spec:
 [CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).
 ```
 
-`special docs build` writes generated markdown without the authoring URI:
+`special docs build`
+writes generated markdown without the authoring URI:
 
 ```markdown
 CSV exports include headers.
@@ -29,9 +30,11 @@ Check the relationship inventory and generated-docs graph:
 special docs --metrics
 ```
 
-Use `--verbose` when you need the relationship audit. It shows each documented
-target, where docs refer to it, and whether the target has support such as
-verifies, attests, implementations, or pattern applications. The audit reports
+Use `--verbose` when you need the
+relationship inventory.
+It shows each documented target, where docs refer to it, and whether the target
+has support such as verifies, attests, implementations, or pattern applications.
+The audit reports
 planned specs and unsupported current specs
 directly in the docs metrics output.
 
@@ -50,4 +53,6 @@ source = "docs/src/public"
 output = "docs"
 ```
 
-Directory mappings preserve the tree below the source directory.
+Directory mappings preserve the tree
+below the source directory and apply
+overwrite safety.

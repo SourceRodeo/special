@@ -36,6 +36,12 @@ special arch APP.EXPORT --metrics
 special arch --unimplemented
 ```
 
-An `@area` can be structural. A
-current module needs ownership through source or markdown `@implements` /
-`@fileimplements`; otherwise `special arch --unimplemented` keeps it visible.
+An `@area`
+can be structural. A
+current module needs ownership
+through source or markdown
+`@implements` /
+`@fileimplements`;
+otherwise
+`special arch --unimplemented`
+keeps it visible.

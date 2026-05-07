@@ -25,7 +25,11 @@ special specs
 special lint
 ```
 
-Groups organize. Specs make claims. Child specs do not prove parent specs.
+`@group` organizes.
+[`@spec`](documents://spec/SPECIAL.PARSE.RESERVED_TAGS.REQUIRE_DIRECTIVE_SHAPE)
+makes a claim. Child specs do not prove parent specs. Lifecycle markers can
+mark specs as [planned](documents://spec/SPECIAL.PARSE.PLANNED) or
+[deprecated](documents://spec/SPECIAL.PARSE.DEPRECATED).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.ANNOTATIONS.EVIDENCE
 @applies DOCS.ANNOTATION_REFERENCE_ENTRY
@@ -40,10 +44,14 @@ test("export writes headers", () => {
 });
 ```
 
-Use [`@fileverifies`](documents://spec/SPECIAL.PARSE.VERIFIES) when the whole
-file is the proof artifact. Use
+Use [`@fileverifies`](documents://spec/SPECIAL.PARSE.VERIFIES.FILE_SCOPE) when
+the whole file is the proof artifact. Use
 [`@attests`](documents://spec/SPECIAL.PARSE.ATTESTS) for manual or external
-evidence with review metadata.
+evidence with review metadata. Special accepts
+[file-scoped attests](documents://spec/SPECIAL.PARSE.ATTESTS.FILE_SCOPE) and
+requires attestation
+[metadata fields](documents://spec/SPECIAL.PARSE.ATTESTS.REQUIRED_FIELDS) in a
+supported [date format](documents://spec/SPECIAL.PARSE.ATTESTS.DATE_FORMAT).
 
 Validate with:
 
@@ -73,16 +81,23 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 }
 ```
 
-An area can stay structural. A current module needs implementation ownership
-unless it is explicitly planned.
+An [`@area`](documents://spec/SPECIAL.MODULE_PARSE.AREA_DECLARATIONS) can stay
+structural. A [`@module`](documents://spec/SPECIAL.MODULE_PARSE.MODULE_DECLARATIONS)
+declares an architecture owner. A
+[current module needs implementation ownership](documents://spec/SPECIAL.MODULE_COMMAND.UNIMPLEMENTED)
+unless it uses the module
+[planned marker](documents://spec/SPECIAL.MODULE_PARSE.PLANNED.MODULE_ONLY).
 
 In markdown, headings are the addressable units, like functions or classes in
 code. [`@implements`](documents://spec/SPECIAL.MODULE_PARSE.IMPLEMENTS.MARKDOWN_SCOPE)
 attaches to a heading-bounded section. Put it immediately before the heading you
 want to own, or inside an existing section to attach that containing section. It
 does not attach to an individual paragraph, list item, table row, or arbitrary
-markdown element. Use `@fileimplements` when the whole file is the ownership
-unit.
+markdown element. Use
+[`@fileimplements`](documents://spec/SPECIAL.MODULE_PARSE.IMPLEMENTS.FILE_SCOPE)
+when the whole file is the ownership unit, and
+[`@implements`](documents://spec/SPECIAL.MODULE_PARSE.IMPLEMENTS.ITEM_SCOPE) for
+item-scoped ownership.
 
 Validate with:
 
@@ -110,7 +125,10 @@ async function loadOrFillCache(key: string): Promise<Value> {
 }
 ```
 
-In markdown, [`@applies`](documents://spec/SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS)
+[`@pattern`](documents://spec/SPECIAL.PATTERNS.DEFINITIONS) declares the shape.
+[`@applies`](documents://spec/SPECIAL.PATTERNS.SOURCE_APPLICATIONS) attaches
+source applications. In markdown,
+[`@applies`](documents://spec/SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS)
 uses the same heading-section rule as `@implements`: the applied body is the
 matching heading section, not a single paragraph, list item, table, or code
 fence. Use
@@ -135,9 +153,11 @@ Purpose: connect docs prose to the smallest relevant Special id.
 [CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).
 ```
 
-`special docs build` rewrites that link to normal reader text in generated
-output. Use `@documents` only when a natural block really documents one target
-and an inline link would be awkward.
+`special docs build`
+[rewrites that link](documents://spec/SPECIAL.DOCS.LINKS.OUTPUT) to normal
+reader text in generated output. Use
+[`@documents`](documents://spec/SPECIAL.DOCS.DOCUMENTS_LINES) only when a
+natural block really documents one target and an inline link would be awkward.
 
 Validate with:
 

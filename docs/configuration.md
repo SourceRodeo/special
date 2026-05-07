@@ -12,6 +12,13 @@ root = "."
 Behavior enabled: Special uses this file as an explicit project anchor instead
 of relying on implicit VCS discovery.
 
+Related contracts: Special can
+fall back to the current directory,
+fall back to a VCS root,
+warn on implicit roots,
+resolve explicit roots,
+and find ancestor config.
+
 Observe with:
 
 ```sh
@@ -29,6 +36,18 @@ ignore = [
 
 Behavior enabled: matching paths are excluded from shared annotation discovery.
 Use exact generated docs output paths so source docs remain visible.
+
+Related contracts: ignore paths
+exclude shared discovery.
+Config parsing rejects
+unknown keys,
+duplicate keys,
+unquoted values,
+bad key/value syntax,
+and invalid roots such as
+empty roots,
+file roots, or
+missing roots.
 
 ## Docs Outputs
 
@@ -69,6 +88,9 @@ ignore-unexplained = [
 
 Behavior enabled: matching paths stay out of the unsupported-implementation
 review bucket without hiding them from all parsing or architecture analysis.
+
+Related contracts: health ignore patterns
+exclude configured unsupported paths.
 
 Observe with:
 

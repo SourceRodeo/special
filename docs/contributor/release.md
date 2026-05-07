@@ -1,7 +1,9 @@
 # Release and Distribution
 
-Special distributes source through GitHub and binaries through GitHub Releases,
-Homebrew, and Cargo.
+Special distributes source through GitHub and binaries through
+GitHub Releases,
+Homebrew,
+and Cargo.
 
 ## Source Dependencies
 
@@ -9,6 +11,8 @@ The parser crate
 lives in the `SourceRodeo/crates` monorepo at `parse-source-annotations`.
 Special resolves that package through Cargo's Git dependency support during
 local development and release builds.
+Release builds must not resolve it through a
+local checkout.
 
 ## Release Workflow
 
@@ -25,6 +29,11 @@ evidence for the exact version and revision.
 The publish phase
 pushes `main`, a `release/vX.Y.Z` bookmark, and the Git tag for the same
 revision.
+The same flow supports
+dry-run,
+manifest-version checks,
+GitHub release verification,
+and Homebrew updates.
 
 ## Homebrew
 
@@ -32,8 +41,15 @@ The Homebrew formula
 lives in `sourcerodeo/homebrew-tap` at `Formula/special.rb`. Release validation
 checks version, platform archive branches, release asset digests, and checksum
 pairing against the GitHub release assets.
+The formula has a stable
+path and
+platform selection
+contract.
 
 ## Plugin Marketplace
 
-The Special Codex plugin source lives under `codex-plugin/special/` in this
-repository. The shared SourceRodeo marketplace entry points at that subdirectory.
+The Special Codex plugin source lives under
+`codex-plugin/special/`
+in this repository. The shared SourceRodeo marketplace entry points at that
+subdirectory, and the plugin carries
+version awareness.
