@@ -69,6 +69,14 @@ export function exportCsv(rows: Array<Record<string, string>>): string {
 An area can stay structural. A current module needs implementation ownership
 unless it is explicitly planned.
 
+In markdown, headings are the addressable units, like functions or classes in
+code. `@implements`
+attaches to a heading-bounded section. Put it immediately before the heading you
+want to own, or inside an existing section to attach that containing section. It
+does not attach to an individual paragraph, list item, table row, or arbitrary
+markdown element. Use `@fileimplements` when the whole file is the ownership
+unit.
+
 Validate with:
 
 ```sh
@@ -92,6 +100,13 @@ async function loadOrFillCache(key: string): Promise<Value> {
   return fills.getOrCreate(key, () => rebuildValue(key));
 }
 ```
+
+In markdown, `@applies`
+uses the same heading-section rule as `@implements`: the applied body is the
+matching heading section, not a single paragraph, list item, table, or code
+fence. Use
+`@fileapplies`
+when the entire markdown file is one pattern application.
 
 Validate with:
 

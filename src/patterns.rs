@@ -412,9 +412,21 @@ fn collect_document_feature_items(
             if !file_lookup.contains(&location.path) {
                 return None;
             }
-            let contained_pattern_ids =
-                contained_pattern_ids_for_body(parsed, implementation, body);
-            let mut features = document_body_features(&implementation.module_id, body);
+            let contained_applications = contained_pattern_applications(
+                parsed,
+                implementation.body_location.as_ref(),
+                &implementation.location,
+                body,
+            );
+            let contained_pattern_ids = contained_applications
+                .iter()
+                .map(|application| application.pattern_id.clone())
+                .collect::<BTreeSet<_>>();
+            let composed_body = compose_document_body_with_pattern_references(
+                body,
+                contained_applications.iter().copied(),
+            );
+            let mut features = document_body_features(&implementation.module_id, &composed_body);
             enrich_features_with_contained_patterns(&mut features, &contained_pattern_ids);
             Some(SourceFeatureItem {
                 item_name: implementation.module_id.clone(),
@@ -424,19 +436,6 @@ fn collect_document_feature_items(
             })
         })
         .collect()
-}
-
-fn contained_pattern_ids_for_body(
-    parsed: &ParsedArchitecture,
-    implementation: &ImplementRef,
-    body: &str,
-) -> BTreeSet<String> {
-    contained_pattern_ids(
-        parsed,
-        implementation.body_location.as_ref(),
-        &implementation.location,
-        body,
-    )
 }
 
 fn enrich_features_with_contained_patterns(
@@ -915,53 +914,38 @@ struct PatternApplicationFeatures {
     size: usize,
 }
 
-fn pattern_application_features(
-    application: &PatternApplication,
-) -> Option<PatternApplicationFeatures> {
-    let body = application.body.as_ref()?;
-    let path = application
-        .body_location
-        .as_ref()
-        .map(|location| location.path.as_path())
-        .unwrap_or_else(|| application.location.path.as_path());
-    if let Some(graph) = parse_source_graph(path, body) {
-        let item = graph
-            .items
-            .iter()
-            .max_by_key(|item| item.shape_node_count)?;
-        return Some(source_item_features(item));
-    }
-    Some(document_body_features(&application.pattern_id, body))
-}
-
 fn pattern_application_features_with_context(
     parsed: &ParsedArchitecture,
     application: &PatternApplication,
 ) -> Option<PatternApplicationFeatures> {
     let body = application.body.as_ref()?;
-    let mut features = pattern_application_features(application)?;
-    let contained_pattern_ids =
-        contained_pattern_ids_for_application_body(parsed, application, body);
+    let contained_applications = contained_pattern_applications(
+        parsed,
+        application.body_location.as_ref(),
+        &application.location,
+        body,
+    );
+    let contained_pattern_ids = contained_applications
+        .iter()
+        .map(|application| application.pattern_id.clone())
+        .collect::<BTreeSet<_>>();
+    let mut features = pattern_application_features_with_composed_body(
+        application,
+        body,
+        &contained_applications,
+    )?;
     enrich_features_with_contained_patterns(&mut features, &contained_pattern_ids);
     Some(features)
 }
 
-fn contained_pattern_ids_for_application_body(
-    parsed: &ParsedArchitecture,
-    owner: &PatternApplication,
-    body: &str,
-) -> BTreeSet<String> {
-    contained_pattern_ids(parsed, owner.body_location.as_ref(), &owner.location, body)
-}
-
-fn contained_pattern_ids(
-    parsed: &ParsedArchitecture,
+fn contained_pattern_applications<'a>(
+    parsed: &'a ParsedArchitecture,
     owner_body_location: Option<&SourceLocation>,
     owner_location: &SourceLocation,
     body: &str,
-) -> BTreeSet<String> {
+) -> Vec<&'a PatternApplication> {
     let owner_start = owner_body_location.unwrap_or(owner_location);
-    parsed
+    let mut applications = parsed
         .pattern_applications
         .iter()
         .filter_map(|application| {
@@ -976,10 +960,57 @@ fn contained_pattern_ids(
                 return None;
             }
             let application_body = application.body.as_ref()?;
-            body.contains(application_body)
-                .then(|| application.pattern_id.clone())
+            body.contains(application_body).then_some(application)
         })
-        .collect()
+        .collect::<Vec<_>>();
+    applications.sort_by(|left, right| {
+        right
+            .body
+            .as_ref()
+            .map_or(0, |body| body.len())
+            .cmp(&left.body.as_ref().map_or(0, |body| body.len()))
+    });
+    applications
+}
+
+fn pattern_application_features_with_composed_body(
+    application: &PatternApplication,
+    body: &str,
+    contained_applications: &[&PatternApplication],
+) -> Option<PatternApplicationFeatures> {
+    let path = application
+        .body_location
+        .as_ref()
+        .map(|location| location.path.as_path())
+        .unwrap_or_else(|| application.location.path.as_path());
+    if let Some(graph) = parse_source_graph(path, body) {
+        let item = graph
+            .items
+            .iter()
+            .max_by_key(|item| item.shape_node_count)?;
+        return Some(source_item_features(item));
+    }
+    let composed_body =
+        compose_document_body_with_pattern_references(body, contained_applications.iter().copied());
+    Some(document_body_features(
+        &application.pattern_id,
+        &composed_body,
+    ))
+}
+
+fn compose_document_body_with_pattern_references<'a>(
+    body: &str,
+    contained_applications: impl Iterator<Item = &'a PatternApplication>,
+) -> String {
+    let mut composed = body.to_string();
+    for application in contained_applications {
+        let Some(application_body) = application.body.as_ref() else {
+            continue;
+        };
+        let placeholder = format!("\n@applies {}\n", application.pattern_id);
+        composed = composed.replacen(application_body, &placeholder, 1);
+    }
+    composed
 }
 
 fn source_item_features(item: &SourceItem) -> PatternApplicationFeatures {

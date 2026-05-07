@@ -680,6 +680,14 @@ fn patterns_metrics_uses_child_pattern_applications_as_parent_features() {
                 .as_str()
                 .is_some_and(|name| name.starts_with("DOCS."))
     }));
+    let surface_metrics = pattern_metrics_by_id(&json, "DOCS.SURFACE");
+    assert!(
+        surface_metrics["mean_similarity"]
+            .as_f64()
+            .unwrap_or_default()
+            > 0.80,
+        "parent pattern fit should stay high after child bodies compose into stable pattern references"
+    );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -1069,13 +1077,48 @@ fn write_hierarchical_pattern_doc(
     } else {
         ""
     };
+    let child_body = match slug {
+        "one" => {
+            "CSV export notes:\n\n- Headers stay visible.\n- Escaped commas round trip.\n\n```ts\nexportCsv(rows)\n```\n"
+        }
+        "two" => {
+            "Widget sync notes:\n\n1. Load account state.\n2. Reconcile remote edits.\n\n```ts\nsyncWidgets(client)\n```\n"
+        }
+        _ => {
+            "Invoice preview notes:\n\n| field | rule |\n| --- | --- |\n| total | format |\n\n```ts\nrenderInvoice(model)\n```\n"
+        }
+    };
     fs::write(
         root.join(format!("{slug}.md")),
         format!(
-            "@implements {module_id}\n{surface_apply}# Guide {slug}\n\nPrimary command:\n\n```sh\nspecial docs --metrics\n```\n\n@implements {module_id}.TRACE\n@applies DOCS.TRACEABLE\n## Traceable Example\n\nDocs source link:\n\n```markdown\n[CSV headers](documents://spec/EXPORT.CSV.HEADERS).\n```\n\nBuild docs:\n\n```sh\nspecial docs build\n```\n\nGenerated markdown keeps text.\n",
+            "@implements {module_id}\n{surface_apply}# Guide {slug}\n\nPrimary command:\n\n```sh\nspecial docs --metrics\n```\n\n@implements {module_id}.TRACE\n@applies DOCS.TRACEABLE\n## Traceable Example\n\n{child_body}\nDocs source link:\n\n```markdown\n[CSV headers](documents://spec/EXPORT.CSV.HEADERS).\n```\n",
         ),
     )
     .expect("docs should be written");
+}
+
+fn pattern_metrics_by_id<'a>(json: &'a Value, pattern_id: &str) -> &'a Value {
+    fn find<'a>(patterns: &'a [Value], pattern_id: &str) -> Option<&'a Value> {
+        for pattern in patterns {
+            if pattern["id"] == pattern_id {
+                return pattern.get("metrics");
+            }
+            if let Some(found) = pattern["children"]
+                .as_array()
+                .and_then(|children| find(children, pattern_id))
+            {
+                return Some(found);
+            }
+        }
+        None
+    }
+    find(
+        json["patterns"]
+            .as_array()
+            .expect("patterns should be an array"),
+        pattern_id,
+    )
+    .expect("pattern metrics should be present")
 }
 
 fn write_thin_delegate_fixture(root: &std::path::Path) {

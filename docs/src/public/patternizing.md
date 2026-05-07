@@ -71,7 +71,11 @@ reader.
 
 Prefer a page- or section-level `@applies` when the natural unit already has the
 shape. Do not split prose into artificial fragments just to attach pattern
-lines. For a whole page, place `@applies` immediately before the H1:
+lines. Markdown headings are the addressable units for documentation patterns,
+like functions or classes are in code.
+[`@applies`](documents://spec/SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS) attaches
+to a heading-bounded section, not to an arbitrary paragraph, list item, table, or
+code fence. For a whole page, place `@applies` immediately before the H1:
 
 ```markdown
 @applies DOCS.TASK_RECIPE_PAGE
