@@ -122,7 +122,11 @@ Representative output:
 
 ```text
 special docs metrics
-  total references: ...
+  relationship inventory
+    total references: ...
+  target coverage
+    specs: ...
+  generated docs graph
   generated pages: ...
   reachable from entrypoints: ...
 ```
@@ -135,13 +139,14 @@ special docs --metrics --verbose
 ```
 
 Decision supported: whether docs links resolve, whether generated docs pages are
-connected, whether documented targets have support, and whether docs output can
-be built safely.
+connected, which declared targets have docs evidence, whether documented targets
+have support, and whether docs output can be built safely.
 
 Contract details: `special docs` supports
 target scoping,
 metrics,
-relationship metrics, and
+relationship metrics,
+target coverage, and
 configured output builds.
 Generated output
 rewrites document links,
@@ -151,7 +156,7 @@ and refuses to overwrite docs evidence-bearing sources by accident.
 ## `special health`
 
 Use `special health` for repo-wide
-signals that connect specs, arch, patterns, and docs.
+signals that go deeper than explicit graph edges or sit outside the graph.
 
 ```sh
 special health
@@ -165,14 +170,15 @@ special health --html
 Representative output:
 
 ```text
-documentation coverage
-  specs: ...
+special health metrics
+  duplicate items: ...
+  unowned items: ...
 traceability
   unsupported items: ...
 ```
 
-Decision supported: what remains unowned, unsupported, duplicated, or
-undocumented.
+Decision supported: what remains unowned, unsupported, duplicated, or hard to
+explain from source structure.
 
 Contract details: `special health` supports
 target scoping,
@@ -184,7 +190,6 @@ HTML. Metrics cover
 unowned items,
 duplication,
 traceability,
-documentation coverage,
 and long exact prose assertions.
 
 ## `special mcp`

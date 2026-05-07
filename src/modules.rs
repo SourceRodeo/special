@@ -14,7 +14,6 @@ use crate::cache::{
     load_or_parse_architecture, load_or_parse_repo,
 };
 use crate::config::{DocsOutputConfig, SpecialVersion};
-use crate::docs::build_documentation_coverage_summary;
 use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureKind, ArchitectureMetricsSummary, GroupedCount,
     LintReport, ModuleAnalysisOptions, ModuleDocument, ModuleFilter, ModuleNode,
@@ -235,11 +234,11 @@ fn apply_health_ignore_unexplained(
 }
 
 fn build_repo_metrics(
-    root: &Path,
-    ignore_patterns: &[String],
-    version: SpecialVersion,
+    _root: &Path,
+    _ignore_patterns: &[String],
+    _version: SpecialVersion,
     summary: &crate::model::ArchitectureAnalysisSummary,
-    docs_outputs: &[DocsOutputConfig],
+    _docs_outputs: &[DocsOutputConfig],
 ) -> Result<RepoMetricsSummary> {
     let duplicate_items_by_file = summary
         .repo_signals
@@ -323,12 +322,6 @@ fn build_repo_metrics(
             .as_ref()
             .map(|signals| signals.long_exact_prose_assertions)
             .unwrap_or_default(),
-        documentation: Some(build_documentation_coverage_summary(
-            root,
-            ignore_patterns,
-            version,
-            docs_outputs,
-        )?),
         duplicate_items_by_file,
         unowned_items_by_file,
         long_exact_prose_assertions_by_file,

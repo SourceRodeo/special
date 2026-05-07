@@ -3,7 +3,7 @@
 Rendered document, filter, metrics, and lint report domain types.
 */
 // @fileimplements SPECIAL.MODEL.OVERVIEW
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{ArchitectureAnalysisSummary, Diagnostic, DiagnosticSeverity, ModuleNode, SpecNode};
 
@@ -103,8 +103,6 @@ pub struct RepoMetricsSummary {
     pub duplicate_items: usize,
     pub unowned_items: usize,
     pub long_exact_prose_assertions: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub documentation: Option<DocumentationCoverageSummary>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub duplicate_items_by_file: Vec<GroupedCount>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -121,12 +119,12 @@ pub struct GroupedCount {
     pub count: usize,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocumentationCoverageSummary {
     pub target_kinds: Vec<DocumentationTargetCoverage>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocumentationTargetCoverage {
     pub kind: String,
     pub total: usize,

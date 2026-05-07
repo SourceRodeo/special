@@ -43,9 +43,9 @@ The audit reports
 [planned specs and unsupported current specs](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.TARGET_AUDIT)
 directly in the docs metrics output.
 
-Use [`special health --metrics`](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE)
-when the question is cross-surface coverage: which specs, modules, areas, and
-patterns are documented by generated docs, internal docs, or not at all?
+Use [target coverage](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE)
+when the question is which specs, modules, areas, and patterns are documented
+by generated docs, internal docs, or not at all.
 
 ## Output Mappings
 

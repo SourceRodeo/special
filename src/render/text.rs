@@ -239,20 +239,6 @@ pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
         "  long exact prose assertions: {}\n",
         metrics.long_exact_prose_assertions
     ));
-    if let Some(documentation) = &metrics.documentation {
-        output.push_str("  documentation coverage\n");
-        for kind in &documentation.target_kinds {
-            output.push_str(&format!(
-                "    {}s: {} total, {} documented, {} generated, {} internal-only, {} undocumented\n",
-                kind.kind,
-                kind.total,
-                kind.documented,
-                kind.generated,
-                kind.internal_only,
-                kind.undocumented
-            ));
-        }
-    }
     append_grouped_counts_text(
         &mut output,
         "duplicate items by file",
