@@ -39,6 +39,7 @@ fn init_creates_special_toml_in_current_directory() {
     let config =
         fs::read_to_string(root.join("special.toml")).expect("special.toml should be created");
     assert!(config.starts_with("version = \"1\"\nroot = \".\"\n"));
+    assert!(config.contains("# vcs = \"git\" # or \"jj\""));
     assert!(config.contains(
         "# ignore = [\"README.md\", \"docs/install.md\", \"docs/contributor/release.md\"]"
     ));

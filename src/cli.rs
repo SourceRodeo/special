@@ -44,6 +44,7 @@ use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 
 mod common;
+mod diff;
 mod docs;
 mod init;
 mod mcp;
@@ -55,6 +56,7 @@ mod skills;
 mod spec;
 mod status;
 
+use self::diff::{DiffArgs, execute_diff};
 use self::docs::{DocsArgs, execute_docs};
 use self::init::execute_init;
 use self::mcp::{McpArgs, execute_mcp};
@@ -109,6 +111,11 @@ enum Command {
         about = "Check docs links, report docs metrics, or build generated docs"
     )]
     Docs(DocsArgs),
+    #[command(
+        name = "diff",
+        about = "Fingerprint explicit relationship endpoints for review"
+    )]
+    Diff(DiffArgs),
     #[command(about = "Serve bounded Special tools for agents over stdio")]
     Mcp(McpArgs),
     #[command(about = "Fail on broken ids, misplaced annotations, and graph errors")]
@@ -156,6 +163,7 @@ fn execute(cli: Cli) -> Result<ExitCode> {
         Some(Command::Patterns(args)) => execute_patterns(args, &current_dir),
         Some(Command::Health(args)) => execute_health(args, &current_dir),
         Some(Command::Docs(args)) => execute_docs(args, &current_dir),
+        Some(Command::Diff(args)) => execute_diff(args, &current_dir),
         Some(Command::Mcp(args)) => execute_mcp(args, &current_dir),
         Some(Command::Skills(args)) => execute_skills(args, &current_dir),
         Some(Command::Specs(args)) => execute_spec(args, &current_dir),

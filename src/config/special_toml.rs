@@ -23,6 +23,7 @@ pub(crate) struct SpecialToml {
     pub(crate) root: Option<PathBuf>,
     pub(crate) version: SpecialVersion,
     pub(crate) version_explicit: bool,
+    pub(crate) vcs: Option<VcsKind>,
     pub(crate) ignore_patterns: Vec<String>,
     pub(crate) docs_outputs: Vec<DocsOutputConfig>,
     pub(crate) docs_entrypoints: Vec<PathBuf>,
@@ -60,6 +61,26 @@ pub(crate) enum ToolchainManager {
     Asdf,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum VcsKind {
+    Git,
+    Jj,
+}
+
+impl VcsKind {
+    fn parse(value: &str, line: usize) -> Result<Self> {
+        match value {
+            "git" => Ok(Self::Git),
+            "jj" => Ok(Self::Jj),
+            _ => bail!(
+                "line {} uses unsupported vcs `{}`; expected `git` or `jj`",
+                line,
+                value
+            ),
+        }
+    }
+}
+
 impl ToolchainManager {
     fn parse(value: &str, line: usize) -> Result<Self> {
         match value {
@@ -93,6 +114,7 @@ impl ToolchainManager {
 struct RawSpecialToml {
     root: Option<String>,
     version: Option<String>,
+    vcs: Option<String>,
     ignore: Option<Vec<String>>,
     docs: Option<RawDocsConfig>,
     health: Option<RawHealthConfig>,
@@ -156,6 +178,7 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
     for key in table.keys() {
         if key != "root"
             && key != "version"
+            && key != "vcs"
             && key != "ignore"
             && key != "docs"
             && key != "health"
@@ -184,6 +207,11 @@ pub(super) fn parse_special_toml(content: &str) -> Result<SpecialToml> {
         let line = key_lines.get("version").copied().unwrap_or(1);
         config.version = SpecialVersion::parse(&version, Some(line))?;
         config.version_explicit = true;
+    }
+
+    if let Some(vcs) = raw.vcs {
+        let line = key_lines.get("vcs").copied().unwrap_or(1);
+        config.vcs = Some(VcsKind::parse(&vcs, line)?);
     }
 
     if let Some(ignore_patterns) = raw.ignore {
@@ -399,7 +427,7 @@ fn line_for_offset(content: &str, offset: usize) -> usize {
 mod tests {
     use std::path::PathBuf;
 
-    use super::{PatternMetricBenchmarks, ToolchainManager, parse_special_toml};
+    use super::{PatternMetricBenchmarks, ToolchainManager, VcsKind, parse_special_toml};
     use crate::config::SpecialVersion;
 
     #[test]
@@ -475,6 +503,20 @@ mod tests {
             parse_special_toml("[toolchain]\nmanager = \"mise\"\n").expect("config should parse");
 
         assert_eq!(config.toolchain_manager, Some(ToolchainManager::Mise));
+    }
+
+    #[test]
+    fn parses_supported_vcs() {
+        let config = parse_special_toml("vcs = \"jj\"\n").expect("config should parse");
+
+        assert_eq!(config.vcs, Some(VcsKind::Jj));
+    }
+
+    #[test]
+    fn rejects_unknown_vcs() {
+        let err = parse_special_toml("vcs = \"svn\"\n").expect_err("unknown vcs should fail");
+
+        assert!(err.to_string().contains("unsupported vcs `svn`"));
     }
 
     #[test]

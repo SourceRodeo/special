@@ -1,5 +1,6 @@
 version = "1"
 root = "."
+vcs = "jj"
 ignore = [
   "CHANGELOG.md",
   "README.md",

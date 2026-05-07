@@ -7,6 +7,7 @@ mod annotation_syntax;
 mod cache;
 mod cli;
 mod config;
+mod diff;
 mod discovery;
 mod docs;
 mod extractor;

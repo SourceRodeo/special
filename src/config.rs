@@ -17,7 +17,7 @@ mod version;
 
 pub use resolution::{RootResolution, RootSource};
 pub(crate) use special_toml::{
-    DocsOutputConfig, PatternMetricBenchmarks, ToolchainManager, load_special_toml,
+    DocsOutputConfig, PatternMetricBenchmarks, ToolchainManager, VcsKind, load_special_toml,
 };
 pub use version::SpecialVersion;
 
