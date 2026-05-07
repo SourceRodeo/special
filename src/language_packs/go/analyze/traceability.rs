@@ -25,11 +25,13 @@ use crate::modules::analyze::traceability_core::{
     merge_trace_graph_edges, owned_module_ids_for_path,
     summarize_repo_traceability as summarize_shared_repo_traceability,
 };
-use crate::modules::analyze::{FileOwnership, emit_analysis_status, read_owned_file_text};
-use super::scope;
 use super::dependencies::collect_go_import_aliases;
+use super::scope;
 use super::surface::{is_go_path, is_review_surface, is_test_file_path, source_item_kind};
 use super::toolchain::{TempDirGuard, create_temp_dir, go_list_packages};
+use crate::modules::analyze::{
+    FileOwnership, ProgressHeartbeat, emit_analysis_status, read_owned_file_text,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct GoTraceabilityPack;
@@ -56,7 +58,7 @@ pub(super) fn build_traceability_graph_facts(
     root: &Path,
     source_files: &[PathBuf],
 ) -> Result<Vec<u8>> {
-    let source_graphs = parse_go_source_graphs(root, source_files);
+    let source_graphs = parse_go_source_graphs(root, source_files)?;
     let static_edges = build_static_call_edges(root, &source_graphs);
     let facts = GoTraceabilityGraphFacts {
         source_graphs: source_graphs
@@ -97,11 +99,12 @@ pub(super) fn build_traceability_inputs_from_cached_or_live_graph_facts(
 ) -> Result<TraceabilityInputs> {
     let (source_graphs, static_edges) = match decode_traceability_graph_facts(graph_facts) {
         Ok(Some(decoded)) => decoded,
-        Ok(None) | Err(_) => {
-            let source_graphs = parse_go_source_graphs(root, source_files);
+        Ok(None) => {
+            let source_graphs = parse_go_source_graphs(root, source_files)?;
             let static_edges = build_static_call_edges(root, &source_graphs);
             (source_graphs, static_edges)
         }
+        Err(error) => return Err(anyhow!("invalid cached Go traceability graph facts: {error}")),
     };
     let repo_items = collect_repo_items(&source_graphs, file_ownership);
     let mut graph = TraceGraph {
@@ -127,19 +130,20 @@ pub(super) fn build_traceability_inputs_from_cached_or_live_graph_facts(
 pub(super) fn parse_go_source_graphs(
     root: &Path,
     source_files: &[PathBuf],
-) -> BTreeMap<PathBuf, ParsedSourceGraph> {
-    source_files
-        .iter()
-        .filter(|path| is_go_path(path))
-        .filter_map(|path| {
-            let repo_path = path
-                .strip_prefix(root)
-                .unwrap_or(path)
-                .to_path_buf();
-            let text = read_owned_file_text(root, &repo_path).ok()?;
-            parse_source_graph(&repo_path, &text).map(|graph| (repo_path, graph))
-        })
-        .collect()
+) -> Result<BTreeMap<PathBuf, ParsedSourceGraph>> {
+    let mut graphs = BTreeMap::new();
+    for path in source_files.iter().filter(|path| is_go_path(path)) {
+        let repo_path = path.strip_prefix(root).unwrap_or(path).to_path_buf();
+        let text = read_owned_file_text(root, &repo_path)?;
+        let graph = parse_source_graph(&repo_path, &text).ok_or_else(|| {
+            anyhow!(
+                "failed to parse Go source graph for {}",
+                repo_path.display()
+            )
+        })?;
+        graphs.insert(repo_path, graph);
+    }
+    Ok(graphs)
 }
 
 // @applies ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
@@ -369,7 +373,9 @@ pub(super) fn build_gopls_reference_edges(
     )?;
     let mut edges = BTreeMap::<String, BTreeSet<String>>::new();
     let mut query_count = 0usize;
-    for item in callable_items {
+    let mut progress = ProgressHeartbeat::new("gopls reference collection", callable_items.len());
+    for (completed, item) in callable_items.iter().enumerate() {
+        progress.maybe_emit(completed);
         query_count += 1;
         for caller_id in client.reference_callers(item, &index)? {
             if caller_id == item.stable_id {
@@ -378,6 +384,7 @@ pub(super) fn build_gopls_reference_edges(
             edges.entry(caller_id).or_default().insert(item.stable_id.clone());
         }
     }
+    progress.finish();
     emit_analysis_status(&format!(
         "gopls opened {} file(s) while collecting references",
         client.opened_file_count()
@@ -425,7 +432,9 @@ pub(super) fn build_reverse_reachable_reference_edges(
     let mut visited = BTreeSet::new();
     let mut query_count = 0usize;
     let mut pending = seed_ids.iter().cloned().collect::<Vec<String>>();
+    let mut progress = ProgressHeartbeat::new("gopls reverse caller walk", 0);
     while let Some(callee_id) = pending.pop() {
+        progress.maybe_emit_dynamic(visited.len(), pending.len());
         if !visited.insert(callee_id.clone()) {
             continue;
         }
@@ -453,6 +462,7 @@ pub(super) fn build_reverse_reachable_reference_edges(
             }
         }
     }
+    progress.finish_dynamic(visited.len());
     emit_analysis_status(&format!(
         "gopls opened {} file(s) while walking reverse callers",
         client.opened_file_count()

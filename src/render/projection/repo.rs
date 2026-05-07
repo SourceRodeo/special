@@ -48,6 +48,7 @@ fn strip_repo_document_analysis_paths(
 fn strip_repo_signal_paths(repo_signals: &mut ArchitectureRepoSignalsSummary) {
     repo_signals.unowned_item_details.clear();
     repo_signals.duplicate_item_details.clear();
+    repo_signals.long_exact_prose_assertion_details.clear();
 }
 
 fn strip_repo_traceability_detail(

@@ -13,7 +13,7 @@ use crate::config::ProjectToolchain;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct RustToolchainProject {
     pub(super) workspace_root: PathBuf,
-    pub(super) target_sources: BTreeMap<PathBuf, RustToolchainTarget>,
+    pub(super) target_sources: BTreeMap<PathBuf, Vec<RustToolchainTarget>>,
     pub(super) capabilities: RustToolchainCapabilities,
 }
 
@@ -52,7 +52,7 @@ pub(super) enum RustdocJsonAvailability {
 impl RustToolchainProject {
     pub(super) fn crate_root_aliases(&self) -> BTreeSet<String> {
         let mut aliases = BTreeSet::new();
-        for target in self.target_sources.values() {
+        for target in self.target_sources.values().flatten() {
             if target
                 .kind
                 .iter()
@@ -68,12 +68,15 @@ impl RustToolchainProject {
     pub(super) fn binary_target_sources(&self) -> BTreeMap<String, BTreeSet<PathBuf>> {
         self.target_sources
             .iter()
-            .filter(|(_, target)| target.kind.iter().any(|kind| kind == "bin"))
             .fold(BTreeMap::new(), |mut targets, (path, target)| {
-                targets
-                    .entry(target.target_name.clone())
-                    .or_default()
-                    .insert(path.clone());
+                for target in target.iter().filter(|target| {
+                    target.kind.iter().any(|kind| kind == "bin")
+                }) {
+                    targets
+                        .entry(target.target_name.clone())
+                        .or_default()
+                        .insert(path.clone());
+                }
                 targets
             })
     }
@@ -226,14 +229,14 @@ fn parse_cargo_metadata(
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
-            target_sources.insert(
-                path,
-                RustToolchainTarget {
+            target_sources
+                .entry(path)
+                .or_insert_with(Vec::new)
+                .push(RustToolchainTarget {
                     package_name: package_name.clone(),
                     target_name: target.get("name")?.as_str()?.to_string(),
                     kind,
-                },
-            );
+                });
         }
     }
 
@@ -291,19 +294,19 @@ mod tests {
         assert_eq!(project.workspace_root, PathBuf::from("/tmp/demo"));
         assert_eq!(
             project.target_sources.get(Path::new("src/lib.rs")),
-            Some(&RustToolchainTarget {
+            Some(&vec![RustToolchainTarget {
                 package_name: "demo".to_string(),
                 target_name: "demo".to_string(),
                 kind: vec!["lib".to_string()],
-            })
+            }])
         );
         assert_eq!(
             project.target_sources.get(Path::new("src/main.rs")),
-            Some(&RustToolchainTarget {
+            Some(&vec![RustToolchainTarget {
                 package_name: "demo".to_string(),
                 target_name: "demo".to_string(),
                 kind: vec!["bin".to_string()],
-            })
+            }])
         );
         assert_eq!(
             project.capabilities,
@@ -316,25 +319,68 @@ mod tests {
     }
 
     #[test]
+    fn preserves_multiple_targets_that_share_a_source_path() {
+        let metadata = json!({
+            "workspace_root": "/tmp/demo",
+            "packages": [{
+                "name": "demo",
+                "targets": [
+                    {
+                        "name": "demo",
+                        "kind": ["bin"],
+                        "src_path": "/tmp/demo/src/main.rs"
+                    },
+                    {
+                        "name": "demo-alias",
+                        "kind": ["bin"],
+                        "src_path": "/tmp/demo/src/main.rs"
+                    }
+                ]
+            }]
+        });
+
+        let project = parse_cargo_metadata(
+            Path::new("/tmp/demo"),
+            &metadata,
+            RustToolchainCapabilities::default(),
+        )
+        .expect("metadata should parse");
+
+        assert_eq!(
+            project.binary_target_sources(),
+            BTreeMap::from([
+                (
+                    "demo".to_string(),
+                    BTreeSet::from([PathBuf::from("src/main.rs")]),
+                ),
+                (
+                    "demo-alias".to_string(),
+                    BTreeSet::from([PathBuf::from("src/main.rs")]),
+                ),
+            ])
+        );
+    }
+
+    #[test]
     fn derives_crate_root_aliases_and_binary_targets() {
         let project = super::RustToolchainProject {
             workspace_root: PathBuf::from("/tmp/demo"),
             target_sources: BTreeMap::from([
                 (
                     PathBuf::from("src/lib.rs"),
-                    RustToolchainTarget {
+                    vec![RustToolchainTarget {
                         package_name: "demo-cli".to_string(),
                         target_name: "demo".to_string(),
                         kind: vec!["lib".to_string()],
-                    },
+                    }],
                 ),
                 (
                     PathBuf::from("src/main.rs"),
-                    RustToolchainTarget {
+                    vec![RustToolchainTarget {
                         package_name: "demo-cli".to_string(),
                         target_name: "demo-cli".to_string(),
                         kind: vec!["bin".to_string()],
-                    },
+                    }],
                 ),
             ]),
             capabilities: RustToolchainCapabilities::default(),

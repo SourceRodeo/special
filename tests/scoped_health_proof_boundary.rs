@@ -5,14 +5,17 @@ Shared proof-boundary tests that compare full and scoped traceability surfaces a
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL
 The scoped traceability proof boundary uses the Lean projected traceability kernel for the shared item-level contract; the Rust reference kernel is only an explicit debug/test oracle and must not be a production fallback.
 
-@spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL.PROVEN_EXECUTABLE
-The production Lean traceability executable must delegate support-root target selection and reverse-closure derivation to the theorem-backed `ScopedHealth.ProjectedKernel` module, leaving the CLI layer as process and JSON adaptation only.
+@spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL.EXECUTABLE_REVERSE_CLOSURE
+The production Lean traceability executable must delegate parsed-`KernelInput` support-root target selection and reverse-closure derivation to `ScopedHealth.ProjectedKernel`, and `reverseClosureNodes` must be proven extensionally equivalent to mathematical reachability over the interpreted kernel reverse relation.
 */
 // @fileimplements SPECIAL.TESTS.SCOPED_HEALTH_PROOF_BOUNDARY
 // @fileverifies SPECIAL.HEALTH_COMMAND.TARGET.TRACEABILITY.LANGUAGE_PARITY
 #[allow(dead_code)]
 #[path = "../src/language_packs/go/test_fixtures.rs"]
 mod go_test_fixtures;
+#[allow(dead_code)]
+#[path = "../src/language_packs/python/test_fixtures.rs"]
+mod python_test_fixtures;
 #[allow(dead_code)]
 #[path = "../src/language_packs/rust/test_fixtures.rs"]
 mod rust_test_fixtures;
@@ -30,6 +33,7 @@ use go_test_fixtures::{
     write_go_reference_traceability_fixture, write_go_tool_traceability_fixture,
     write_go_traceability_fixture,
 };
+use python_test_fixtures::write_python_traceability_fixture;
 use rust_test_fixtures::{
     write_traceability_imported_call_fixture, write_traceability_instance_method_fixture,
     write_traceability_module_context_fixture,
@@ -532,6 +536,19 @@ fn assert_scoped_go_traceability_matches_full_then_filtered(
     )
 }
 
+fn assert_scoped_python_traceability_matches_full_then_filtered(
+    fixture_name: &str,
+    fixture_writer: fn(&std::path::Path),
+    scoped_path: &str,
+) {
+    assert_scoped_traceability_matches_full_then_filtered_or_reports_unavailable(
+        fixture_name,
+        fixture_writer,
+        scoped_path,
+        "Python backward trace",
+    )
+}
+
 fn fixture_graph() -> Graph {
     BTreeMap::from([
         (Node::ScopeRoot, BTreeSet::from([Node::Helper])),
@@ -606,17 +623,37 @@ fn project_with_exact_match_only(summary: &Summary, request: ScopeRequest) -> Su
     project(summary, &in_scope)
 }
 
-// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL.PROVEN_EXECUTABLE
+// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL.EXECUTABLE_REVERSE_CLOSURE
 #[test]
 fn production_lean_kernel_cli_delegates_to_proof_imported_projected_kernel() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let lean_root = root.join("lean/ScopedHealth.lean");
     let cli = root.join("lean/ScopedHealth/KernelCli.lean");
     let kernel = root.join("lean/ScopedHealth/ProjectedKernel.lean");
+    let kernel_base = root.join("lean/ScopedHealth/ProjectedKernel/Base.lean");
+    let kernel_worklist = root.join("lean/ScopedHealth/ProjectedKernel/Worklist.lean");
+    let kernel_output = root.join("lean/ScopedHealth/ProjectedKernel/Output.lean");
+    let kernel_transport = root.join("lean/ScopedHealth/ProjectedKernel/Transport.lean");
 
     let lean_root = fs::read_to_string(&lean_root).expect("Lean kernel root should be readable");
     let cli = fs::read_to_string(&cli).expect("Lean kernel CLI should be readable");
     let kernel = fs::read_to_string(&kernel).expect("projected Lean kernel should be readable");
+    let kernel_base =
+        fs::read_to_string(&kernel_base).expect("projected Lean kernel base should be readable");
+    let kernel_worklist = fs::read_to_string(&kernel_worklist)
+        .expect("projected Lean kernel worklist should be readable");
+    let kernel_output = fs::read_to_string(&kernel_output)
+        .expect("projected Lean kernel output should be readable");
+    let kernel_transport = fs::read_to_string(&kernel_transport)
+        .expect("projected Lean kernel transport should be readable");
+    let kernel_family = [
+        kernel.as_str(),
+        kernel_base.as_str(),
+        kernel_worklist.as_str(),
+        kernel_output.as_str(),
+        kernel_transport.as_str(),
+    ]
+    .join("\n");
 
     assert!(
         lean_root.contains("import ScopedHealth.ProjectedKernel"),
@@ -624,11 +661,11 @@ fn production_lean_kernel_cli_delegates_to_proof_imported_projected_kernel() {
     );
     assert!(
         cli.contains("import ScopedHealth.ProjectedKernel"),
-        "the production Lean executable must import the theorem-backed kernel",
+        "the production Lean executable must import the proof-facing kernel",
     );
     assert!(
         cli.contains("ProjectedKernel.run input"),
-        "the production Lean executable must delegate runtime derivation to ProjectedKernel.run",
+        "the production Lean executable must delegate parsed KernelInput graph derivation to ProjectedKernel.run",
     );
     for forbidden_cli_algorithm in [
         "def reverseReachable",
@@ -644,24 +681,40 @@ fn production_lean_kernel_cli_delegates_to_proof_imported_projected_kernel() {
         );
     }
     assert!(
-        kernel.contains("import ScopedHealth.ProjectedContractClosure"),
-        "the executable projected kernel must import the theorem surface it inhabits",
+        kernel.contains("import ScopedHealth.ProjectedKernel.Transport")
+            && kernel_worklist.contains("import ScopedHealth.ProjectedContractClosure")
+            && kernel_output.contains("import ScopedHealth.ProjectedKernel.Worklist")
+            && kernel_transport.contains("import ScopedHealth.ProjectedKernel.Output"),
+        "the executable projected kernel family must keep theorem, output, and transport modules explicit",
     );
     assert!(
-        !kernel.contains("partial def"),
+        !kernel_family.contains("partial def"),
         "the executable projected kernel must use total Lean definitions, not partial executable loops",
     );
     assert!(
-        !kernel.contains("| 0 => visited")
-            && kernel.contains("traceability kernel reverse reachability fuel exhausted"),
-        "the executable projected kernel must fail loudly instead of returning partial closure output when fuel is exhausted",
+        kernel_family.contains("def projectedKernelBoundary")
+            && kernel_family.contains("theorem reverseClosureWork_closed")
+            && kernel_family.contains("theorem computedReverseClosure_closed")
+            && kernel_family.contains("theorem reverseClosureNodes_correct")
+            && kernel_family.contains("reverseClosureExact_of_sound_closed")
+            && kernel_family.contains("theorem internalCalleeIds_correct")
+            && kernel_family.contains("theorem internalEdgePredicate_correct")
+            && kernel_family.contains("theorem supportRootNodes_correct")
+            && kernel_family.contains("theorem supportRootsFor_correct")
+            && kernel_family.contains("theorem executable_target_reverse_closure_preserved")
+            && kernel_family.contains("theorem executable_target_support_roots_preserved"),
+        "the parsed KernelInput graph kernel must expose reverse-closure correspondence and conditional preservation theorems",
     );
-    assert!(
-        kernel.contains("def projectedKernelBoundary")
-            && kernel.contains("theorem executable_target_reverse_closure_preserved")
-            && kernel.contains("theorem executable_target_support_roots_preserved"),
-        "the executable projected kernel must expose preservation theorems over its runtime target selection",
-    );
+    for boundary_token in [
+        "KernelInput",
+        "duplicate JSON object key",
+        "transport contracts",
+    ] {
+        assert!(lean_root.contains(boundary_token));
+    }
+    for transport_token in ["parseInput", "KernelInput", "stdin JSON"] {
+        assert!(kernel_transport.contains(transport_token));
+    }
 }
 
 // @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL
@@ -975,6 +1028,37 @@ fn scoped_graph_discovery_go_does_not_build_eager_language_pack_fact_blobs() {
         write_go_reference_traceability_fixture,
         "app/main.go",
         "go",
+    );
+}
+
+#[test]
+fn scoped_cli_matches_full_then_filtered_traceability_on_python_fixture() {
+    assert_scoped_python_traceability_matches_full_then_filtered(
+        "special-scoped-proof-boundary-python",
+        write_python_traceability_fixture,
+        "src/app.py",
+    );
+}
+
+// @verifies SPECIAL.HEALTH_COMMAND.TARGET.TRACEABILITY.SCOPED_GRAPH_DISCOVERY
+#[test]
+fn scoped_graph_discovery_matches_full_then_filtered_traceability_on_python_fixture() {
+    assert_scoped_graph_discovery_matches_full_then_filtered(
+        "special-scoped-graph-discovery-proof-boundary-python",
+        write_python_traceability_fixture,
+        "src/app.py",
+        &["python scoped traceability is using parser-backed scoped graph discovery"],
+    );
+}
+
+// @verifies SPECIAL.HEALTH_COMMAND.TARGET.TRACEABILITY.NO_EAGER_FACT_BLOBS
+#[test]
+fn scoped_graph_discovery_python_does_not_build_eager_language_pack_fact_blobs() {
+    assert_scoped_graph_discovery_does_not_build_language_pack_fact_blobs(
+        "special-scoped-graph-discovery-proof-boundary-python-no-eager-facts",
+        write_python_traceability_fixture,
+        "src/app.py",
+        "python",
     );
 }
 

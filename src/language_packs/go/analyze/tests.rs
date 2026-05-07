@@ -154,6 +154,49 @@ fn scoped_go_embedded_interface_analysis_matches_full_then_filtered_traceability
 }
 
 #[test]
+fn invalid_cached_graph_facts_do_not_fall_back_to_live_go_traceability() {
+    let error = super::traceability::build_traceability_inputs_from_cached_or_live_graph_facts(
+        Path::new("."),
+        &[],
+        Some(b"not json"),
+        &crate::model::ParsedRepo::default(),
+        &BTreeMap::new(),
+    )
+    .expect_err("invalid graph facts should fail explicitly");
+
+    assert!(
+        error
+            .to_string()
+            .contains("invalid cached Go traceability graph facts")
+    );
+}
+
+#[test]
+fn go_source_graph_loading_reports_unreadable_files() {
+    let root = temp_repo_dir("special-go-unreadable-source-graph");
+    let error = super::traceability::parse_go_source_graphs(&root, &[PathBuf::from("missing.go")])
+        .expect_err("unreadable Go source should fail explicitly");
+
+    assert!(error.to_string().contains("failed to read owned file"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be removed");
+}
+
+#[test]
+fn go_source_graph_loading_reports_unparseable_files() {
+    let root = temp_repo_dir("special-go-unparseable-source-graph");
+    fs::write(root.join("broken.go"), "package app\nfunc broken(")
+        .expect("broken Go source should be written");
+
+    let error = super::traceability::parse_go_source_graphs(&root, &[PathBuf::from("broken.go")])
+        .expect_err("unparseable Go source should fail explicitly");
+
+    assert!(error.to_string().contains("failed to parse Go source graph"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be removed");
+}
+
+#[test]
 fn scoped_go_direct_projected_support_roots_match_full_analysis() {
     assert_direct_scoped_go_projected_support_roots_match_full_analysis(
         "special-go-proof-boundary-direct-support-roots",

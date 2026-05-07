@@ -22,6 +22,9 @@ impl SyntaxProvider for RustSyntaxProvider {
             .set_language(&tree_sitter_rust::LANGUAGE.into())
             .ok()?;
         let tree = parser.parse(text, None)?;
+        if tree.root_node().has_error() {
+            return None;
+        }
         let mut items = Vec::new();
         collect_items(path, tree.root_node(), text.as_bytes(), &mut items);
         Some(ParsedSourceGraph {
@@ -114,10 +117,12 @@ fn has_test_attribute(node: Node<'_>, source: &[u8]) -> bool {
         {
             continue;
         }
-        if trimmed.starts_with("#[") {
-            if attribute_marks_test(trimmed) {
+        if trimmed.starts_with("#[") || trimmed.ends_with(']') {
+            let (attribute_start, attribute) = collect_attribute_text(&lines, line_index);
+            if attribute_marks_test(&attribute) {
                 return true;
             }
+            line_index = attribute_start;
             continue;
         }
         break;
@@ -125,14 +130,34 @@ fn has_test_attribute(node: Node<'_>, source: &[u8]) -> bool {
     false
 }
 
-fn attribute_marks_test(trimmed: &str) -> bool {
-    let Some(attribute) = trimmed
+fn collect_attribute_text(lines: &[&str], end_index: usize) -> (usize, String) {
+    let mut start_index = end_index;
+    while start_index > 0 {
+        let trimmed = lines[start_index].trim();
+        if trimmed.starts_with("#[") {
+            break;
+        }
+        start_index -= 1;
+    }
+    (
+        start_index,
+        lines[start_index..=end_index].join("\n").trim().to_string(),
+    )
+}
+
+fn attribute_marks_test(attribute_text: &str) -> bool {
+    let Some(attribute) = attribute_text
         .strip_prefix("#[")
         .and_then(|text| text.strip_suffix(']'))
     else {
         return false;
     };
-    let path = attribute.split('(').next().unwrap_or_default().trim();
+    let path = attribute
+        .trim_start()
+        .split(|ch: char| ch == '(' || ch.is_whitespace())
+        .next()
+        .unwrap_or_default()
+        .trim();
     path == "test" || path.ends_with("::test")
 }
 
@@ -253,6 +278,11 @@ fn function_name(
             CallSyntaxKind::Field,
         )),
         "generic_function" => function_name(node.child_by_field_name("function")?, source),
+        "parenthesized_expression" => {
+            let mut cursor = node.walk();
+            node.named_children(&mut cursor)
+                .find_map(|child| function_name(child, source))
+        }
         _ => None,
     }
 }
@@ -323,4 +353,176 @@ fn impl_container_segments(node: Node<'_>, source: &[u8]) -> Vec<String> {
     }
     segments.reverse();
     segments
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::parse_source_graph;
+    use crate::syntax::{CallSyntaxKind, SourceInvocationKind, SourceItemKind};
+
+    fn item_named<'a>(
+        graph: &'a crate::syntax::ParsedSourceGraph,
+        name: &str,
+    ) -> &'a crate::syntax::SourceItem {
+        graph
+            .items
+            .iter()
+            .find(|item| item.name == name)
+            .unwrap_or_else(|| panic!("item {name} should be present"))
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS
+    fn provider_facade_collects_rust_items_calls_tests_and_invocations() {
+        let graph = parse_source_graph(
+            Path::new("src/render/html.rs"),
+            r#"
+use std::process::Command;
+
+mod nested {
+    struct Worker;
+
+    impl Worker {
+        fn run() {}
+    }
+}
+
+fn helper() {}
+
+#[test]
+fn verifies_demo() {
+    helper();
+    crate::shared::work();
+    subject.run();
+    Command::new(env!("CARGO_BIN_EXE_special")).output();
+}
+
+#[cfg(not(test))]
+fn not_a_test() {
+    format!("{}", env!("CARGO_BIN_EXE_special"));
+}
+"#,
+        )
+        .expect("rust graph should parse");
+
+        let helper = item_named(&graph, "helper");
+        assert_eq!(helper.qualified_name, "render::html::helper");
+        assert!(!helper.public);
+        assert!(!helper.is_test);
+
+        let method = graph
+            .items
+            .iter()
+            .find(|item| item.qualified_name == "render::html::nested::Worker::run")
+            .expect("nested method should be present");
+        assert_eq!(method.kind, SourceItemKind::Method);
+
+        let test_item = item_named(&graph, "verifies_demo");
+        assert!(test_item.is_test);
+        assert!(test_item.calls.iter().any(|call| {
+            call.name == "helper"
+                && call.qualifier.is_none()
+                && call.syntax == CallSyntaxKind::Identifier
+        }));
+        assert!(test_item.calls.iter().any(|call| {
+            call.name == "work"
+                && call.qualifier.as_deref() == Some("crate::shared")
+                && call.syntax == CallSyntaxKind::ScopedIdentifier
+        }));
+        assert!(test_item.calls.iter().any(|call| {
+            call.name == "run"
+                && call.qualifier.as_deref() == Some("subject")
+                && call.syntax == CallSyntaxKind::Field
+        }));
+        assert_eq!(
+            test_item.invocations[0].kind,
+            SourceInvocationKind::LocalCargoBinary {
+                binary_name: "special".to_string()
+            }
+        );
+
+        let not_a_test = item_named(&graph, "not_a_test");
+        assert!(!not_a_test.is_test);
+        assert!(not_a_test.invocations.is_empty());
+    }
+
+    #[test]
+    fn provider_facade_collects_parenthesized_descriptor_field_calls() {
+        let graph = parse_source_graph(
+            Path::new("src/registry.rs"),
+            r#"
+fn parse_source_graph_at_path(descriptor: Descriptor, path: &Path, text: &str) {
+    (descriptor.parse_source_graph)(path, text);
+}
+"#,
+        )
+        .expect("source graph should parse");
+        let item = graph
+            .items
+            .iter()
+            .find(|item| item.name == "parse_source_graph_at_path")
+            .expect("registry function should be present");
+
+        assert!(item.calls.iter().any(|call| {
+            call.name == "parse_source_graph"
+                && call.qualifier.as_deref() == Some("descriptor")
+                && call.syntax == CallSyntaxKind::Field
+        }));
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS
+    fn provider_facade_rejects_rust_syntax_error_trees() {
+        let graph = parse_source_graph(Path::new("src/lib.rs"), "fn broken( {\n");
+
+        assert!(
+            graph.is_none(),
+            "syntax-error Rust trees should not produce partial source graphs"
+        );
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
+    fn provider_facade_rejects_non_test_cfg_and_stringified_binary_names() {
+        let graph = parse_source_graph(
+            Path::new("src/lib.rs"),
+            r#"
+#[cfg(not(test))]
+fn helper() {
+    format!("{}", env!("CARGO_BIN_EXE_special"));
+}
+"#,
+        )
+        .expect("rust graph should parse");
+
+        let helper = item_named(&graph, "helper");
+        assert!(!helper.is_test);
+        assert!(helper.invocations.is_empty());
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
+    fn provider_facade_detects_multiline_test_attributes() {
+        let graph = parse_source_graph(
+            Path::new("src/lib.rs"),
+            r#"
+#[tokio::test(
+    flavor = "multi_thread"
+)]
+async fn verifies_async_path() {
+    helper().await;
+}
+
+async fn helper() {}
+"#,
+        )
+        .expect("rust graph should parse");
+
+        let test_item = item_named(&graph, "verifies_async_path");
+        assert!(test_item.is_test);
+        let helper = item_named(&graph, "helper");
+        assert!(!helper.is_test);
+    }
 }

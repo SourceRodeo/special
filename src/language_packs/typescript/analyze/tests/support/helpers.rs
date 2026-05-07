@@ -64,7 +64,9 @@ pub(crate) fn build_typescript_summary_from_closure(
 ) -> Option<ArchitectureTraceabilitySummary> {
     let graph_facts = match analyze::build_traceability_graph_facts(root, closure_files) {
         Ok(facts) => facts,
-        Err(error) if is_typescript_tooling_unavailable(&error) => return None,
+        Err(error) if is_typescript_tooling_unavailable(&error) => {
+            panic!("TypeScript graph facts require Node tooling: {error}")
+        }
         Err(error) => panic!("graph facts should build: {error}"),
     };
     let analysis = match analyze::build_traceability_analysis_for_typescript(
@@ -77,7 +79,9 @@ pub(crate) fn build_typescript_summary_from_closure(
         file_ownership,
     ) {
         Ok(analysis) => analysis,
-        Err(error) if is_typescript_tooling_unavailable(&error) => return None,
+        Err(error) if is_typescript_tooling_unavailable(&error) => {
+            panic!("TypeScript analysis requires Node tooling: {error}")
+        }
         Err(error) => panic!("typescript analysis should build: {error}"),
     };
     Some(analyze::summarize_shared_repo_traceability(root, &analysis))

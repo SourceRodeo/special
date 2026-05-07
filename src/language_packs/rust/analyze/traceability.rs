@@ -182,6 +182,7 @@ pub(super) fn build_traceability_scope_facts(
         toolchain_project.as_ref(),
     );
     let mut edges = parser_edges.clone();
+    let mut scoped_semantic_edges = false;
     if matches!(
         semantic_fact_source,
         Some(RustSemanticFactSourceKind::RustAnalyzer)
@@ -201,6 +202,7 @@ pub(super) fn build_traceability_scope_facts(
             )
             .map_err(rust_backward_trace_failure)?,
         );
+        scoped_semantic_edges = true;
     }
     let root_supports = build_root_supports(parsed_repo, &source_graphs, |path, body| {
         parse_source_graph(path, body)
@@ -212,6 +214,7 @@ pub(super) fn build_traceability_scope_facts(
             .map(|(path, graph)| (path.clone(), CachedParsedSourceGraph::from_parsed(graph)))
             .collect(),
         edges,
+        scoped_semantic_edges,
         mediated_reasons: collect_mediated_reasons(root, source_files, &source_graphs)
             .into_iter()
             .map(|(stable_id, reason)| (stable_id, CachedRustMediatedReason::from_parsed(reason)))
@@ -238,6 +241,7 @@ pub(super) fn expand_traceability_closure_from_facts(
     let RustTraceabilityScopeFacts {
         source_graphs,
         edges,
+        scoped_semantic_edges: _,
         mediated_reasons,
         root_supports,
     } = serde_json::from_slice(facts)?;
@@ -318,10 +322,10 @@ fn build_traceability_inputs_from_cached_or_live_graph_facts(
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
     traceability_pack: &RustTraceabilityPack,
 ) -> Result<TraceabilityInputs> {
-    let (source_graphs, parser_edges, mediated_reasons) =
+    let (source_graphs, parser_edges, mediated_reasons, _) =
         match decode_traceability_graph_facts(graph_facts) {
             Ok(Some(decoded)) => decoded,
-            Ok(None) | Err(_) => {
+            Ok(None) => {
                 let source_graphs = parse_rust_source_graphs(root, source_files);
                 let parser_edges = build_parser_call_edges_with_toolchain(
                     root,
@@ -330,7 +334,12 @@ fn build_traceability_inputs_from_cached_or_live_graph_facts(
                     traceability_pack.toolchain_project.as_ref(),
                 );
                 let mediated_reasons = collect_mediated_reasons(root, source_files, &source_graphs);
-                (source_graphs, parser_edges, mediated_reasons)
+                (source_graphs, parser_edges, mediated_reasons, false)
+            }
+            Err(error) => {
+                return Err(anyhow::anyhow!(
+                    "invalid cached Rust traceability graph facts: {error}"
+                ));
             }
         };
     let edges = build_full_trace_edges(
@@ -383,10 +392,10 @@ fn build_scoped_traceability_inputs_from_cached_or_live_graph_facts(
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
     traceability_pack: &RustTraceabilityPack,
 ) -> Result<TraceabilityInputs> {
-    let (source_graphs, parser_edges, mediated_reasons) =
+    let (source_graphs, parser_edges, mediated_reasons, scoped_semantic_edges) =
         match decode_traceability_graph_facts(graph_facts) {
             Ok(Some(decoded)) => decoded,
-            Ok(None) | Err(_) => {
+            Ok(None) => {
                 let source_graphs = parse_rust_source_graphs(root, source_files);
                 let parser_edges = build_parser_call_edges_with_toolchain(
                     root,
@@ -395,10 +404,14 @@ fn build_scoped_traceability_inputs_from_cached_or_live_graph_facts(
                     traceability_pack.toolchain_project.as_ref(),
                 );
                 let mediated_reasons = collect_mediated_reasons(root, source_files, &source_graphs);
-                (source_graphs, parser_edges, mediated_reasons)
+                (source_graphs, parser_edges, mediated_reasons, false)
+            }
+            Err(error) => {
+                return Err(anyhow::anyhow!(
+                    "invalid cached Rust traceability graph facts: {error}"
+                ));
             }
         };
-    let graph_facts_include_scoped_semantics = source_graphs.len() > source_files.len();
     let scoped_boundary = derive_scoped_traceability_boundary(
         collect_repo_items(&source_graphs, file_ownership, &mediated_reasons),
         scoped_source_files,
@@ -416,7 +429,7 @@ fn build_scoped_traceability_inputs_from_cached_or_live_graph_facts(
             .len()
     ));
     let mut edges = parser_edges.clone();
-    if !graph_facts_include_scoped_semantics && matches!(
+    if !scoped_semantic_edges && matches!(
         traceability_pack.semantic_fact_source,
         Some(RustSemanticFactSourceKind::RustAnalyzer)
     ) {

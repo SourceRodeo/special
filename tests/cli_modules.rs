@@ -5,6 +5,9 @@ mod go_test_fixtures;
 mod metrics;
 #[path = "cli_modules/parse.rs"]
 mod parse;
+#[allow(dead_code)]
+#[path = "../src/language_packs/python/test_fixtures.rs"]
+mod python_test_fixtures;
 /**
 @module SPECIAL.TESTS.CLI_MODULES
 `special arch` command tests in `tests/cli_modules.rs`.
@@ -173,6 +176,15 @@ special arch --metrics --verbose surfaces highest-complexity Go items within own
 @spec SPECIAL.MODULE_COMMAND.METRICS.GO.ITEM_SIGNALS.QUALITY
 special arch --metrics --verbose surfaces parameter-heavy, stringly boundary, and panic-heavy Go items within owned implementation so unusual local craftsmanship signals are visible inside a claimed module boundary.
 
+@group SPECIAL.MODULE_COMMAND.METRICS.PYTHON_GROUP
+special arch can surface Python-specific implementation evidence for owned Python code through the built-in Python analyzer.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.PYTHON
+special arch --metrics --verbose surfaces built-in Python implementation evidence for owned Python code, including item counts, import-path dependency evidence, coupling derived from owned package and relative imports, and per-item signals when the built-in analyzer can identify them honestly.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.PYTHON.ITEM_SIGNALS
+special arch --metrics --verbose surfaces per-item Python evidence for owned implementation, including internally connected, outbound-heavy, isolated, and unreached items when the built-in analyzer can identify them honestly.
+
 @spec SPECIAL.MODULE_COMMAND.METRICS.JSON
 special arch --json --metrics includes structured architecture analysis summaries.
 
@@ -250,6 +262,15 @@ special arch --json --metrics --verbose includes structured highest-complexity G
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.JSON.GO.ITEM_SIGNALS.QUALITY
 special arch --json --metrics --verbose includes structured parameter-heavy, stringly boundary, and panic-heavy Go item evidence for owned implementation.
+
+@group SPECIAL.MODULE_COMMAND.METRICS.JSON.PYTHON_GROUP
+special arch --json --metrics can include Python-specific structured analysis evidence.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.PYTHON
+special arch --json --metrics --verbose includes structured Python implementation evidence for owned Python code, including item counts, dependency targets, module coupling, and per-item signals.
+
+@spec SPECIAL.MODULE_COMMAND.METRICS.JSON.PYTHON.ITEM_SIGNALS
+special arch --json --metrics --verbose includes structured per-item Python evidence for owned implementation, including connected Python items when the built-in analyzer can identify them honestly.
 
 @group SPECIAL.MODULE_PARSE
 special parses architecture module declarations and implementation attachments.
@@ -333,7 +354,7 @@ fn top_level_help_presents_arch_as_the_primary_command_name() {
     assert!(
         top_level_help_commands(&stdout)
             .iter()
-            .any(|(name, summary)| name == "arch" && summary == "Inspect architecture")
+            .any(|(name, _summary)| name == "arch")
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");

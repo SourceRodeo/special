@@ -19,6 +19,9 @@ impl SyntaxProvider for GoSyntaxProvider {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_go::LANGUAGE.into()).ok()?;
         let tree = parser.parse(text, None)?;
+        if tree.root_node().has_error() {
+            return None;
+        }
         let mut items = Vec::new();
         collect_items(path, tree.root_node(), text.as_bytes(), &mut items);
         Some(ParsedSourceGraph {
@@ -227,4 +230,52 @@ fn first_named_child(node: Node<'_>) -> Option<Node<'_>> {
 fn last_named_child(node: Node<'_>) -> Option<Node<'_>> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor).last()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::parse_source_graph;
+    use crate::syntax::CallSyntaxKind;
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.GO_ITEMS_AND_CALLS
+    fn provider_facade_collects_go_items_and_calls() {
+        let graph = parse_source_graph(
+            Path::new("app/main.go"),
+            r#"
+package app
+
+import "fmt"
+
+func Entry() {
+    helper()
+    fmt.Println("hi")
+}
+
+func helper() {}
+"#,
+        )
+        .expect("go graph should parse");
+
+        assert_eq!(graph.items.len(), 2);
+        let entry = graph
+            .items
+            .iter()
+            .find(|item| item.name == "Entry")
+            .expect("Entry should be present");
+        assert!(entry.public);
+        assert_eq!(entry.qualified_name, "app::Entry");
+        assert!(entry.calls.iter().any(|call| {
+            call.name == "helper"
+                && call.qualifier.is_none()
+                && call.syntax == CallSyntaxKind::Identifier
+        }));
+        assert!(entry.calls.iter().any(|call| {
+            call.name == "Println"
+                && call.qualifier.as_deref() == Some("fmt")
+                && call.syntax == CallSyntaxKind::Field
+        }));
+    }
 }

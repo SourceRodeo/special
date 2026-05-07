@@ -102,12 +102,15 @@ pub struct SpecMetricsSummary {
 pub struct RepoMetricsSummary {
     pub duplicate_items: usize,
     pub unowned_items: usize,
+    pub long_exact_prose_assertions: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub documentation: Option<DocumentationCoverageSummary>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub duplicate_items_by_file: Vec<GroupedCount>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub unowned_items_by_file: Vec<GroupedCount>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub long_exact_prose_assertions_by_file: Vec<GroupedCount>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub traceability: Option<RepoTraceabilityMetrics>,
 }

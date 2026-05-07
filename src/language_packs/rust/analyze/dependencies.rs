@@ -6,12 +6,12 @@ Extracts Rust-specific `use`-path dependency evidence from owned Rust implementa
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use syn::{Item, ItemUse, visit::Visit};
+use syn::{Item, ItemUse};
 
-use crate::modules::analyze::ModuleCouplingInput;
-use super::use_tree::flatten_use_tree;
 use crate::model::ModuleDependencySummary;
+use crate::modules::analyze::ModuleCouplingInput;
 use crate::modules::analyze::build_dependency_summary;
+use super::use_tree::flatten_use_tree;
 
 #[derive(Debug, Default)]
 pub(super) struct RustDependencySummary {
@@ -23,26 +23,12 @@ pub(super) struct RustDependencySummary {
 impl RustDependencySummary {
     pub(super) fn observe(&mut self, root: &Path, source_path: &Path, text: &str) {
         if let Ok(file) = syn::parse_file(text) {
-            let mut collector = UseCollector {
-                root,
-                source_path,
-                targets: &mut self.targets,
-                internal_files: &mut self.internal_files,
-                external_targets: &mut self.external_targets,
-            };
-            collector.visit_file(&file);
+            self.observe_items(root, source_path, &file.items);
             return;
         }
 
         if let Ok(item) = syn::parse_str::<Item>(text) {
-            let mut collector = UseCollector {
-                root,
-                source_path,
-                targets: &mut self.targets,
-                internal_files: &mut self.internal_files,
-                external_targets: &mut self.external_targets,
-            };
-            collector.visit_item(&item);
+            self.observe_item(root, source_path, &item);
         }
     }
 
@@ -56,27 +42,34 @@ impl RustDependencySummary {
             external_targets: self.external_targets.clone(),
         }
     }
-}
 
-struct UseCollector<'a> {
-    root: &'a Path,
-    source_path: &'a Path,
-    targets: &'a mut BTreeMap<String, usize>,
-    internal_files: &'a mut BTreeSet<PathBuf>,
-    external_targets: &'a mut BTreeSet<String>,
-}
+    fn observe_items(&mut self, root: &Path, source_path: &Path, items: &[Item]) {
+        for item in items {
+            self.observe_item(root, source_path, item);
+        }
+    }
 
-impl Visit<'_> for UseCollector<'_> {
-    fn visit_item_use(&mut self, node: &ItemUse) {
+    fn observe_item(&mut self, root: &Path, source_path: &Path, item: &Item) {
+        match item {
+            Item::Use(item_use) => self.observe_use(root, source_path, item_use),
+            Item::Mod(item_mod) => {
+                if let Some((_, nested)) = &item_mod.content {
+                    self.observe_items(root, source_path, nested);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn observe_use(&mut self, root: &Path, source_path: &Path, node: &ItemUse) {
         for path in flatten_use_tree(&node.tree) {
             *self.targets.entry(path.clone()).or_default() += 1;
-            if let Some(file) = resolve_internal_file(self.root, self.source_path, &path) {
+            if let Some(file) = resolve_internal_file(root, source_path, &path) {
                 self.internal_files.insert(file);
             } else if !is_internal_target(&path) {
                 self.external_targets.insert(path);
             }
         }
-        syn::visit::visit_item_use(self, node);
     }
 }
 
@@ -101,7 +94,10 @@ fn resolve_internal_file(root: &Path, source_path: &Path, path: &str) -> Option<
         "crate" => root.to_path_buf(),
         "self" => source_dir,
         "super" => {
-            let mut dir = source_dir;
+            let mut dir = source_dir
+                .parent()
+                .unwrap_or_else(|| Path::new(""))
+                .to_path_buf();
             let mut remaining = remainder.as_slice();
             while matches!(remaining.first(), Some(segment) if *segment == "super") {
                 dir = dir.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
@@ -133,4 +129,52 @@ fn resolve_internal_segments(
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn provider_dependency_summary_resolves_internal_rust_modules() {
+        let root = temp_root("special-rust-dependencies");
+        fs::create_dir_all(root.join("nested")).expect("nested dir should exist");
+        fs::write(root.join("api.rs"), "").expect("api module should exist");
+        fs::write(root.join("nested").join("mod.rs"), "").expect("nested module should exist");
+        fs::write(root.join("nested").join("sibling.rs"), "")
+            .expect("sibling module should exist");
+
+        assert!(is_internal_target("crate::api::Item"));
+        assert!(!is_internal_target("serde::Serialize"));
+        assert_eq!(
+            resolve_internal_file(&root, Path::new("lib.rs"), "crate::api::Item"),
+            Some(root.join("api.rs"))
+        );
+        assert_eq!(
+            resolve_internal_file(&root, Path::new("lib.rs"), "self::nested::Thing"),
+            Some(root.join("nested").join("mod.rs"))
+        );
+        assert_eq!(
+            resolve_internal_file(&root, Path::new("nested/current.rs"), "super::api::Item"),
+            Some(root.join("api.rs"))
+        );
+        assert_eq!(
+            resolve_internal_segments(&root, root.join("nested"), &["sibling", "Item"]),
+            Some(root.join("nested").join("sibling.rs"))
+        );
+
+        fs::remove_dir_all(root).expect("temp root should be removed");
+    }
+
+    fn temp_root(prefix: &str) -> PathBuf {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system clock should be valid")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("{prefix}-{}-{unique}", std::process::id()));
+        fs::create_dir_all(&path).expect("temp root should exist");
+        path
+    }
 }

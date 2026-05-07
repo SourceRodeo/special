@@ -14,6 +14,9 @@ pub struct ArchitectureRepoSignalsSummary {
     pub duplicate_items: usize,
     #[serde(default)]
     pub duplicate_item_details: Vec<ArchitectureDuplicateItem>,
+    pub long_exact_prose_assertions: usize,
+    #[serde(default)]
+    pub long_exact_prose_assertion_details: Vec<ArchitectureLongExactProseAssertion>,
 }
 
 impl Serialize for ArchitectureRepoSignalsSummary {
@@ -21,22 +24,35 @@ impl Serialize for ArchitectureRepoSignalsSummary {
     where
         S: Serializer,
     {
-        let mut field_count = 2;
+        let mut field_count = 3;
         if !self.unowned_item_details.is_empty() {
             field_count += 1;
         }
         if !self.duplicate_item_details.is_empty() {
+            field_count += 1;
+        }
+        if !self.long_exact_prose_assertion_details.is_empty() {
             field_count += 1;
         }
         let mut state =
             serializer.serialize_struct("ArchitectureRepoSignalsSummary", field_count)?;
         state.serialize_field("unowned_items", &self.unowned_items)?;
         state.serialize_field("duplicate_items", &self.duplicate_items)?;
+        state.serialize_field(
+            "long_exact_prose_assertions",
+            &self.long_exact_prose_assertions,
+        )?;
         if !self.unowned_item_details.is_empty() {
             state.serialize_field("unowned_item_details", &self.unowned_item_details)?;
         }
         if !self.duplicate_item_details.is_empty() {
             state.serialize_field("duplicate_item_details", &self.duplicate_item_details)?;
+        }
+        if !self.long_exact_prose_assertion_details.is_empty() {
+            state.serialize_field(
+                "long_exact_prose_assertion_details",
+                &self.long_exact_prose_assertion_details,
+            )?;
         }
         state.end()
     }
@@ -104,6 +120,16 @@ pub struct ArchitectureDuplicateItem {
     pub name: String,
     pub kind: ModuleItemKind,
     pub duplicate_peer_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArchitectureLongExactProseAssertion {
+    pub path: std::path::PathBuf,
+    pub line: usize,
+    pub language: String,
+    pub callee: String,
+    pub word_count: usize,
+    pub literal: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -53,11 +53,10 @@ pub(crate) fn assert_direct_scoped_typescript_analysis_matches_full_then_filtere
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((full, scoped, root)) =
-        build_direct_scoped_typescript_analysis_pair(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (full, scoped, root) = require_typescript_test_context(
+        fixture_name,
+        build_direct_scoped_typescript_analysis_pair(fixture_name, fixture_writer, scoped_path),
+    );
 
     assert_eq!(
         summary_identity(&filter_summary_to_display_path(full, scoped_path)),
@@ -74,10 +73,10 @@ pub(crate) fn assert_direct_scoped_typescript_exact_contract_paths(
     scoped_path: &str,
     expected_paths: &[&str],
 ) {
-    let Some(contract) = build_typescript_exact_contract(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let contract = require_typescript_test_context(
+        fixture_name,
+        build_typescript_exact_contract(fixture_name, fixture_writer, scoped_path),
+    );
 
     let actual = relativize_contract_paths(contract.projected_files.iter().cloned());
     let expected = expected_paths
@@ -92,27 +91,28 @@ pub(crate) fn assert_direct_scoped_typescript_contract_is_minimal(
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((full_summary, contract, root, parsed_repo, parsed_architecture, file_ownership)) =
-        build_typescript_contract_test_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (full_summary, contract, root, parsed_repo, parsed_architecture, file_ownership) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_contract_test_context(fixture_name, fixture_writer, scoped_path),
+        );
 
     let expected = filter_summary_to_display_path(full_summary, scoped_path);
 
     for index in 0..contract.preserved_file_closure.len() {
         let mut reduced = contract.preserved_file_closure.clone();
         let removed = reduced.remove(index);
-        let Some(summary) = build_typescript_summary_from_closure(
-            &root,
-            &reduced,
-            Some(&[root.join(scoped_path)]),
-            &parsed_repo,
-            &parsed_architecture,
-            &file_ownership,
-        ) else {
-            continue;
-        };
+        let summary = require_typescript_test_context(
+            fixture_name,
+            build_typescript_summary_from_closure(
+                &root,
+                &reduced,
+                Some(&[root.join(scoped_path)]),
+                &parsed_repo,
+                &parsed_architecture,
+                &file_ownership,
+            ),
+        );
         let filtered = filter_summary_to_display_path(summary, scoped_path);
         assert_ne!(
             summary_identity(&filtered),
@@ -130,11 +130,10 @@ pub(crate) fn assert_direct_scoped_typescript_working_contract_contains_exact_co
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((working_contract, exact_contract, root)) =
-        build_typescript_working_and_exact_contract(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (working_contract, exact_contract, root) = require_typescript_test_context(
+        fixture_name,
+        build_typescript_working_and_exact_contract(fixture_name, fixture_writer, scoped_path),
+    );
 
     assert!(
         exact_contract
@@ -153,11 +152,10 @@ pub(crate) fn assert_direct_scoped_typescript_exact_contract_target_names(
     scoped_path: &str,
     expected_names: &[&str],
 ) {
-    let Some((contract, full_inputs, root)) =
-        build_typescript_exact_contract_target_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (contract, full_inputs, root) = require_typescript_test_context(
+        fixture_name,
+        build_typescript_exact_contract_target_context(fixture_name, fixture_writer, scoped_path),
+    );
 
     let actual = contract
         .preserved_reverse_closure_target_ids
@@ -184,11 +182,10 @@ pub(crate) fn assert_direct_scoped_typescript_projected_support_roots_match_full
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((full_inputs, scoped_inputs, projected_files, root)) =
-        build_typescript_input_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (full_inputs, scoped_inputs, projected_files, root) = require_typescript_test_context(
+        fixture_name,
+        build_typescript_input_comparison_context(fixture_name, fixture_writer, scoped_path),
+    );
 
     let full_roots =
         projected_support_root_ids_for_inputs(&full_inputs, projected_files.iter().cloned());
@@ -204,11 +201,10 @@ pub(crate) fn assert_direct_scoped_typescript_projected_reverse_closure_matches_
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((full_inputs, scoped_inputs, projected_files, root)) =
-        build_typescript_input_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (full_inputs, scoped_inputs, projected_files, root) = require_typescript_test_context(
+        fixture_name,
+        build_typescript_input_comparison_context(fixture_name, fixture_writer, scoped_path),
+    );
 
     let full_closure =
         projected_reverse_closure_for_inputs(&full_inputs, projected_files.iter().cloned());
@@ -224,11 +220,15 @@ pub(crate) fn assert_direct_scoped_typescript_projected_reverse_subgraph_matches
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((_exact_contract, reference, full_inputs, scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (_exact_contract, reference, full_inputs, scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
 
     assert_eq!(
         reverse_subgraphs_for_item_ids(
@@ -249,11 +249,15 @@ pub(crate) fn assert_direct_scoped_typescript_context_support_roots_match_full_a
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((_exact_contract, _reference, full_inputs, scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (_exact_contract, _reference, full_inputs, scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
     let scoped_context_ids = effective_context_item_ids(&scoped_inputs);
 
     assert_eq!(
@@ -269,11 +273,15 @@ pub(crate) fn assert_direct_scoped_typescript_context_reverse_closure_matches_fu
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((_exact_contract, _reference, full_inputs, scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (_exact_contract, _reference, full_inputs, scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
     let scoped_context_ids = effective_context_item_ids(&scoped_inputs);
 
     assert_eq!(
@@ -289,11 +297,15 @@ pub(crate) fn assert_direct_scoped_typescript_context_reverse_subgraph_matches_f
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((_exact_contract, _reference, full_inputs, scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (_exact_contract, _reference, full_inputs, scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
     let scoped_context_ids = effective_context_item_ids(&scoped_inputs);
 
     assert_eq!(
@@ -309,11 +321,15 @@ pub(crate) fn assert_direct_scoped_typescript_structure_matches_full_then_filter
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((_exact_contract, reference, full_inputs, scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (_exact_contract, reference, full_inputs, scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
     let full = build_traceability_analysis(full_inputs);
     let scoped = build_traceability_analysis(scoped_inputs);
     let projected_ids = reference.contract.projected_item_ids;
@@ -344,11 +360,15 @@ pub(crate) fn assert_direct_scoped_typescript_reference_contract_matches_scoped_
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((exact_contract, reference, _full_inputs, scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (exact_contract, reference, _full_inputs, scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
     let scoped_context_ids = effective_context_item_ids_for_inputs(&scoped_inputs);
     let scoped_exact_reverse_closure = projected_reverse_closure_for_inputs(
         &scoped_inputs,
@@ -386,11 +406,15 @@ pub(crate) fn assert_direct_scoped_typescript_reference_reverse_closure_matches_
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((_contract, reference, _full_inputs, scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (_contract, reference, _full_inputs, scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
 
     let reference_preserved_items = reference.contract.preserved_item_ids.clone();
     let scoped_preserved_items = effective_context_item_ids_for_inputs(&scoped_inputs);
@@ -404,11 +428,15 @@ pub(crate) fn assert_direct_scoped_typescript_exact_file_closure_matches_referen
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((exact_contract, reference, _full_inputs, _scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (exact_contract, reference, _full_inputs, _scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
 
     assert_eq!(
         relativize_contract_paths(exact_contract.preserved_file_closure.iter().cloned()),
@@ -423,11 +451,15 @@ pub(crate) fn assert_direct_scoped_typescript_exact_item_kernel_matches_referenc
     fixture_writer: fn(&Path),
     scoped_path: &str,
 ) {
-    let Some((exact_contract, reference, _full_inputs, _scoped_inputs, root)) =
-        build_typescript_reference_comparison_context(fixture_name, fixture_writer, scoped_path)
-    else {
-        return;
-    };
+    let (exact_contract, reference, _full_inputs, _scoped_inputs, root) =
+        require_typescript_test_context(
+            fixture_name,
+            build_typescript_reference_comparison_context(
+                fixture_name,
+                fixture_writer,
+                scoped_path,
+            ),
+        );
 
     assert_eq!(
         exact_contract.preserved_item_ids,
@@ -443,6 +475,14 @@ pub(crate) fn assert_contract_contains_path(paths: &[PathBuf], expected: &str) {
         "expected contract to contain {expected}, got {:?}",
         relativize_contract_paths(paths.iter().cloned())
     );
+}
+
+fn require_typescript_test_context<T>(fixture_name: &str, context: Option<T>) -> T {
+    context.unwrap_or_else(|| {
+        panic!(
+            "TypeScript analysis test `{fixture_name}` requires Node and TypeScript tooling"
+        )
+    })
 }
 
 fn analysis_item_ids(
@@ -599,4 +639,18 @@ fn reverse_subgraphs_for_item_ids(
             )
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::require_typescript_test_context;
+
+    #[test]
+    fn required_typescript_context_fails_when_builder_skips() {
+        let result = std::panic::catch_unwind(|| {
+            require_typescript_test_context::<()>("missing-typescript-tooling", None);
+        });
+
+        assert!(result.is_err());
+    }
 }

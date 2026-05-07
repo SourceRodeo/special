@@ -2,6 +2,9 @@
 #[path = "../src/language_packs/go/test_fixtures.rs"]
 mod go_test_fixtures;
 #[allow(dead_code)]
+#[path = "../src/language_packs/python/test_fixtures.rs"]
+mod python_test_fixtures;
+#[allow(dead_code)]
 #[path = "../src/language_packs/rust/test_fixtures.rs"]
 mod rust_test_fixtures;
 /**
@@ -36,7 +39,7 @@ special health --target PATH --symbol NAME narrows the health view to items in t
     special health --within PATH hard-limits the analysis corpus for advanced monorepo and performance use cases.
 
     @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY
-    special health surfaces repo-wide implementation traceability for analyzable Rust, TypeScript, and Go source items through built-in language packs.
+    special health surfaces repo-wide implementation traceability for analyzable Rust, TypeScript, Go, and Python source items through built-in language packs.
 
     @spec SPECIAL.HEALTH_COMMAND.TARGET.TRACEABILITY
     special health --target PATH preserves traceability semantics while narrowing health output to the requested scope.
@@ -48,7 +51,7 @@ special health --target PATH --symbol NAME narrows the health view to items in t
     special health --target PATH uses scoped graph discovery without building eager whole-repo language-pack traceability fact blobs when the selected language pack supports scoped discovery.
 
     @spec SPECIAL.HEALTH_COMMAND.TARGET.TRACEABILITY.LANGUAGE_PARITY
-    special health --target PATH supports scoped graph discovery for the built-in Rust, TypeScript, and Go traceability language packs.
+    special health --target PATH supports scoped graph discovery for the built-in Rust, TypeScript, Go, and Python traceability language packs.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT
 special health surfaces built-in TypeScript implementation traceability for analyzable TypeScript source items.
@@ -92,6 +95,12 @@ special health combines parser and Go tool-backed package edges so selector call
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.GO.REFERENCE_EDGES
 special health combines parser and Go tool-backed reference edges so callback-style Go support can trace to the owned implementation item that is passed through an intermediary helper.
 
+@spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.PYTHON
+special health surfaces parser-backed Python implementation traceability for functions, methods, package and relative imports, aliases, pytest roots, pytest fixture injection, and direct identifier or attribute calls.
+
+@spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.PYTHON.PARSE_FAILURE
+special health reports Python traceability unavailable when parser-backed graph construction fails instead of silently analyzing a partial Python graph.
+
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.ALL_SUPPORTING_ROOTS
 special health includes every verifying test and verified spec claim that supports one traced implementation item when backward trace is available.
 
@@ -100,6 +109,9 @@ special health reports a degraded analyzer status when Rust traceability falls b
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.UNEXPLAINED
 special health keeps currently unsupported implementation separate from traced and statically mediated implementation.
+
+@spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.BOUNDARY_NON_PENETRATION
+special health intentionally does not treat process launches, command-line entrypoints, route handlers, generated entrypoints, or framework callback dispatch as proof paths into internal behavior; unsupported implementation behind those boundaries remains visible so teams can move behavior behind ordinary modules or facades that tests call directly.
 
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.DETERMINISTIC_ORDERING
 special health emits traceability item lists in deterministic source/name order rather than analyzer discovery order.
@@ -121,6 +133,9 @@ special health surfaces repo-wide duplicate-logic signals from owned implementat
 
 @spec SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS
 special health surfaces repo-wide unowned item indicators so code outside declared modules stays visible even when traceability is available.
+
+@spec SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS
+special health reports long human-prose string literals used as exact assertion targets in recognized test and fixture source files as non-blocking repo-wide quality data.
 
 @spec SPECIAL.HEALTH_COMMAND.METRICS.DOCUMENTATION_COVERAGE
 special health --metrics reports cross-surface documentation coverage for specs, groups, modules, areas, and patterns.
@@ -144,6 +159,7 @@ use go_test_fixtures::{
     write_go_reference_traceability_fixture, write_go_tool_traceability_fixture,
     write_go_traceability_fixture,
 };
+use python_test_fixtures::write_python_traceability_fixture;
 use rust_test_fixtures::{
     write_traceability_instance_method_fixture, write_traceability_module_analysis_fixture,
     write_traceability_module_context_fixture, write_traceability_multiple_supports_fixture,
@@ -193,9 +209,16 @@ fn top_level_help_presents_repo_command() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(top_level_help_commands(&stdout).iter().any(
-        |(name, summary)| name == "health" && summary == "Inspect code health and traceability"
-    ));
+    assert!(
+        top_level_help_commands(&stdout)
+            .iter()
+            .any(|(name, summary)| {
+                name == "health"
+                    && ["ownership", "proof", "docs", "patterns", "traceability"]
+                        .iter()
+                        .all(|token| summary.contains(token))
+            })
+    );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -261,6 +284,39 @@ fn repo_surfaces_unowned_items() {
 }
 
 #[test]
+// @verifies SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS
+fn repo_surfaces_long_exact_prose_assertion_signals() {
+    let root = temp_repo_dir("special-cli-repo-long-exact-prose");
+    let tests_dir = root.join("tests");
+    fs::create_dir_all(&tests_dir).expect("tests directory should be created");
+    fs::write(
+        tests_dir.join("exact_prose.rs"),
+        r#"
+#[test]
+fn exact_copy_assertion() {
+    let rendered = "actual output";
+    assert!(rendered.contains("this copied product explanation has too many prose words to make a good exact assertion target"));
+}
+"#,
+    )
+    .expect("test fixture should be written");
+
+    let output = run_special(&root, &["health", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let signals = &json["analysis"]["repo_signals"];
+    assert_eq!(signals["long_exact_prose_assertions"], Value::from(1));
+    let detail = &signals["long_exact_prose_assertion_details"][0];
+    assert_eq!(detail["path"], Value::from("tests/exact_prose.rs"));
+    assert_eq!(detail["language"], Value::from("rust"));
+    assert_eq!(detail["callee"], Value::from("contains"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.HEALTH_COMMAND.JSON
 fn repo_json_includes_structured_repo_signals() {
     let root = temp_repo_dir("special-cli-repo-json");
@@ -274,6 +330,10 @@ fn repo_json_includes_structured_repo_signals() {
     assert_eq!(
         json["analysis"]["repo_signals"]["duplicate_items"],
         Value::from(2)
+    );
+    assert_eq!(
+        json["analysis"]["repo_signals"]["long_exact_prose_assertions"],
+        Value::from(0)
     );
     assert!(
         json["analysis"]["repo_signals"]["duplicate_item_details"].is_null(),
@@ -296,6 +356,7 @@ fn repo_metrics_text_surfaces_repo_health_counts() {
     assert!(stdout.contains("special health metrics"));
     assert!(stdout.contains("duplicate items: 2"));
     assert!(stdout.contains("unowned items: 0"));
+    assert!(stdout.contains("long exact prose assertions: 0"));
     assert!(stdout.contains("duplicate items by file"));
     assert!(stdout.contains("alpha.rs: 1"));
     assert!(stdout.contains("beta.rs: 1"));
@@ -775,6 +836,130 @@ fn repo_scope_limits_traceability_to_matching_files() {
     } else {
         assert_typescript_traceability_unavailable(&json);
     }
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.PYTHON
+fn repo_surfaces_python_traceability() {
+    let root = temp_repo_dir("special-cli-repo-python-traceability");
+    write_python_traceability_fixture(&root);
+
+    let output = run_special(&root, &["health", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    assert_eq!(
+        json["analysis"]["traceability_unavailable_reason"],
+        Value::Null
+    );
+
+    let current_names = json["analysis"]["traceability"]["current_spec_items"]
+        .as_array()
+        .expect("current items should be an array")
+        .iter()
+        .filter_map(|item| item["name"].as_str())
+        .collect::<Vec<_>>();
+    assert!(current_names.contains(&"live_impl"));
+    assert!(current_names.contains(&"helper"));
+    assert!(current_names.contains(&"shared_value"));
+    assert!(current_names.contains(&"run"));
+    assert!(current_names.contains(&"offset"));
+    assert!(current_names.contains(&"nested_value"));
+
+    let unexplained_names = json["analysis"]["traceability"]["unexplained_items"]
+        .as_array()
+        .expect("unexplained items should be an array")
+        .iter()
+        .filter_map(|item| item["name"].as_str())
+        .collect::<Vec<_>>();
+    assert!(unexplained_names.contains(&"orphan_impl"));
+    assert!(!unexplained_names.contains(&"live_impl"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.PYTHON.PARSE_FAILURE
+fn repo_reports_python_traceability_unavailable_on_parse_failure() {
+    let root = temp_repo_dir("special-cli-repo-python-parse-failure");
+    write_python_traceability_fixture(&root);
+    fs::write(
+        root.join("src/package/broken.py"),
+        "# @fileimplements WORKER\n\ndef broken(:\n    return 1\n",
+    )
+    .expect("broken python source should be written");
+
+    let output = run_special(&root, &["health", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let reason = json["analysis"]["traceability_unavailable_reason"]
+        .as_str()
+        .expect("python parse failure should report unavailable traceability");
+    assert!(reason.contains("Python backward trace is unavailable"));
+    assert!(reason.contains("broken.py"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.BOUNDARY_NON_PENETRATION
+fn repo_traceability_does_not_follow_process_boundaries_into_scripts() {
+    let root = temp_repo_dir("special-cli-repo-process-boundary-traceability");
+    fs::create_dir_all(root.join("specs")).expect("specs dir should be created");
+    fs::create_dir_all(root.join("scripts")).expect("scripts dir should be created");
+    fs::create_dir_all(root.join("tests")).expect("tests dir should be created");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("config should be written");
+    fs::write(
+        root.join("ARCHITECTURE.md"),
+        "### `@module APP`\nApp module.\n",
+    )
+    .expect("architecture should be written");
+    fs::write(
+        root.join("specs/root.md"),
+        "### `@group APP`\nApp root.\n\n### `@spec APP.SCRIPT`\nScript behavior.\n",
+    )
+    .expect("specs should be written");
+    fs::write(
+        root.join("scripts/tool.py"),
+        "# @fileimplements APP\n\n\ndef business_rule():\n    return 1\n\n\ndef main():\n    return business_rule()\n\n\nif __name__ == \"__main__\":\n    main()\n",
+    )
+    .expect("script should be written");
+    fs::write(
+        root.join("tests/boundary.rs"),
+        "use std::process::Command;\n\n// @verifies APP.SCRIPT\n#[test]\nfn launches_script() {\n    let status = Command::new(\"python3\")\n        .arg(\"scripts/tool.py\")\n        .status()\n        .unwrap();\n    assert!(status.success());\n}\n",
+    )
+    .expect("test source should be written");
+
+    let output = run_special(&root, &["health", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    assert_eq!(
+        json["analysis"]["traceability_unavailable_reason"],
+        Value::Null
+    );
+    let traceability = &json["analysis"]["traceability"];
+    let current_names = traceability["current_spec_items"]
+        .as_array()
+        .expect("current items should be an array")
+        .iter()
+        .filter_map(|item| item["name"].as_str())
+        .collect::<Vec<_>>();
+    let unexplained_names = traceability["unexplained_items"]
+        .as_array()
+        .expect("unexplained items should be an array")
+        .iter()
+        .filter_map(|item| item["name"].as_str())
+        .collect::<Vec<_>>();
+    assert!(!current_names.contains(&"business_rule"));
+    assert!(unexplained_names.contains(&"business_rule"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

@@ -20,6 +20,9 @@ the release script rejects legacy `--skip-checklist` and `--yes` bypass flags.
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.DRY_RUN
 the release script dry-run prints the planned prepare, validate, and publish pipeline plus publication commands without creating a tag, moving the main bookmark, pushing to origin, or updating Homebrew.
 
+@spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.NON_CURRENT_HEAD_CONTEXT
+the release script reports non-current Jujutsu heads as release context, including enough lineage and changed-path information for a release reviewer to see what work is not on the current line without blocking the release automatically.
+
 @spec SPECIAL.DISTRIBUTION.RELEASE_FLOW.MATCHES_MANIFEST_VERSION
 the release script requires the requested tag version to exactly match the current `Cargo.toml` package version.
 
@@ -142,6 +145,16 @@ fn release_tag_dry_run_lists_pipeline_and_publication_commands() {
             .is_some_and(|commands| commands.len() >= 3),
         "dry-run should expose deterministic validation commands"
     );
+    let release_context = payload["release_context"]
+        .as_object()
+        .expect("release_context should be an object");
+    assert!(
+        release_context
+            .get("non_current_heads")
+            .and_then(Value::as_array)
+            .is_some(),
+        "dry-run should expose non-current JJ head context"
+    );
     assert_eq!(
         payload["bookmark_command"]
             .as_array()
@@ -244,6 +257,24 @@ fn release_tag_dry_run_lists_pipeline_and_publication_commands() {
                     .to_string(),
             ),
         ]
+    );
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.RELEASE_FLOW.NON_CURRENT_HEAD_CONTEXT
+fn release_tag_dry_run_reports_non_current_head_context() {
+    let version = current_package_version();
+    let payload = release_tag_dry_run(&version, &[]);
+
+    let release_context = payload["release_context"]
+        .as_object()
+        .expect("release_context should be an object");
+    assert!(
+        release_context
+            .get("non_current_heads")
+            .and_then(Value::as_array)
+            .is_some(),
+        "dry-run should expose non-current JJ head context"
     );
 }
 

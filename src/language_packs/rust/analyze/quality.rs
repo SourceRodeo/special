@@ -72,3 +72,45 @@ impl RustItemObserver for RustQualitySummary {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use syn::{ImplItem, ItemImpl};
+
+    use super::*;
+
+    fn first_method(source: &str) -> ImplItemFn {
+        let item = syn::parse_str::<ItemImpl>(source).expect("impl should parse");
+        item.items
+            .into_iter()
+            .find_map(|item| match item {
+                ImplItem::Fn(method) => Some(method),
+                _ => None,
+            })
+            .expect("impl should contain a method")
+    }
+
+    #[test]
+    fn provider_quality_summary_observes_methods_through_shared_metrics() {
+        let method = first_method("impl W { pub fn run(&self, flag: bool, name: &str) { panic!(); } }");
+        let mut summary = RustQualitySummary::default();
+
+        summary.observe_method(&method);
+        summary.observe_metrics(RustItemMetrics {
+            public: true,
+            parameter_count: 1,
+            bool_parameter_count: 0,
+            raw_string_parameter_count: 0,
+            cyclomatic: 1,
+            cognitive: 0,
+            panic_site_count: 0,
+        });
+        let metrics = summary.finish();
+
+        assert_eq!(metrics.public_function_count, 2);
+        assert_eq!(metrics.parameter_count, 4);
+        assert_eq!(metrics.bool_parameter_count, 1);
+        assert_eq!(metrics.raw_string_parameter_count, 1);
+        assert_eq!(metrics.panic_site_count, 1);
+    }
+}

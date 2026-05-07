@@ -1,6 +1,30 @@
 /**
 @module SPECIAL.SYNTAX
 Normalizes parser-specific syntax trees into a shared per-file item and call graph that language packs can populate without leaking raw parser nodes into higher layers. This layer is the parser baseline for traceability, not a claim that syntax trees alone recover full semantic reachability, and it should discover compile-time syntax providers through the shared `SPECIAL.LANGUAGE_PACKS` registry instead of hardcoding one parse branch per language in the syntax core.
+
+@group SPECIAL.SYNTAX
+shared syntax contracts.
+
+@group SPECIAL.SYNTAX.PROVIDERS
+shared syntax provider behavior.
+
+@spec SPECIAL.SYNTAX.PROVIDERS.GO_ITEMS_AND_CALLS
+the Go syntax provider records top-level functions, visibility, qualified names, and identifier or selector call edges.
+
+@spec SPECIAL.SYNTAX.PROVIDERS.PYTHON_ITEMS_AND_CALLS
+the Python syntax provider records functions, methods, pytest test roots, module/container-qualified names, and identifier or attribute call edges for parser-backed Python traceability.
+
+@spec SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS
+the Rust syntax provider records functions, methods, module/container-qualified names, test roots, local binary invocations, and identifier/scoped/field call edges.
+
+@spec SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
+the Rust syntax provider treats real tests as test roots without mistaking non-test cfg attributes or stringified binary names for tests or invocations.
+
+@spec SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_ITEMS_AND_CALLS
+the TypeScript syntax provider records exported/internal functions, exported arrow functions, and identifier or field call edges.
+
+@spec SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_TEST_CALLBACKS
+the TypeScript syntax provider records supported test callback forms as test roots only in test files.
 */
 // @fileimplements SPECIAL.SYNTAX
 use std::path::Path;
@@ -8,6 +32,7 @@ use std::path::Path;
 use tree_sitter::Node;
 
 pub(crate) mod go;
+pub(crate) mod python;
 mod registry;
 pub(crate) mod rust;
 pub(crate) mod typescript;
@@ -179,7 +204,7 @@ fn collect_calls_with_inner(
     calls: &mut Vec<SourceCall>,
     function_name: CallResolver,
 ) {
-    if node.kind() == "call_expression"
+    if matches!(node.kind(), "call_expression" | "call")
         && let Some(function) = node.child_by_field_name("function")
         && let Some((name, qualifier, syntax)) = function_name(function, source)
     {
@@ -226,6 +251,7 @@ mod tests {
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.GO_ITEMS_AND_CALLS
     fn go_provider_collects_items_and_calls() {
         let graph = parse_source_graph_for_language_at_path(
             SourceLanguage::new("go"),
@@ -264,6 +290,7 @@ func helper() {}
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS
     fn rust_provider_collects_items_and_calls() {
         let graph = parse_source_graph_for_language(
             SourceLanguage::new("rust"),
@@ -321,6 +348,7 @@ fn verifies_demo() {
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
     fn rust_provider_avoids_false_positive_test_and_invocation_detection() {
         let graph = parse_source_graph_for_language(
             SourceLanguage::new("rust"),
@@ -340,6 +368,7 @@ fn helper() {
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS
     fn rust_provider_records_stable_and_qualified_item_names() {
         let graph = parse_source_graph_for_language_at_path(
             SourceLanguage::new("rust"),
@@ -366,6 +395,7 @@ mod nested {
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS
     fn rust_provider_includes_file_module_path_in_qualified_names() {
         let graph = parse_source_graph_for_language_at_path(
             SourceLanguage::new("rust"),
@@ -391,6 +421,7 @@ mod nested {
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS
     fn rust_provider_collects_trait_impl_methods() {
         let graph = parse_source_graph_for_language_at_path(
             SourceLanguage::new("rust"),
@@ -421,6 +452,7 @@ pub fn orphan_impl() {}
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_ITEMS_AND_CALLS
     fn typescript_provider_collects_items_and_calls() {
         let graph = parse_source_graph_for_language_at_path(
             SourceLanguage::new("typescript"),
@@ -463,6 +495,7 @@ export const render = () => {
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_TEST_CALLBACKS
     fn typescript_provider_collects_inline_test_callbacks() {
         let graph = parse_source_graph_for_language_at_path(
             SourceLanguage::new("typescript"),
@@ -518,6 +551,7 @@ it.concurrent.each([["second"]])("covers %s behavior", async () => {
     }
 
     #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_TEST_CALLBACKS
     fn typescript_provider_does_not_collect_test_callbacks_outside_test_files() {
         let graph = parse_source_graph_for_language_at_path(
             SourceLanguage::new("typescript"),

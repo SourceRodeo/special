@@ -14,6 +14,7 @@ pub(super) fn format_repo_signals(coverage: &ProjectedRepoSignals) -> String {
     if coverage.counts.is_empty()
         && coverage.unowned_items.is_empty()
         && coverage.duplicate_items.is_empty()
+        && coverage.long_exact_prose_assertions.is_empty()
     {
         return String::new();
     }
@@ -27,6 +28,10 @@ pub(super) fn format_repo_signals(coverage: &ProjectedRepoSignals) -> String {
     }
     for item in &coverage.duplicate_items {
         writeln!(output, "  duplicate item: {item}").expect("string writes should succeed");
+    }
+    for item in &coverage.long_exact_prose_assertions {
+        writeln!(output, "  long exact prose assertion: {item}")
+            .expect("string writes should succeed");
     }
 
     output

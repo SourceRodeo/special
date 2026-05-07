@@ -140,7 +140,11 @@ pub(super) struct GoListPackage {
 }
 #[cfg(test)]
 mod tests {
-    use super::create_temp_dir;
+    use std::fs;
+
+    use crate::config::ProjectToolchain;
+
+    use super::{analysis_environment_fingerprint, create_temp_dir, tool_version_fingerprint};
 
     #[test]
     fn create_temp_dir_uses_unique_paths_and_cleans_up_on_drop() {
@@ -160,5 +164,44 @@ mod tests {
 
         drop(second);
         assert!(!second_path.exists());
+    }
+
+    #[test]
+    fn analysis_environment_fingerprint_reports_missing_toolchain_contract() {
+        let root = temp_root("special-go-toolchain-missing");
+
+        assert_eq!(
+            analysis_environment_fingerprint(&root),
+            "project_toolchain=unavailable"
+        );
+
+        fs::remove_dir_all(root).expect("temp root should be removed");
+    }
+
+    #[test]
+    fn tool_version_fingerprint_reports_undeclared_tools_without_shelling_real_tool() {
+        let root = temp_root("special-go-toolchain-undeclared");
+        fs::write(root.join(".tool-versions"), "python 3.12\n")
+            .expect("tool versions should be written");
+        let toolchain = ProjectToolchain::discover(&root)
+            .expect("toolchain discovery should succeed")
+            .expect("toolchain should exist");
+
+        assert_eq!(
+            tool_version_fingerprint(&toolchain, "go", &["version"]),
+            "false"
+        );
+
+        fs::remove_dir_all(root).expect("temp root should be removed");
+    }
+
+    fn temp_root(prefix: &str) -> std::path::PathBuf {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system clock should be valid")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("{prefix}-{}-{unique}", std::process::id()));
+        fs::create_dir_all(&path).expect("temp root should exist");
+        path
     }
 }

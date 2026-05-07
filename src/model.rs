@@ -10,12 +10,12 @@ mod overview;
 mod spec;
 
 pub use analysis::{
-    ArchitectureAnalysisSummary, ArchitectureDuplicateItem, ArchitectureRepoSignalsSummary,
-    ArchitectureTraceabilityItem, ArchitectureTraceabilitySummary, ArchitectureUnownedItem,
-    ModuleAnalysisOptions, ModuleAnalysisSummary, ModuleComplexitySummary, ModuleCouplingSummary,
-    ModuleCoverageSummary, ModuleDependencySummary, ModuleDependencyTargetSummary, ModuleItemKind,
-    ModuleItemSignal, ModuleItemSignalsSummary, ModuleMetricsSummary, ModuleQualitySummary,
-    ModuleTraceabilityItem, ModuleTraceabilitySummary,
+    ArchitectureAnalysisSummary, ArchitectureDuplicateItem, ArchitectureLongExactProseAssertion,
+    ArchitectureRepoSignalsSummary, ArchitectureTraceabilityItem, ArchitectureTraceabilitySummary,
+    ArchitectureUnownedItem, ModuleAnalysisOptions, ModuleAnalysisSummary, ModuleComplexitySummary,
+    ModuleCouplingSummary, ModuleCoverageSummary, ModuleDependencySummary,
+    ModuleDependencyTargetSummary, ModuleItemKind, ModuleItemSignal, ModuleItemSignalsSummary,
+    ModuleMetricsSummary, ModuleQualitySummary, ModuleTraceabilityItem, ModuleTraceabilitySummary,
 };
 pub use architecture::{
     ImplementRef, ModuleDecl, ModuleFilter, ModuleNode, ParsedArchitecture, PatternApplication,

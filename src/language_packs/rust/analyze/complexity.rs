@@ -69,3 +69,35 @@ impl RustItemObserver for RustComplexitySummary {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use syn::{ImplItem, ItemImpl};
+
+    use super::*;
+
+    fn first_method(source: &str) -> ImplItemFn {
+        let item = syn::parse_str::<ItemImpl>(source).expect("impl should parse");
+        item.items
+            .into_iter()
+            .find_map(|item| match item {
+                ImplItem::Fn(method) => Some(method),
+                _ => None,
+            })
+            .expect("impl should contain a method")
+    }
+
+    #[test]
+    fn provider_complexity_summary_observes_methods_through_shared_metrics() {
+        let method = first_method("impl W { pub fn run(&self) { if true {} } }");
+        let mut summary = RustComplexitySummary::default();
+
+        summary.observe_method(&method);
+        summary.observe_complexity(3, 2);
+        let metrics = summary.finish();
+
+        assert_eq!(metrics.function_count, 2);
+        assert_eq!(metrics.max_cyclomatic, 3);
+        assert_eq!(metrics.total_cognitive, 3);
+    }
+}

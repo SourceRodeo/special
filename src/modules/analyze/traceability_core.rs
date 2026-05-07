@@ -1030,7 +1030,7 @@ mod tests {
         }
     }
 
-    // @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL.PROVEN_EXECUTABLE
+    // @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL
     #[test]
     fn projected_traceability_kernel_default_uses_lean_when_available() {
         if !lean_kernel_available_for_equivalence_test() {
@@ -1333,7 +1333,149 @@ mod tests {
                     .collect(),
                 },
             ),
+            deep_chain_equivalence_case(),
+            wide_sibling_equivalence_case(),
+            dense_cross_link_equivalence_case(),
+            unrelated_edges_equivalence_case(),
+            large_support_roots_equivalence_case(),
         ]
+    }
+
+    fn deep_chain_equivalence_case() -> ProjectedTraceabilityKernelInput {
+        let depth = 96;
+        let mut edges = BTreeMap::new();
+        for index in 0..depth {
+            edges.insert(
+                format!("app::node_{}", index + 1),
+                [format!("app::node_{index}")].into_iter().collect(),
+            );
+        }
+        edges.insert(
+            "tests::deep".to_string(),
+            [format!("app::node_{depth}")].into_iter().collect(),
+        );
+
+        ProjectedTraceabilityKernelInput::from_projected_items_and_graph(
+            ["app::node_0".to_string()].into_iter().collect(),
+            &TraceGraph {
+                edges,
+                root_supports: [(
+                    "tests::deep".to_string(),
+                    TraceabilityItemSupport::kernel_placeholder("tests::deep"),
+                )]
+                .into_iter()
+                .collect(),
+            },
+        )
+    }
+
+    fn wide_sibling_equivalence_case() -> ProjectedTraceabilityKernelInput {
+        let sibling_count = 80;
+        let mut edges = BTreeMap::new();
+        let mut root_supports = BTreeMap::new();
+        for index in 0..sibling_count {
+            edges.insert(
+                format!("tests::wide_{index}"),
+                [format!("app::sibling_{index}")].into_iter().collect(),
+            );
+            edges.insert(
+                format!("app::sibling_{index}"),
+                ["app::target".to_string()].into_iter().collect(),
+            );
+            root_supports.insert(
+                format!("tests::wide_{index}"),
+                TraceabilityItemSupport::kernel_placeholder(&format!("tests::wide_{index}")),
+            );
+        }
+
+        ProjectedTraceabilityKernelInput::from_projected_items_and_graph(
+            ["app::target".to_string()].into_iter().collect(),
+            &TraceGraph {
+                edges,
+                root_supports,
+            },
+        )
+    }
+
+    fn dense_cross_link_equivalence_case() -> ProjectedTraceabilityKernelInput {
+        let node_count = 18;
+        let mut edges = BTreeMap::new();
+        for caller in 0..node_count {
+            let callees = (0..caller)
+                .map(|callee| format!("app::dense_{callee}"))
+                .chain((caller + 1..node_count).map(|callee| format!("app::dense_{callee}")))
+                .collect();
+            edges.insert(format!("app::dense_{caller}"), callees);
+        }
+        edges.insert(
+            "tests::dense".to_string(),
+            ["app::dense_17".to_string()].into_iter().collect(),
+        );
+
+        ProjectedTraceabilityKernelInput::from_projected_items_and_graph(
+            ["app::dense_0".to_string()].into_iter().collect(),
+            &TraceGraph {
+                edges,
+                root_supports: [(
+                    "tests::dense".to_string(),
+                    TraceabilityItemSupport::kernel_placeholder("tests::dense"),
+                )]
+                .into_iter()
+                .collect(),
+            },
+        )
+    }
+
+    fn unrelated_edges_equivalence_case() -> ProjectedTraceabilityKernelInput {
+        let mut edges = BTreeMap::new();
+        edges.insert(
+            "tests::live".to_string(),
+            ["app::live".to_string()].into_iter().collect(),
+        );
+        for index in 0..120 {
+            edges.insert(
+                format!("noise::caller_{index}"),
+                [format!("noise::callee_{index}")].into_iter().collect(),
+            );
+        }
+
+        ProjectedTraceabilityKernelInput::from_projected_items_and_graph(
+            ["app::live".to_string()].into_iter().collect(),
+            &TraceGraph {
+                edges,
+                root_supports: [(
+                    "tests::live".to_string(),
+                    TraceabilityItemSupport::kernel_placeholder("tests::live"),
+                )]
+                .into_iter()
+                .collect(),
+            },
+        )
+    }
+
+    fn large_support_roots_equivalence_case() -> ProjectedTraceabilityKernelInput {
+        let root_count = 72;
+        let mut edges = BTreeMap::new();
+        let mut root_supports = BTreeMap::new();
+        for index in 0..root_count {
+            let root = format!("tests::root_{index}");
+            edges.insert(
+                root.clone(),
+                ["app::shared".to_string()].into_iter().collect(),
+            );
+            root_supports.insert(
+                root.clone(),
+                TraceabilityItemSupport::kernel_placeholder(&root),
+            );
+        }
+
+        ProjectedTraceabilityKernelInput::from_projected_items_and_graph(
+            ["app::shared".to_string()].into_iter().collect(),
+            &TraceGraph {
+                edges,
+                root_supports,
+            },
+        )
     }
 
     #[test]

@@ -27,6 +27,7 @@ mod registry;
 mod repo_scope;
 pub(crate) mod source_item_signals;
 mod status;
+mod test_quality;
 pub(crate) mod traceability_core;
 mod unreached_code;
 
@@ -34,7 +35,10 @@ pub(crate) use coupling::ModuleCouplingInput;
 pub(crate) use ownership::{FileOwnership, display_path, read_owned_file_text, visit_owned_texts};
 pub(crate) use provider_merge::build_dependency_summary;
 pub(crate) use repo_scope::normalized_scope_paths;
-pub(crate) use status::{emit_analysis_status, with_analysis_status_notifier};
+pub(crate) use status::{
+    ProgressHeartbeat, emit_analysis_status, with_analysis_status_notifier,
+    with_periodic_analysis_status,
+};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct ArchitectureAnalysis {
@@ -142,6 +146,8 @@ pub(crate) fn build_repo_analysis_summary(
     )?;
     status::emit_analysis_status("computing duplicate-logic signals across owned implementation");
     duplication::apply_duplicate_item_summary(root, parsed, &file_ownership, &mut repo_signals)?;
+    status::emit_analysis_status("scanning test surfaces for long exact prose assertions");
+    test_quality::apply_long_exact_prose_assertion_summary(root, scoped_files, &mut repo_signals)?;
     if let Some(boundary) = scope_boundary.as_ref() {
         repo_scope::filter_repo_signals_to_scope(boundary, &mut repo_signals);
     }
@@ -165,20 +171,23 @@ pub(crate) fn build_repo_analysis_summary(
         &file_ownership,
         true,
     );
-    let traceability = build_repo_traceability_summary(
-        root,
-        &traceability_context_files,
-        &repo_contexts,
-    )
-    .map(|mut summary| {
-        if let Some(boundary) = scope_boundary.as_ref() {
-            status::emit_analysis_status("filtering repo traceability to the requested scope");
-            repo_scope::filter_traceability_to_scope(boundary, &mut summary);
-        }
-        summary
-    });
     let traceability_unavailable_reason =
         build_repo_traceability_unavailable_reason(&traceability_context_files, &repo_contexts);
+    let traceability = if traceability_unavailable_reason.is_some() {
+        None
+    } else {
+        build_repo_traceability_summary(root, &traceability_context_files, &repo_contexts).map(
+            |mut summary| {
+                if let Some(boundary) = scope_boundary.as_ref() {
+                    status::emit_analysis_status(
+                        "filtering repo traceability to the requested scope",
+                    );
+                    repo_scope::filter_traceability_to_scope(boundary, &mut summary);
+                }
+                summary
+            },
+        )
+    };
 
     Ok(ArchitectureAnalysisSummary {
         repo_signals: Some(repo_signals),
@@ -232,6 +241,8 @@ pub(crate) fn build_bounded_repo_analysis_summary(
         Some(corpus_files),
         &mut repo_signals,
     )?;
+    status::emit_analysis_status("scanning test surfaces for long exact prose assertions");
+    test_quality::apply_long_exact_prose_assertion_summary(root, corpus_files, &mut repo_signals)?;
 
     status::emit_analysis_status(&format!(
         "building language analysis contexts from {} bounded source files",
@@ -246,9 +257,13 @@ pub(crate) fn build_bounded_repo_analysis_summary(
         &file_ownership,
         true,
     );
-    let traceability = build_repo_traceability_summary(root, corpus_files, &repo_contexts);
     let traceability_unavailable_reason =
         build_repo_traceability_unavailable_reason(corpus_files, &repo_contexts);
+    let traceability = if traceability_unavailable_reason.is_some() {
+        None
+    } else {
+        build_repo_traceability_summary(root, corpus_files, &repo_contexts)
+    };
 
     Ok(ArchitectureAnalysisSummary {
         repo_signals: Some(repo_signals),

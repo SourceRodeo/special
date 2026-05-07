@@ -34,6 +34,8 @@ pub(crate) fn filter_repo_analysis_summary_to_symbol(
             .duplicate_item_details
             .retain(|item| item.name == symbol);
         repo_signals.duplicate_items = repo_signals.duplicate_item_details.len();
+        repo_signals.long_exact_prose_assertion_details.clear();
+        repo_signals.long_exact_prose_assertions = 0;
     }
     if let Some(traceability) = &mut summary.traceability {
         retain_traceability_items_by_symbol(symbol, &mut traceability.current_spec_items);
@@ -87,6 +89,10 @@ pub(super) fn filter_repo_signals_to_scope(
         .duplicate_item_details
         .retain(|item| boundary.matches_display_path(&item.path));
     summary.duplicate_items = summary.duplicate_item_details.len();
+    summary
+        .long_exact_prose_assertion_details
+        .retain(|item| boundary.matches_display_path(&item.path));
+    summary.long_exact_prose_assertions = summary.long_exact_prose_assertion_details.len();
 }
 
 pub(super) fn filter_traceability_to_scope(

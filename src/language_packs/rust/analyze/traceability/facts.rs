@@ -25,6 +25,8 @@ pub(super) struct RustTraceabilityGraphFacts {
 pub(super) struct RustTraceabilityScopeFacts {
     pub(super) source_graphs: BTreeMap<PathBuf, CachedParsedSourceGraph>,
     pub(super) edges: BTreeMap<String, BTreeSet<String>>,
+    #[serde(default)]
+    pub(super) scoped_semantic_edges: bool,
     pub(super) mediated_reasons: BTreeMap<String, CachedRustMediatedReason>,
     pub(super) root_supports: BTreeMap<String, CachedTraceabilityItemSupport>,
 }
@@ -33,6 +35,7 @@ pub(super) type RustGraphFactsDecoded = (
     BTreeMap<PathBuf, ParsedSourceGraph>,
     BTreeMap<String, BTreeSet<String>>,
     BTreeMap<String, RustMediatedReason>,
+    bool,
 );
 
 pub(super) fn decode_traceability_graph_facts(
@@ -54,9 +57,11 @@ pub(super) fn decode_traceability_graph_facts(
                 .into_iter()
                 .map(|(stable_id, reason)| (stable_id, reason.into_parsed()))
                 .collect(),
+            false,
         )));
     }
     let facts = serde_json::from_slice::<RustTraceabilityScopeFacts>(facts)?;
+    let scoped_semantic_edges = facts.scoped_semantic_edges;
     Ok(Some((
         facts
             .source_graphs
@@ -69,6 +74,7 @@ pub(super) fn decode_traceability_graph_facts(
             .into_iter()
             .map(|(stable_id, reason)| (stable_id, reason.into_parsed()))
             .collect(),
+        scoped_semantic_edges,
     )))
 }
 
@@ -380,6 +386,195 @@ impl CachedRustMediatedReason {
             Self::BuildScriptEntrypoint => RustMediatedReason::BuildScriptEntrypoint,
             Self::BuildScriptSupportCode => RustMediatedReason::BuildScriptSupportCode,
             Self::TraitImplEntrypoint => RustMediatedReason::TraitImplEntrypoint,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::{BTreeMap, BTreeSet};
+    use std::path::PathBuf;
+
+    use crate::modules::analyze::traceability_core::TraceabilityItemSupport;
+    use crate::syntax::{
+        CallSyntaxKind, ParsedSourceGraph, SourceCall, SourceInvocation, SourceInvocationKind,
+        SourceItem, SourceItemKind, SourceLanguage, SourceSpan,
+    };
+
+    use super::{
+        CachedParsedSourceGraph, CachedRustMediatedReason, CachedTraceabilityItemSupport,
+        RustTraceabilityGraphFacts, RustTraceabilityScopeFacts, decode_traceability_graph_facts,
+    };
+    use crate::language_packs::rust::analyze::traceability::RustMediatedReason;
+
+    #[test]
+    fn cached_graph_facts_round_trip_parsed_rust_source_items() {
+        let graph = parsed_graph_fixture();
+        let facts = RustTraceabilityGraphFacts {
+            source_graphs: BTreeMap::from([(
+                PathBuf::from("src/lib.rs"),
+                CachedParsedSourceGraph::from_parsed(&graph),
+            )]),
+            parser_edges: BTreeMap::from([(
+                "src/lib.rs:entry:1".to_string(),
+                BTreeSet::from(["src/lib.rs:Worker::run:8".to_string()]),
+            )]),
+            mediated_reasons: BTreeMap::from([(
+                "src/lib.rs:build:20".to_string(),
+                CachedRustMediatedReason::from_parsed(RustMediatedReason::BuildScriptEntrypoint),
+            )]),
+        };
+
+        let encoded = serde_json::to_vec(&facts).expect("graph facts should encode");
+        let (source_graphs, edges, mediated_reasons, scoped_semantic_edges) =
+            decode_traceability_graph_facts(Some(&encoded))
+                .expect("graph facts should decode")
+                .expect("graph facts should exist");
+        assert!(!scoped_semantic_edges);
+
+        let decoded_graph = source_graphs
+            .get(&PathBuf::from("src/lib.rs"))
+            .expect("source graph should be present");
+        assert_eq!(decoded_graph.items, graph.items);
+        assert_eq!(
+            edges["src/lib.rs:entry:1"],
+            BTreeSet::from(["src/lib.rs:Worker::run:8".to_string()])
+        );
+        assert!(matches!(
+            mediated_reasons["src/lib.rs:build:20"],
+            RustMediatedReason::BuildScriptEntrypoint
+        ));
+    }
+
+    #[test]
+    fn cached_scope_facts_decode_through_graph_fact_boundary() {
+        let support = TraceabilityItemSupport {
+            name: "entry test".to_string(),
+            has_item_scoped_support: true,
+            has_file_scoped_support: false,
+            current_specs: BTreeSet::from(["APP.START".to_string()]),
+            planned_specs: BTreeSet::new(),
+            deprecated_specs: BTreeSet::new(),
+        };
+        let facts = RustTraceabilityScopeFacts {
+            source_graphs: BTreeMap::from([(
+                PathBuf::from("src/lib.rs"),
+                CachedParsedSourceGraph::from_parsed(&parsed_graph_fixture()),
+            )]),
+            edges: BTreeMap::from([(
+                "src/lib.rs:test_entry:30".to_string(),
+                BTreeSet::from(["src/lib.rs:entry:1".to_string()]),
+            )]),
+            scoped_semantic_edges: true,
+            mediated_reasons: BTreeMap::from([(
+                "src/lib.rs:impl:40".to_string(),
+                CachedRustMediatedReason::from_parsed(RustMediatedReason::TraitImplEntrypoint),
+            )]),
+            root_supports: BTreeMap::from([(
+                "src/lib.rs:test_entry:30".to_string(),
+                CachedTraceabilityItemSupport::from_runtime(support.clone()),
+            )]),
+        };
+
+        let decoded_support = facts.root_supports["src/lib.rs:test_entry:30"]
+            .clone()
+            .into_runtime();
+        assert_eq!(decoded_support.name, support.name);
+        assert_eq!(decoded_support.current_specs, support.current_specs);
+
+        let encoded = serde_json::to_vec(&facts).expect("scope facts should encode");
+        let (_, edges, mediated_reasons, scoped_semantic_edges) = decode_traceability_graph_facts(Some(&encoded))
+            .expect("scope facts should decode")
+            .expect("scope facts should exist");
+        assert!(scoped_semantic_edges);
+        assert_eq!(
+            edges["src/lib.rs:test_entry:30"],
+            BTreeSet::from(["src/lib.rs:entry:1".to_string()])
+        );
+        assert!(matches!(
+            mediated_reasons["src/lib.rs:impl:40"],
+            RustMediatedReason::TraitImplEntrypoint
+        ));
+    }
+
+    fn parsed_graph_fixture() -> ParsedSourceGraph {
+        ParsedSourceGraph {
+            language: SourceLanguage::new("rust"),
+            items: vec![
+                source_item(
+                    "entry",
+                    "entry",
+                    SourceItemKind::Function,
+                    vec![
+                        source_call("helper", None, CallSyntaxKind::Identifier),
+                        source_call("new", Some("std::process::Command"), CallSyntaxKind::Field),
+                    ],
+                ),
+                source_item(
+                    "run",
+                    "Worker::run",
+                    SourceItemKind::Method,
+                    vec![source_call(
+                        "helper",
+                        Some("crate::helpers"),
+                        CallSyntaxKind::ScopedIdentifier,
+                    )],
+                ),
+            ],
+        }
+    }
+
+    fn source_item(
+        name: &str,
+        qualified_name: &str,
+        kind: SourceItemKind,
+        calls: Vec<SourceCall>,
+    ) -> SourceItem {
+        SourceItem {
+            source_path: "src/lib.rs".to_string(),
+            stable_id: format!("src/lib.rs:{qualified_name}:1"),
+            name: name.to_string(),
+            qualified_name: qualified_name.to_string(),
+            module_path: vec!["src".to_string()],
+            container_path: qualified_name
+                .split("::")
+                .take(qualified_name.split("::").count().saturating_sub(1))
+                .map(ToString::to_string)
+                .collect(),
+            shape_fingerprint: format!("shape-{name}"),
+            shape_node_count: 3,
+            kind,
+            span: span(),
+            public: true,
+            root_visible: true,
+            is_test: false,
+            calls,
+            invocations: vec![SourceInvocation {
+                kind: SourceInvocationKind::LocalCargoBinary {
+                    binary_name: "special".to_string(),
+                },
+                span: span(),
+            }],
+        }
+    }
+
+    fn source_call(name: &str, qualifier: Option<&str>, syntax: CallSyntaxKind) -> SourceCall {
+        SourceCall {
+            name: name.to_string(),
+            qualifier: qualifier.map(ToString::to_string),
+            syntax,
+            span: span(),
+        }
+    }
+
+    fn span() -> SourceSpan {
+        SourceSpan {
+            start_line: 1,
+            end_line: 2,
+            start_column: 0,
+            end_column: 1,
+            start_byte: 0,
+            end_byte: 10,
         }
     }
 }

@@ -56,6 +56,10 @@ fn format_repo_metrics_html(metrics: &RepoMetricsSummary) -> String {
                 label: "unowned items",
                 value: metrics.unowned_items.to_string(),
             },
+            HtmlCount {
+                label: "long exact prose assertions",
+                value: metrics.long_exact_prose_assertions.to_string(),
+            },
         ],
     );
     html.push_str(&render_grouped_metrics_section_html(
@@ -65,6 +69,10 @@ fn format_repo_metrics_html(metrics: &RepoMetricsSummary) -> String {
     html.push_str(&render_grouped_metrics_section_html(
         "unowned items by file",
         &metrics.unowned_items_by_file,
+    ));
+    html.push_str(&render_grouped_metrics_section_html(
+        "long exact prose assertions by file",
+        &metrics.long_exact_prose_assertions_by_file,
     ));
     if let Some(documentation) = &metrics.documentation {
         let documented = documentation

@@ -2,10 +2,10 @@
 Lean traceability kernel
 ========================
 
-This package contains the production scoped traceability kernel plus the small
-abstract theorem family that audits its graph-narrowing contract. The executable
-JSON kernel lives in `ScopedHealth.KernelCli`; this root imports the theorem
-surface and executable kernel used by the released binary.
+This package contains the production scoped traceability kernel and the formal
+contract that justifies graph narrowing. The executable JSON adapter lives in
+`ScopedHealth.KernelCli`; this root imports both the theorem surface and the
+operational kernel used by the released binary.
 
 How to read this package
 ------------------------
@@ -20,47 +20,64 @@ Read the files in this order:
 3. `SupportWitness.lean`
    lifts the same fact to reachable support roots.
 4. `ProjectedContractClosure.lean`
-   packages the shared Rust/TypeScript/Go item-level production contract.
+   packages the shared Rust/TypeScript/Go/Python item-level production contract.
 5. `FileContractClosure.lean`
    adds the TypeScript file-loading projection.
 6. `ProjectedKernel.lean`
-   defines the executable projected-kernel decisions and proves that those
-   target-selection definitions inhabit the projected contract theorem surface.
+   re-exports the executable projected-kernel module family:
+   `ProjectedKernel.Base` defines `KernelInput` and graph interpretation,
+   `ProjectedKernel.Worklist` proves exact reverse closure,
+   `ProjectedKernel.Output` proves support-root and kept-callee filtering plus
+   projected-contract preservation, and `ProjectedKernel.Transport` adapts the
+   proven kernel to stdin/stdout JSON.
 7. `KernelCli.lean`
    adapts the projected kernel to stdin/stdout JSON.
 
-Why there is a narrowed kernel
-------------------------------
+The proof boundary
+------------------
 
-The product behavior we want for `special health PATH` is conceptually simple:
-analyze the full repository, then show only the traceability results relevant to
-`PATH`.
+The formal graph kernel starts at `KernelInput`. From that parsed input, Lean
+proves the target selection, reverse-closure node list, support-root filter,
+kept-callee filter, and projected-contract preservation theorems.
 
-Doing that literally for every scoped request is often too expensive and, for
-some language packs, not the way the underlying tools work. TypeScript and Go
-tools naturally load files or packages; Rust analysis may need context items
-that are outside the displayed scope. So the implementation uses a narrowed
-kernel: keep the requested output items plus enough surrounding trace graph to
-compute their support evidence.
+`parseInput`, `outputJson`, `run`, and `KernelCli.lean` are transport adapters.
+They keep the released binary small and direct. They form a separate protocol
+boundary: this package proves the mathematics of narrowing after parsing has
+produced `KernelInput`; protocol behavior such as malformed JSON, Lean object
+decoding, and duplicate object keys is validated by tests and can be formalized
+independently if that boundary ever becomes the theorem object.
+
+The narrowing problem
+---------------------
+
+The product behavior for `special health PATH` is conceptually simple: analyze
+the repository, then show only the traceability results relevant to `PATH`.
+
+Doing that literally for every scoped request is often too expensive, and some
+language tools do not expose results at exactly the display boundary. TypeScript
+and Go naturally load files or packages, Rust analysis may require context items
+outside the requested path, and Python derives a parser-backed graph over files.
+The implementation therefore uses a narrowed kernel: keep the requested output
+items plus the trace graph needed to compute their support evidence.
 
 The danger is that "enough surrounding graph" is easy to get subtly wrong. If
 we keep too little, a scoped run can lose support roots or reverse callers that
 full analysis would have found. If we keep unrelated material, results may be
 slow or confusing, but the more serious correctness failure is losing evidence.
 
-This Lean package states the exact condition under which narrowing is
-traceability-preserving. It is not math for its own sake: it is the audit
-contract that lets a faster scoped implementation stand in for "full analysis,
-then filter" for the traceability evidence named below.
+This Lean package states the condition under which narrowing is
+traceability-preserving. It is the audit contract that lets scoped execution
+stand in for "full analysis, then filter" for the traceability evidence named
+below.
 
 Objects
 -------
 
 Let `α` be the type of analyzed items. Let `R : α -> α -> Prop` be the
 backward trace relation: `R callee caller` means that `caller` is direct
-evidence for, or directly supports, `callee`. This is the inverse of the JSON
-edge map accepted by `KernelCli.lean`, which stores direct `caller -> callee`
-edges and then walks incoming callers.
+evidence for, or directly supports, `callee`. In `KernelInput`, edges are
+stored as direct `caller -> callee` lists; `reverseRelation` interprets that
+finite input as the incoming-caller relation used by the theorem.
 
 `Path R a b` is the reflexive-transitive closure of `R`. Thus `Path R target x`
 means that `x` is in the reverse support/caller closure of `target`.
@@ -108,6 +125,26 @@ For every `target` item satisfying `boundary.target target`:
    So the kept graph preserves exactly the same reachable roots, such as tests
    or specs, for every supported projected target.
 
+`ProjectedKernel.Worklist` then attaches this abstract theorem to the executable
+closure calculation. The worklist starts from the selected target ids, closes
+over the finite input graph, and produces exactly the mathematical reverse
+closure:
+
+      contains (reverseClosureNodes edges targets) x = true <->
+      Reachable (reverseRelation edges) (seedPredicate targets) x
+
+This connects the emitted `node_ids` list to the same reachability predicate
+used by the graph theorem.
+
+`ProjectedKernel.Output` proves the executable support-root filter against the
+same relation:
+
+      contains (supportRootsFor input target) root = true <->
+      supportRootPredicate input root /\ Path (reverseRelation input.edges) target root
+
+The `internalCalleeIds` helper used by the transport encoder is also proven to
+keep exactly the original callees that appear in the emitted node set.
+
 TypeScript has one extra execution-layer theorem,
 `FileContractClosureBoundary`, because its analyzer loads files rather than
 individual items. If the kept file set is exactly the projected files plus the
@@ -115,18 +152,16 @@ files that own the reverse closure of the target items, then the same two
 item-level preservation results hold when `Keep x` is defined as "the owner file
 of `x` is kept".
 
-What is not proven here
------------------------
+Transport and upstream boundaries
+---------------------------------
 
-This proof does not prove parser correctness, language-server correctness,
-quality metrics, cache correctness, JSON parsing correctness, or that any
-language pack computes predicates satisfying the boundary assumptions. Those
-are checked by executable Rust/TypeScript/Go fixture tests and by Lean-vs-Rust
-kernel equivalence tests around the production JSON kernel.
-
-The proof is therefore conditional but exact: if the boundary predicate matches
-the full reverse closure described above, then reverse-reachable traceability
-evidence and support-root witnesses are preserved by the narrowed graph.
+The kernel proof starts at `KernelInput`, so parser correctness,
+language-server correctness, quality metrics, cache correctness, JSON parser and
+object semantics, duplicate JSON object key behavior, and language-pack fact
+construction are upstream or transport contracts. This package proves the graph
+calculation performed after parsing: reverse-closure `node_ids`, support-root
+filtering, the kept-callee helper used inside `internal_edges`, and the
+preservation contract those outputs inhabit.
 -/
 
 import ScopedHealth.Closure

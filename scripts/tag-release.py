@@ -140,6 +140,115 @@ def release_revision(root: Path) -> str:
     return revision_id(root, release_revset(root))
 
 
+def non_current_head_rows(root: Path) -> list[tuple[str, str, str]]:
+    template = 'change_id.short() ++ "\t" ++ commit_id ++ "\t" ++ description.first_line() ++ "\n"'
+    output = run_checked(
+        root,
+        [
+            "jj",
+            "log",
+            "-r",
+            "heads(all()) ~ ancestors(@)",
+            "--no-graph",
+            "-T",
+            template,
+        ],
+    )
+    rows = []
+    for line in output.splitlines():
+        parts = line.split("\t", 2)
+        if len(parts) == 3:
+            rows.append((parts[0], parts[1], parts[2]))
+    return rows
+
+
+def limited_lines(text: str, limit: int) -> dict[str, object]:
+    lines = [line for line in text.splitlines() if line.strip()]
+    return {
+        "lines": lines[:limit],
+        "truncated": len(lines) > limit,
+        "total_lines": len(lines),
+    }
+
+
+def non_current_head_context(root: Path) -> dict[str, object]:
+    heads = []
+    for change_id, commit_id, description in non_current_head_rows(root):
+        common = run_checked(
+            root,
+            [
+                "jj",
+                "log",
+                "-r",
+                f"latest(ancestors(@) & ancestors({commit_id}), 1)",
+                "--no-graph",
+                "-T",
+                'change_id.short() ++ "\t" ++ commit_id ++ "\t" ++ description.first_line()',
+            ],
+        ).strip()
+        common_parts = common.split("\t", 2)
+        common_display = " ".join(part for part in common_parts if part)
+        common_commit = common_parts[1] if len(common_parts) >= 2 else common.split(" ", 1)[0]
+        lineage = run_checked(
+            root,
+            [
+                "jj",
+                "log",
+                "-r",
+                f"ancestors({commit_id}) ~ ancestors(@)",
+                "--no-graph",
+                "--limit",
+                "40",
+                "-T",
+                'change_id.short() ++ " " ++ commit_id.short() ++ " " ++ description.first_line() ++ "\n"',
+            ],
+        )
+        summary = run_checked(
+            root,
+            ["jj", "diff", "--from", common_commit, "--to", commit_id, "--summary"],
+        )
+        heads.append(
+            {
+                "change_id": change_id,
+                "commit_id": commit_id,
+                "description": description,
+                "common_ancestor": common_display,
+                "lineage": limited_lines(lineage, 40),
+                "diff_summary": limited_lines(summary, 120),
+            }
+        )
+    return {"non_current_heads": heads}
+
+
+def emit_non_current_head_context(root: Path) -> None:
+    context = non_current_head_context(root)
+    heads = context["non_current_heads"]
+    assert isinstance(heads, list)
+    sys.stderr.write(f"release context: {len(heads)} non-current JJ head(s)\n")
+    for head in heads:
+        assert isinstance(head, dict)
+        sys.stderr.write(
+            f"- {head['change_id']} {head['commit_id']} {head['description']}\n"
+        )
+        sys.stderr.write(f"  common ancestor: {head['common_ancestor']}\n")
+        lineage = head["lineage"]
+        assert isinstance(lineage, dict)
+        if lineage["lines"]:
+            sys.stderr.write("  lineage:\n")
+            for line in lineage["lines"]:
+                sys.stderr.write(f"    {line}\n")
+            if lineage["truncated"]:
+                sys.stderr.write(f"    ... {lineage['total_lines']} total line(s)\n")
+        diff_summary = head["diff_summary"]
+        assert isinstance(diff_summary, dict)
+        if diff_summary["lines"]:
+            sys.stderr.write("  changed paths:\n")
+            for line in diff_summary["lines"]:
+                sys.stderr.write(f"    {line}\n")
+            if diff_summary["truncated"]:
+                sys.stderr.write(f"    ... {diff_summary['total_lines']} total path(s)\n")
+
+
 def require_clean_working_copy(root: Path) -> None:
     status = run_checked(root, ["jj", "status", "--no-pager"])
     if (
@@ -418,6 +527,7 @@ def main() -> int:
                     "release_bookmark": release_bookmark,
                     "release_revset": target,
                     "revision": revision,
+                    "release_context": non_current_head_context(root),
                     "pipeline": [
                         {
                             "phase": "prepare",
@@ -457,6 +567,7 @@ def main() -> int:
         return 0
 
     require_release_preflight(root, version)
+    emit_non_current_head_context(root)
 
     if args.validate:
         run_validation(root, version, revision, args)

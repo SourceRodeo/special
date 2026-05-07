@@ -4,7 +4,9 @@ import ScopedHealth.ProjectedKernel
 Thin executable adapter for the theorem-backed projected traceability kernel.
 
 All traceability decisions live in `ScopedHealth.ProjectedKernel`; this module
-only handles process IO and exit behavior.
+only handles process IO and exit behavior. The formal graph proof starts at
+`ProjectedKernel.KernelInput`; raw stdin/stdout JSON belongs to this transport
+layer.
 -/
 
 namespace SpecialProofs

@@ -6,7 +6,7 @@ Owns Go scoped traceability scope-facts, exact item-kernel narrowing, and the ex
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 use crate::model::ParsedRepo;
 use crate::modules::analyze::traceability_core::{
@@ -31,7 +31,7 @@ pub(super) fn build_traceability_scope_facts(
     parsed_repo: &ParsedRepo,
     file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
 ) -> Result<Vec<u8>> {
-    let source_graphs = parse_go_source_graphs(root, source_files);
+    let source_graphs = parse_go_source_graphs(root, source_files)?;
     let static_edges = build_static_call_edges(root, &source_graphs);
     let repo_items = collect_repo_items(&source_graphs, file_ownership);
     let known_source_paths = source_graphs.keys().cloned().collect::<Vec<_>>();
@@ -177,11 +177,12 @@ pub(super) fn build_scoped_traceability_inputs_from_cached_or_live_graph_facts(
 ) -> Result<TraceabilityInputs> {
     let (source_graphs, static_edges) = match decode_traceability_graph_facts(graph_facts) {
         Ok(Some(decoded)) => decoded,
-        Ok(None) | Err(_) => {
-            let source_graphs = parse_go_source_graphs(root, source_files);
+        Ok(None) => {
+            let source_graphs = parse_go_source_graphs(root, source_files)?;
             let static_edges = build_static_call_edges(root, &source_graphs);
             (source_graphs, static_edges)
         }
+        Err(error) => return Err(anyhow!("invalid cached Go traceability graph facts: {error}")),
     };
     let graph_facts_include_scoped_semantics = source_graphs.len() > source_files.len();
     let normalized_scoped_source_files = scoped_source_files

@@ -22,6 +22,7 @@ pub(crate) enum MetricExplanationKey {
     UnreachedItem,
     UnreachedItems,
     DuplicateItems,
+    LongExactProseAssertions,
     HighestComplexityItem,
     ParameterHeavyItem,
     StringlyBoundaryItem,
@@ -43,7 +44,7 @@ pub(crate) fn metric_explanation(key: MetricExplanationKey) -> MetricExplanation
     METRIC_EXPLANATIONS[key as usize]
 }
 
-const METRIC_EXPLANATIONS: [MetricExplanation; 25] = [
+const METRIC_EXPLANATIONS: [MetricExplanation; 26] = [
     MetricExplanation {
         plain: "this is the combined branchiness across owned functions and methods.",
         precise: "sum of per-item cyclomatic complexity across analyzed owned implementation.",
@@ -107,6 +108,10 @@ const METRIC_EXPLANATIONS: [MetricExplanation; 25] = [
     MetricExplanation {
         plain: "this counts owned items whose parser-normalized structure and substantive operation profile match another owned item, so they may indicate repeated implementation logic worth consolidating or reviewing.",
         precise: "count of analyzed owned items whose structural fingerprint and substantive call/control-flow profile match at least one other analyzed owned item.",
+    },
+    MetricExplanation {
+        plain: "this highlights tests that pin long prose to exact string matching instead of checking smaller semantic pieces.",
+        precise: "count of long human-prose string literals used as exact assertion targets in recognized test or fixture source files.",
     },
     MetricExplanation {
         plain: "this is one of the most structurally complex owned items inside the module boundary.",

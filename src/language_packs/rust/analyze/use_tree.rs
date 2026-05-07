@@ -78,3 +78,30 @@ fn collect_use_aliases_with_prefix(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_use_tree(source: &str) -> UseTree {
+        let item = syn::parse_str::<syn::ItemUse>(source).expect("use item should parse");
+        item.tree
+    }
+
+    #[test]
+    fn provider_use_tree_helpers_flatten_groups_and_renames() {
+        let tree = parse_use_tree("use crate::{api::Client, io::Reader as R, prelude::*};");
+        let mut prefixed = Vec::new();
+
+        flatten_use_tree_with_prefix(&tree, vec!["root".to_string()], &mut prefixed);
+
+        assert_eq!(
+            flatten_use_tree(&tree),
+            vec!["crate::api::Client", "crate::io::Reader"]
+        );
+        assert_eq!(
+            prefixed,
+            vec!["root::crate::api::Client", "root::crate::io::Reader"]
+        );
+    }
+}

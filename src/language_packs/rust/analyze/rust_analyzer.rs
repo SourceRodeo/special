@@ -16,6 +16,7 @@ use serde_json::{Value, json};
 use url::Url;
 
 use crate::config::ProjectToolchain;
+use crate::modules::analyze::ProgressHeartbeat;
 use crate::syntax::{SourceCall, SourceSpan};
 
 #[derive(Debug, Clone)]
@@ -63,7 +64,9 @@ pub(super) fn build_reachable_call_edges(
             .extend(seed_callees);
     }
 
+    let mut forward_progress = ProgressHeartbeat::new("rust-analyzer call graph walk", 0);
     while let Some(caller_id) = pending.pop_front() {
+        forward_progress.maybe_emit_dynamic(visited.len(), pending.len());
         if !visited.insert(caller_id.clone()) {
             continue;
         }
@@ -92,12 +95,16 @@ pub(super) fn build_reachable_call_edges(
 
         edges.entry(caller_id).or_default().extend(callees);
     }
+    forward_progress.finish_dynamic(visited.len());
 
     crate::modules::analyze::emit_analysis_status(&format!(
         "rust-analyzer resolving incoming callers for {} callable item(s)",
         items.len()
     ));
-    for callee in items {
+    let mut incoming_progress =
+        ProgressHeartbeat::new("rust-analyzer incoming caller resolution", items.len());
+    for (completed, callee) in items.iter().enumerate() {
+        incoming_progress.maybe_emit(completed);
         for caller_id in client.reference_callers(callee, &index)? {
             if caller_id != callee.stable_id {
                 edges
@@ -107,6 +114,7 @@ pub(super) fn build_reachable_call_edges(
             }
         }
     }
+    incoming_progress.finish();
 
     client.shutdown()?;
     crate::modules::analyze::emit_analysis_status(&format!(
@@ -147,7 +155,9 @@ pub(super) fn build_reverse_reachable_call_edges(
     let mut visited = BTreeSet::new();
     let mut pending = seed_ids.iter().cloned().collect::<VecDeque<_>>();
 
+    let mut reverse_progress = ProgressHeartbeat::new("rust-analyzer reverse caller walk", 0);
     while let Some(callee_id) = pending.pop_front() {
+        reverse_progress.maybe_emit_dynamic(visited.len(), pending.len());
         if !visited.insert(callee_id.clone()) {
             continue;
         }
@@ -175,6 +185,7 @@ pub(super) fn build_reverse_reachable_call_edges(
             }
         }
     }
+    reverse_progress.finish_dynamic(visited.len());
 
     client.shutdown()?;
     crate::modules::analyze::emit_analysis_status(&format!(
@@ -219,41 +230,54 @@ impl RustAnalyzerItemIndex {
 
     fn resolve(&self, target: &RustAnalyzerTarget) -> Option<String> {
         let items = self.by_path.get(&target.path)?;
-        let mut exact = items.iter().filter(|item| {
-            item.name == target.name
-                && target.line >= item.span.start_line
-                && target.line <= item.span.end_line
-        });
-        if let Some(item) = exact.next()
-            && exact.next().is_none()
-        {
-            return Some(item.stable_id.clone());
-        }
-
-        let mut fallback = items.iter().filter(|item| {
-            target.line >= item.span.start_line && target.line <= item.span.end_line
-        });
-        if let Some(item) = fallback.next()
-            && fallback.next().is_none()
-        {
-            return Some(item.stable_id.clone());
-        }
-
-        None
+        unique_narrowest_item(items.iter().filter(|item| {
+            item.name == target.name && contains_line(&item.span, target.line)
+        }))
+        .or_else(|| unique_narrowest_item(items.iter().filter(|item| contains_line(&item.span, target.line))))
+        .map(|item| item.stable_id.clone())
     }
 
     fn resolve_containing(&self, path: &Path, line: usize) -> Option<String> {
         let items = self.by_path.get(path)?;
-        let mut containing = items
-            .iter()
-            .filter(|item| line >= item.span.start_line && line <= item.span.end_line);
-        if let Some(item) = containing.next()
-            && containing.next().is_none()
-        {
-            return Some(item.stable_id.clone());
-        }
-        None
+        unique_narrowest_item(items.iter().filter(|item| contains_line(&item.span, line)))
+            .map(|item| item.stable_id.clone())
     }
+}
+
+fn contains_line(span: &SourceSpan, line: usize) -> bool {
+    line >= span.start_line && line <= span.end_line
+}
+
+fn span_line_count(span: &SourceSpan) -> usize {
+    span.end_line.saturating_sub(span.start_line)
+}
+
+fn unique_narrowest_item<'a>(
+    candidates: impl Iterator<Item = &'a IndexedItem>,
+) -> Option<&'a IndexedItem> {
+    let mut best: Option<&IndexedItem> = None;
+    let mut ambiguous = false;
+
+    for candidate in candidates {
+        match best {
+            None => {
+                best = Some(candidate);
+                ambiguous = false;
+            }
+            Some(current) => {
+                let candidate_size = span_line_count(&candidate.span);
+                let current_size = span_line_count(&current.span);
+                if candidate_size < current_size {
+                    best = Some(candidate);
+                    ambiguous = false;
+                } else if candidate_size == current_size && candidate.stable_id != current.stable_id {
+                    ambiguous = true;
+                }
+            }
+        }
+    }
+
+    best.filter(|_| !ambiguous)
 }
 
 struct RustAnalyzerClient {
@@ -683,21 +707,13 @@ mod tests {
 
     #[test]
     fn resolves_target_by_name_and_line() {
-        let items = vec![RustAnalyzerCallableItem {
-            stable_id: "src/lib.rs:demo::run:3".to_string(),
-            name: "run".to_string(),
-            path: PathBuf::from("src/lib.rs"),
-            calls: Vec::new(),
-            span: SourceSpan {
-                start_line: 3,
-                end_line: 5,
-                start_column: 0,
-                end_column: 0,
-                start_byte: 0,
-                end_byte: 0,
-            },
-            invocation_targets: BTreeSet::new(),
-        }];
+        let items = vec![callable_item(
+            "src/lib.rs:demo::run:3",
+            "run",
+            "src/lib.rs",
+            3,
+            5,
+        )];
         let index = RustAnalyzerItemIndex::new(PathBuf::from("/tmp/demo").as_path(), &items);
 
         let resolved = index.resolve(&RustAnalyzerTarget {
@@ -707,6 +723,39 @@ mod tests {
         });
 
         assert_eq!(resolved.as_deref(), Some("src/lib.rs:demo::run:3"));
+    }
+
+    #[test]
+    fn resolve_containing_prefers_unique_narrowest_item() {
+        let items = vec![
+            callable_item("src/lib.rs:demo::Feature:2", "Feature", "src/lib.rs", 2, 20),
+            callable_item("src/lib.rs:demo::Feature::run:8", "run", "src/lib.rs", 8, 10),
+        ];
+        let index = RustAnalyzerItemIndex::new(PathBuf::from("/tmp/demo").as_path(), &items);
+
+        let resolved = index.resolve_containing(&PathBuf::from("/tmp/demo/src/lib.rs"), 9);
+
+        assert_eq!(
+            resolved.as_deref(),
+            Some("src/lib.rs:demo::Feature::run:8")
+        );
+    }
+
+    #[test]
+    fn resolve_rejects_equal_width_ambiguous_items() {
+        let items = vec![
+            callable_item("src/lib.rs:demo::first:8", "run", "src/lib.rs", 8, 10),
+            callable_item("src/lib.rs:demo::second:8", "run", "src/lib.rs", 8, 10),
+        ];
+        let index = RustAnalyzerItemIndex::new(PathBuf::from("/tmp/demo").as_path(), &items);
+
+        let resolved = index.resolve(&RustAnalyzerTarget {
+            path: PathBuf::from("/tmp/demo/src/lib.rs"),
+            name: "run".to_string(),
+            line: 9,
+        });
+
+        assert_eq!(resolved, None);
     }
 
     #[test]
@@ -721,5 +770,29 @@ mod tests {
         assert_eq!(locations.len(), 1);
         assert_eq!(locations[0].uri, "file:///tmp/demo/src/lib.rs");
         assert_eq!(locations[0].range.start.line, 7);
+    }
+
+    fn callable_item(
+        stable_id: &str,
+        name: &str,
+        path: &str,
+        start_line: usize,
+        end_line: usize,
+    ) -> RustAnalyzerCallableItem {
+        RustAnalyzerCallableItem {
+            stable_id: stable_id.to_string(),
+            name: name.to_string(),
+            path: PathBuf::from(path),
+            calls: Vec::new(),
+            span: SourceSpan {
+                start_line,
+                end_line,
+                start_column: 0,
+                end_column: 0,
+                start_byte: 0,
+                end_byte: 0,
+            },
+            invocation_targets: BTreeSet::new(),
+        }
     }
 }

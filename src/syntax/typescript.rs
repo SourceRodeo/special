@@ -27,6 +27,9 @@ impl SyntaxProvider for TypeScriptSyntaxProvider {
                 .ok()?,
         };
         let tree = parser.parse(text, None)?;
+        if tree.root_node().has_error() {
+            return None;
+        }
         let mut items = Vec::new();
         let exported_names = collect_exported_names(tree.root_node(), text.as_bytes());
         collect_items(
@@ -431,4 +434,116 @@ fn is_typescript_test_item(path: &Path) -> bool {
         || file_name.ends_with(".test.tsx")
         || file_name.ends_with(".spec.ts")
         || file_name.ends_with(".spec.tsx")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::parse_source_graph;
+    use crate::syntax::CallSyntaxKind;
+
+    fn item_named<'a>(
+        graph: &'a crate::syntax::ParsedSourceGraph,
+        name: &str,
+    ) -> &'a crate::syntax::SourceItem {
+        graph
+            .items
+            .iter()
+            .find(|item| item.name == name)
+            .unwrap_or_else(|| panic!("item {name} should be present"))
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_ITEMS_AND_CALLS
+    fn provider_facade_collects_typescript_items_and_calls() {
+        let graph = parse_source_graph(
+            Path::new("src/example.ts"),
+            r#"
+export function entry() {
+    helper();
+    api.run();
+}
+
+function helper() {}
+
+export const render = () => {
+    helper();
+};
+"#,
+        )
+        .expect("typescript graph should parse");
+
+        assert_eq!(graph.items.len(), 3);
+        let entry = item_named(&graph, "entry");
+        assert!(entry.public);
+        assert!(
+            entry
+                .calls
+                .iter()
+                .any(|call| call.name == "helper" && call.qualifier.is_none())
+        );
+        assert!(entry.calls.iter().any(|call| {
+            call.name == "run"
+                && call.qualifier.as_deref() == Some("api")
+                && call.syntax == CallSyntaxKind::Field
+        }));
+        assert!(!item_named(&graph, "helper").public);
+        assert!(item_named(&graph, "render").public);
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_TEST_CALLBACKS
+    fn provider_facade_collects_typescript_test_callbacks_only_in_test_files() {
+        let test_graph = parse_source_graph(
+            Path::new("src/example.test.ts"),
+            r#"
+import { liveImpl } from "./app";
+
+it("covers live behavior", async () => {
+    await liveImpl();
+});
+
+test.only("covers alternate behavior", () => {
+    liveImpl();
+});
+"#,
+        )
+        .expect("typescript test graph should parse");
+
+        let test_roots = test_graph
+            .items
+            .iter()
+            .filter(|item| item.is_test)
+            .collect::<Vec<_>>();
+        assert_eq!(test_roots.len(), 2);
+        assert!(test_roots.iter().any(|item| {
+            item.name == "it" && item.calls.iter().any(|call| call.name == "liveImpl")
+        }));
+        assert!(test_roots.iter().any(|item| {
+            item.name == "test.only" && item.calls.iter().any(|call| call.name == "liveImpl")
+        }));
+
+        let source_graph = parse_source_graph(
+            Path::new("src/example.ts"),
+            r#"
+it("ordinary source should not become a test root", () => {
+    liveImpl();
+});
+"#,
+        )
+        .expect("typescript source graph should parse");
+        assert!(source_graph.items.is_empty());
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_ITEMS_AND_CALLS
+    fn provider_facade_rejects_typescript_syntax_error_trees() {
+        let graph = parse_source_graph(Path::new("src/example.ts"), "export function broken( {\n");
+
+        assert!(
+            graph.is_none(),
+            "syntax-error TypeScript trees should not produce partial source graphs"
+        );
+    }
 }

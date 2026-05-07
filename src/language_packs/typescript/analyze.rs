@@ -13,11 +13,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
-use tree_sitter::{Node, Parser};
 
 use crate::model::{
-    ArchitectureTraceabilitySummary, ImplementRef, ModuleDependencySummary, ModuleItemKind,
-    ModuleMetricsSummary, ParsedArchitecture, ParsedRepo,
+    ArchitectureTraceabilitySummary, ImplementRef, ModuleMetricsSummary, ParsedArchitecture,
+    ParsedRepo,
 };
 use crate::syntax::{ParsedSourceGraph, SourceCall, parse_source_graph};
 use crate::config::{ProjectToolchain, supported_project_toolchain_contracts};
@@ -30,20 +29,28 @@ use crate::modules::analyze::traceability_core::{
     summarize_module_traceability, summarize_repo_traceability as summarize_shared_repo_traceability,
 };
 use crate::modules::analyze::{
-    FileOwnership, ModuleCouplingInput, ProviderModuleAnalysis, build_dependency_summary,
-    emit_analysis_status,
+    FileOwnership, ProviderModuleAnalysis, emit_analysis_status, with_periodic_analysis_status,
     read_owned_file_text, visit_owned_texts,
 };
 
 #[path = "analyze/boundary.rs"]
 mod boundary;
+#[path = "analyze/dependencies.rs"]
+mod dependencies;
 #[path = "analyze/quality.rs"]
 mod quality;
+#[path = "analyze/surface.rs"]
+mod surface;
 #[cfg(test)]
 #[path = "analyze/tests.rs"]
 mod scoped_tests;
 
 use boundary::{derive_projected_traceability_boundary, derive_scoped_traceability_boundary};
+use dependencies::TypeScriptDependencySummary;
+use surface::{
+    TypeScriptSurfaceSummary, is_review_surface, is_test_file_path, is_typescript_path,
+    source_item_kind,
+};
 
 // @applies ADAPTER.FACTS_TO_MODEL
 pub(crate) fn analyze_module(
@@ -312,7 +319,12 @@ fn build_traceability_inputs_for_typescript(
     let (source_graphs, tool_call_edges) =
         match decode_traceability_graph_facts(traceability_graph_facts) {
             Some(Ok(decoded)) => decoded,
-            None | Some(Err(_)) => {
+            Some(Err(error)) => {
+                return Err(anyhow!(
+                    "invalid cached TypeScript traceability graph facts: {error}"
+                ));
+            }
+            None => {
                 let source_graphs = parse_typescript_source_graphs(root, source_files);
                 let tool_call_edges = build_tool_call_edges(root, &source_graphs)?;
                 (source_graphs, tool_call_edges)
@@ -356,10 +368,13 @@ pub(crate) fn build_traceability_scope_facts(
             .and_then(|graph| graph.items.first().map(|item| item.span.start_line))
     });
     let facts = TypeScriptTraceabilityScopeFacts {
-        adjacency: undirected_file_graph(file_graph_from_import_edges(build_tool_module_edges(
-            root,
+        adjacency: file_graph_with_isolated_sources(
             source_files,
-        )?)),
+            undirected_file_graph(file_graph_from_import_edges(build_tool_module_edges(
+                root,
+                source_files,
+            )?)),
+        ),
         source_graphs: source_graphs
             .iter()
             .map(|(path, graph)| (path.clone(), CachedParsedSourceGraph::from_parsed(graph)))
@@ -495,129 +510,6 @@ pub(crate) fn build_traceability_graph_facts(
         tool_call_edges: build_tool_call_edges(root, &source_graphs)?,
     };
     Ok(serde_json::to_vec(&facts)?)
-}
-
-fn is_typescript_path(path: &Path) -> bool {
-    matches!(
-        path.extension().and_then(|ext| ext.to_str()),
-        Some("ts" | "tsx")
-    )
-}
-
-#[derive(Default)]
-struct TypeScriptSurfaceSummary {
-    public_items: usize,
-    internal_items: usize,
-}
-
-impl TypeScriptSurfaceSummary {
-    fn observe(&mut self, items: &[crate::syntax::SourceItem]) {
-        for item in items {
-            if item.public {
-                self.public_items += 1;
-            } else {
-                self.internal_items += 1;
-            }
-        }
-    }
-}
-
-#[derive(Default)]
-struct TypeScriptDependencySummary {
-    targets: BTreeMap<String, usize>,
-    internal_files: BTreeSet<PathBuf>,
-    external_targets: BTreeSet<String>,
-}
-
-impl TypeScriptDependencySummary {
-    fn observe(
-        &mut self,
-        root: &Path,
-        source_path: &Path,
-        text: &str,
-        tool_internal_files: &BTreeMap<PathBuf, BTreeMap<String, BTreeSet<PathBuf>>>,
-    ) {
-        let mut parser = Parser::new();
-        if parser
-            .set_language(
-                &match source_path.extension().and_then(|ext| ext.to_str()) {
-                    Some("tsx") => tree_sitter_typescript::LANGUAGE_TSX,
-                    _ => tree_sitter_typescript::LANGUAGE_TYPESCRIPT,
-                }
-                .into(),
-            )
-            .is_err()
-        {
-            return;
-        }
-        let Some(tree) = parser.parse(text, None) else {
-            return;
-        };
-        let mut imports = Vec::new();
-        collect_import_sources(tree.root_node(), text.as_bytes(), &mut imports);
-        let tool_resolved_files = tool_internal_files.get(source_path);
-        for target in imports {
-            *self.targets.entry(target.clone()).or_default() += 1;
-            if let Some(files) = tool_resolved_files.and_then(|files| files.get(&target)) {
-                self.internal_files.extend(files.iter().cloned());
-            } else if let Some(file) = resolve_internal_import(root, source_path, &target) {
-                self.internal_files.insert(file);
-            } else if !target.starts_with('.') {
-                self.external_targets.insert(target);
-            }
-        }
-    }
-
-    fn summary(&self) -> ModuleDependencySummary {
-        build_dependency_summary(&self.targets)
-    }
-
-    fn coupling_input(&self) -> ModuleCouplingInput {
-        ModuleCouplingInput {
-            internal_files: self.internal_files.clone(),
-            external_targets: self.external_targets.clone(),
-        }
-    }
-}
-
-fn collect_import_sources(node: Node<'_>, source: &[u8], imports: &mut Vec<String>) {
-    if node.kind() == "import_statement"
-        && let Some(import_source) = node.child_by_field_name("source")
-        && let Ok(text) = import_source.utf8_text(source)
-    {
-        imports.push(text.trim_matches('"').trim_matches('\'').to_string());
-    }
-
-    let mut cursor = node.walk();
-    for child in node.named_children(&mut cursor) {
-        collect_import_sources(child, source, imports);
-    }
-}
-
-fn resolve_internal_import(root: &Path, source_path: &Path, target: &str) -> Option<PathBuf> {
-    if !target.starts_with('.') {
-        return None;
-    }
-
-    let source_dir = normalize_path(
-        &root
-            .join(source_path)
-            .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| root.to_path_buf()),
-    );
-    let candidate_base = source_dir.join(target);
-    let candidates = [
-        candidate_base.with_extension("ts"),
-        candidate_base.with_extension("tsx"),
-        candidate_base.join("index.ts"),
-        candidate_base.join("index.tsx"),
-    ];
-
-    candidates
-        .into_iter()
-        .map(|candidate| normalize_path(&candidate))
-        .find(|candidate| candidate.exists())
 }
 
 fn normalize_path(path: &Path) -> PathBuf {
@@ -977,7 +869,10 @@ fn run_typescript_trace_helper(
     }
     let _ = child.stdin.take();
 
-    let output = child.wait_with_output()?;
+    let output =
+        with_periodic_analysis_status(typescript_trace_helper_phase(input), || {
+            child.wait_with_output()
+        })?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         return Err(anyhow!(
@@ -1003,6 +898,26 @@ fn run_required_typescript_trace_helper(
             "TypeScript trace helper did not run even though TypeScript traceability was requested"
         )
     })
+}
+
+fn typescript_trace_helper_phase(input: &ToolTraceInput) -> String {
+    match &input.mode {
+        ToolRequestMode::TraceEdges => format!(
+            "TypeScript call graph helper for {} file(s), {} callable item(s)",
+            input.source_files.len(),
+            input.items.len()
+        ),
+        ToolRequestMode::ReverseTraceEdges => format!(
+            "TypeScript reverse caller helper for {} file(s), {} callable item(s), {} seed root(s)",
+            input.source_files.len(),
+            input.items.len(),
+            input.seed_item_ids.len()
+        ),
+        ToolRequestMode::ModuleGraph => format!(
+            "TypeScript module graph helper for {} file(s)",
+            input.source_files.len()
+        ),
+    }
 }
 
 fn build_reverse_reachable_tool_call_edges_for_scoped_files(
@@ -1117,6 +1032,16 @@ fn file_graph_from_import_edges(
         for targets in specifiers.into_values() {
             graph.entry(from.clone()).or_default().extend(targets);
         }
+    }
+    graph
+}
+
+fn file_graph_with_isolated_sources(
+    source_files: &[PathBuf],
+    mut graph: BTreeMap<PathBuf, BTreeSet<PathBuf>>,
+) -> BTreeMap<PathBuf, BTreeSet<PathBuf>> {
+    for path in source_files {
+        graph.entry(path.clone()).or_default();
     }
     graph
 }
@@ -1472,40 +1397,6 @@ fn resolve_call_target(
     None
 }
 
-fn is_test_file_path(path: &Path) -> bool {
-    path.components()
-        .any(|component| component.as_os_str() == "tests")
-        || path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .is_some_and(|name| {
-                name.ends_with(".test.ts")
-                    || name.ends_with(".test.tsx")
-                    || name.ends_with(".spec.ts")
-                    || name.ends_with(".spec.tsx")
-            })
-}
-
-fn is_process_entrypoint_name(name: &str, kind: crate::syntax::SourceItemKind) -> bool {
-    kind == crate::syntax::SourceItemKind::Function && name == "main"
-}
-
-fn is_review_surface(
-    public: bool,
-    name: &str,
-    kind: crate::syntax::SourceItemKind,
-    test_file: bool,
-) -> bool {
-    !test_file && (public || is_process_entrypoint_name(name, kind))
-}
-
-fn source_item_kind(kind: crate::syntax::SourceItemKind) -> ModuleItemKind {
-    match kind {
-        crate::syntax::SourceItemKind::Function => ModuleItemKind::Function,
-        crate::syntax::SourceItemKind::Method => ModuleItemKind::Method,
-    }
-}
-
 struct TypeScriptRuntime {
     toolchain: ProjectToolchain,
     typescript_entry: PathBuf,
@@ -1708,10 +1599,56 @@ struct ToolFileEdge {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{BTreeMap, BTreeSet};
     use std::fs;
+    use std::path::{Path, PathBuf};
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    use super::{typescript_entry_fingerprint, write_embedded_tool_script};
+    use crate::model::{ParsedArchitecture, ParsedRepo};
+
+    use super::{
+        build_traceability_inputs_for_typescript, file_graph_with_isolated_sources,
+        typescript_entry_fingerprint, write_embedded_tool_script,
+    };
+
+    #[test]
+    fn invalid_cached_graph_facts_do_not_fall_back_to_live_typescript_traceability() {
+        let error = build_traceability_inputs_for_typescript(
+            Path::new("."),
+            &[],
+            Some(b"not json"),
+            &ParsedRepo::default(),
+            &ParsedArchitecture::default(),
+            &BTreeMap::new(),
+        )
+        .expect_err("invalid graph facts should fail explicitly");
+
+        assert!(
+            error
+                .to_string()
+                .contains("invalid cached TypeScript traceability graph facts")
+        );
+    }
+
+    #[test]
+    fn scope_file_graph_keeps_isolated_typescript_candidate_files() {
+        let graph = file_graph_with_isolated_sources(
+            &[
+                PathBuf::from("src/linked.ts"),
+                PathBuf::from("src/isolated.ts"),
+            ],
+            BTreeMap::from([(
+                PathBuf::from("src/linked.ts"),
+                BTreeSet::from([PathBuf::from("src/other.ts")]),
+            )]),
+        );
+
+        assert!(graph.contains_key(Path::new("src/isolated.ts")));
+        assert_eq!(
+            graph.get(Path::new("src/isolated.ts")),
+            Some(&BTreeSet::new())
+        );
+    }
 
     #[test]
     fn embedded_tool_script_uses_unique_paths_and_cleans_up_on_drop() {

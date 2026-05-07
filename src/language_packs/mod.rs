@@ -1,6 +1,24 @@
 /**
 @module SPECIAL.LANGUAGE_PACKS
 Owns compile-time language-pack registration and the shared descriptor boundary between syntax parsing, implementation analysis, scoped traceability preparation, and pack-specific local-tool enrichers. Adding a built-in pack should reduce to adding one pack entry file under this directory plus its own implementation files, while the shared core consumes the generated pack registry without hardcoded per-language match arms.
+
+@group SPECIAL.LANGUAGE_PACKS
+language-pack registration and admission contracts.
+
+@group SPECIAL.LANGUAGE_PACKS.ADMISSION
+Language-pack admission contract.
+
+@spec SPECIAL.LANGUAGE_PACKS.ADMISSION.REGISTRATION
+An admitted built-in language pack is registered through a descriptor source file that the generated language-pack registry includes without adding language-specific dispatch in the shared syntax or analysis cores.
+
+@spec SPECIAL.LANGUAGE_PACKS.ADMISSION.PARSER_SURFACE
+An admitted built-in language pack provides a shared syntax provider that records owned items and call edges for the static language semantics it claims, with provider tests that describe the supported boundary.
+
+@spec SPECIAL.LANGUAGE_PACKS.ADMISSION.TRACEABILITY
+An admitted built-in language pack has health traceability fixtures that exercise repo-wide traceability and scoped graph discovery parity against full analysis filtered to the same target.
+
+@spec SPECIAL.LANGUAGE_PACKS.ADMISSION.DEGRADATION
+An admitted built-in language pack either declares required project tooling and unavailable or degraded behavior, or explicitly names parser-backed static semantics without claiming runtime/tool-backed semantics.
 */
 // @fileimplements SPECIAL.LANGUAGE_PACKS
 use std::collections::BTreeMap;

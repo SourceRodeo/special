@@ -15,12 +15,20 @@ pub(in crate::render) fn project_repo_signals_view(
     let explanations = vec![
         explanation("unowned items", MetricExplanationKey::UnownedItems),
         explanation("duplicate items", MetricExplanationKey::DuplicateItems),
+        explanation(
+            "long exact prose assertions",
+            MetricExplanationKey::LongExactProseAssertions,
+        ),
     ];
 
     ProjectedRepoSignals {
         counts: vec![
             count("unowned items", coverage.unowned_items),
             count("duplicate items", coverage.duplicate_items),
+            count(
+                "long exact prose assertions",
+                coverage.long_exact_prose_assertions,
+            ),
         ],
         explanations,
         unowned_items: if verbose {
@@ -57,6 +65,25 @@ pub(in crate::render) fn project_repo_signals_view(
                             ModuleItemKind::Method => "method",
                         },
                         item.duplicate_peer_count,
+                    )
+                })
+                .collect()
+        } else {
+            Vec::new()
+        },
+        long_exact_prose_assertions: if verbose {
+            coverage
+                .long_exact_prose_assertion_details
+                .iter()
+                .map(|item| {
+                    format!(
+                        "{}:{} [{} {}; {} words] {}",
+                        item.path.display(),
+                        item.line,
+                        item.language,
+                        item.callee,
+                        item.word_count,
+                        item.literal.replace('\n', "\\n")
                     )
                 })
                 .collect()

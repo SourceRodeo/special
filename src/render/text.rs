@@ -235,6 +235,10 @@ pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
     let mut output = String::from("special health metrics\n");
     output.push_str(&format!("  duplicate items: {}\n", metrics.duplicate_items));
     output.push_str(&format!("  unowned items: {}\n", metrics.unowned_items));
+    output.push_str(&format!(
+        "  long exact prose assertions: {}\n",
+        metrics.long_exact_prose_assertions
+    ));
     if let Some(documentation) = &metrics.documentation {
         output.push_str("  documentation coverage\n");
         for kind in &documentation.target_kinds {
@@ -258,6 +262,11 @@ pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
         &mut output,
         "unowned items by file",
         &metrics.unowned_items_by_file,
+    );
+    append_grouped_counts_text(
+        &mut output,
+        "long exact prose assertions by file",
+        &metrics.long_exact_prose_assertions_by_file,
     );
     if let Some(traceability) = &metrics.traceability {
         append_repo_traceability_metrics_text(&mut output, traceability);

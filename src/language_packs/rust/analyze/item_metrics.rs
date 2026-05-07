@@ -9,7 +9,6 @@ use syn::{BinOp, FnArg, GenericArgument, ImplItemFn, Item, PathArguments, Type, 
 #[derive(Debug, Clone, Copy, Default)]
 pub(super) struct RustItemMetrics {
     pub public: bool,
-    pub root_visible: bool,
     pub parameter_count: usize,
     pub bool_parameter_count: usize,
     pub raw_string_parameter_count: usize,
@@ -25,7 +24,6 @@ pub(super) fn function_metrics(
 ) -> RustItemMetrics {
     RustItemMetrics {
         public: is_public_visibility(visibility),
-        root_visible: is_root_visibility(visibility),
         parameter_count: parameter_count(inputs),
         bool_parameter_count: bool_parameter_count(inputs),
         raw_string_parameter_count: raw_string_parameter_count(inputs),
@@ -95,10 +93,6 @@ fn raw_string_parameter_count(
 
 fn is_public_visibility(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))
-}
-
-fn is_root_visibility(vis: &Visibility) -> bool {
-    matches!(vis, Visibility::Public(_) | Visibility::Restricted(_))
 }
 
 fn is_bool_type(ty: &Type) -> bool {
@@ -362,5 +356,20 @@ pub fn outer(flag: bool) {
         assert_eq!(metrics.cyclomatic, 2);
         assert_eq!(metrics.cognitive, 1);
         assert_eq!(metrics.panic_site_count, 0);
+    }
+
+    #[test]
+    fn visitor_helpers_account_for_branch_and_nesting_weight() {
+        let mut cyclomatic = CyclomaticVisitor { complexity: 1 };
+        cyclomatic.visit_loop_like(|visitor| {
+            visitor.complexity += 2;
+        });
+        assert_eq!(cyclomatic.complexity, 4);
+
+        let mut cognitive = CognitiveVisitor::default();
+        cognitive.bump_structural();
+        cognitive.with_nested(|visitor| visitor.bump_structural());
+        cognitive.visit_nested_loop_body(|_| {}, |visitor| visitor.bump_structural());
+        assert_eq!(cognitive.complexity, 6);
     }
 }

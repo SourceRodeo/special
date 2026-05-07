@@ -574,9 +574,101 @@ fn build_script_generates_the_builtin_language_pack_registry() {
         "generated registry should expose the built-in language pack descriptor list"
     );
     assert!(
-        build_script.contains("stem != \"mod\"") && build_script.contains("stem != \"python\""),
-        "registry generation should skip helper modules that are not built-in language packs"
+        build_script.contains("stem != \"mod\"") && !build_script.contains("stem != \"python\""),
+        "registry generation should skip helper modules without excluding the built-in Python pack"
     );
+}
+
+fn built_in_language_pack_ids() -> [&'static str; 4] {
+    ["go", "python", "rust", "typescript"]
+}
+
+fn read_language_pack_source(id: &str) -> String {
+    read_repo_file(format!("src/language_packs/{id}.rs"))
+}
+
+#[test]
+// @verifies SPECIAL.LANGUAGE_PACKS.ADMISSION.REGISTRATION
+fn built_in_language_pack_admission_uses_descriptor_registration() {
+    let build_script = read_repo_file("build.rs");
+    let syntax_registry = read_repo_file("src/syntax/registry.rs");
+    let syntax_core = read_repo_file("src/syntax.rs");
+
+    for id in built_in_language_pack_ids() {
+        let source = read_language_pack_source(id);
+        assert!(source.contains("DESCRIPTOR"));
+        assert!(source.contains("LanguagePackDescriptor"));
+        assert!(source.contains("parse_source_graph"));
+    }
+    assert!(build_script.contains("language_pack_registry.rs"));
+    assert!(build_script.contains("stem != \"mod\""));
+    assert!(syntax_registry.contains("language_packs::descriptors()"));
+    assert!(syntax_core.contains("registry::parse_source_graph_at_path"));
+}
+
+#[test]
+// @verifies SPECIAL.LANGUAGE_PACKS.ADMISSION.PARSER_SURFACE
+fn built_in_language_pack_admission_has_parser_surface_tests() {
+    let syntax_core = read_repo_file("src/syntax.rs");
+
+    for id in built_in_language_pack_ids() {
+        let provider = read_repo_file(format!("src/syntax/{id}.rs"));
+        assert!(provider.contains("impl SyntaxProvider"));
+        assert!(provider.contains("ParsedSourceGraph"));
+        assert!(provider.contains("SourceItem"));
+        assert!(provider.contains("call"));
+        assert!(provider.contains("provider_facade"));
+    }
+    for spec in [
+        "SPECIAL.SYNTAX.PROVIDERS.GO_ITEMS_AND_CALLS",
+        "SPECIAL.SYNTAX.PROVIDERS.PYTHON_ITEMS_AND_CALLS",
+        "SPECIAL.SYNTAX.PROVIDERS.RUST_ITEMS_AND_CALLS",
+        "SPECIAL.SYNTAX.PROVIDERS.TYPESCRIPT_ITEMS_AND_CALLS",
+    ] {
+        assert!(syntax_core.contains(spec));
+    }
+}
+
+#[test]
+// @verifies SPECIAL.LANGUAGE_PACKS.ADMISSION.TRACEABILITY
+fn built_in_language_pack_admission_has_traceability_parity_fixtures() {
+    let scoped_tests = read_repo_file("tests/scoped_health_proof_boundary.rs");
+    let repo_tests = read_repo_file("tests/cli_repo.rs");
+
+    for token in [
+        "write_go_traceability_fixture",
+        "write_python_traceability_fixture",
+        "write_traceability_imported_call_fixture",
+        "write_typescript_traceability_fixture",
+        "matches_full_then_filtered",
+        "does_not_build_language_pack_fact_blobs",
+    ] {
+        assert!(scoped_tests.contains(token));
+    }
+    for token in [
+        "repo_surfaces_go_traceability",
+        "repo_surfaces_python_traceability",
+        "repo_surfaces_traceability",
+        "repo_surfaces_typescript_traceability",
+    ] {
+        assert!(repo_tests.contains(token));
+    }
+}
+
+#[test]
+// @verifies SPECIAL.LANGUAGE_PACKS.ADMISSION.DEGRADATION
+fn built_in_language_pack_admission_declares_tooling_or_parser_boundary() {
+    for id in ["go", "rust", "typescript"] {
+        let source = read_language_pack_source(id);
+        assert!(source.contains("project_tooling: Some(&PROJECT_TOOLING)"));
+        assert!(source.contains("ProjectToolRequirement"));
+        assert!(source.contains("traceability_unavailable_reason"));
+    }
+
+    let python = read_language_pack_source("python");
+    assert!(python.contains("project_tooling: None"));
+    assert!(python.contains("parser-backed"));
+    assert!(python.contains("traceability_unavailable_reason"));
 }
 
 #[test]

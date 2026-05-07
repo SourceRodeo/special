@@ -265,6 +265,18 @@ fn build_repo_metrics(
             )
         })
         .unwrap_or_default();
+    let long_exact_prose_assertions_by_file = summary
+        .repo_signals
+        .as_ref()
+        .map(|signals| {
+            grouped_counts(
+                signals
+                    .long_exact_prose_assertion_details
+                    .iter()
+                    .map(|item| item.path.display().to_string()),
+            )
+        })
+        .unwrap_or_default();
     let traceability = summary
         .traceability
         .as_ref()
@@ -306,6 +318,11 @@ fn build_repo_metrics(
             .as_ref()
             .map(|signals| signals.unowned_items)
             .unwrap_or_default(),
+        long_exact_prose_assertions: summary
+            .repo_signals
+            .as_ref()
+            .map(|signals| signals.long_exact_prose_assertions)
+            .unwrap_or_default(),
         documentation: Some(build_documentation_coverage_summary(
             root,
             ignore_patterns,
@@ -314,6 +331,7 @@ fn build_repo_metrics(
         )?),
         duplicate_items_by_file,
         unowned_items_by_file,
+        long_exact_prose_assertions_by_file,
         traceability,
     })
 }

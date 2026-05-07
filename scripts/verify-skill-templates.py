@@ -19,7 +19,7 @@ SKILL_ROOTS = [
 COMMAND_OPTIONS = {
     "": {"--help", "--version"},
     "arch": {"--current", "--html", "--json", "--metrics", "--planned", "--unimplemented", "--verbose"},
-    "docs": {"--output", "--target"},
+    "docs": {"--json", "--metrics", "--output", "--target", "--verbose"},
     "health": {"--html", "--json", "--metrics", "--symbol", "--target", "--verbose"},
     "init": set(),
     "lint": set(),
@@ -43,6 +43,7 @@ COMMAND_OPTIONS = {
 OPTIONS_WITH_VALUES = {"--destination", "--symbol", "--target"}
 OPTIONS_WITH_OPTIONAL_VALUES = {"--output"}
 POSITIONAL_COMMANDS = {"arch", "patterns", "specs"}
+DOCS_BUILD_OPTIONS = {"--output", "--target"}
 
 
 @dataclass(frozen=True)
@@ -143,11 +144,15 @@ def validate_command_example(example: CommandExample) -> list[str]:
 
     if subcommand == "skills" and index < len(tokens) and tokens[index] == "install":
         index += 1
+    docs_build = subcommand == "docs" and index < len(tokens) and tokens[index] == "build"
+    if docs_build:
+        index += 1
+    active_options = DOCS_BUILD_OPTIONS if docs_build else COMMAND_OPTIONS[subcommand]
 
     while index < len(tokens):
         token = tokens[index]
         if token.startswith("--"):
-            if token not in COMMAND_OPTIONS[subcommand]:
+            if token not in active_options:
                 errors.append(f"{location(example)}: unsupported option `{token}` in `{example.text}`")
             if token in OPTIONS_WITH_VALUES:
                 index += 1
@@ -163,6 +168,9 @@ def validate_command_example(example: CommandExample) -> list[str]:
             continue
 
         if subcommand in POSITIONAL_COMMANDS:
+            index += 1
+            continue
+        if docs_build:
             index += 1
             continue
         if subcommand == "skills" and re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", token):

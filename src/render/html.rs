@@ -102,6 +102,7 @@ pub(super) struct CoverageSectionHtmlTemplate<'a> {
     pub(super) verbose: bool,
     pub(super) unowned_items: &'a [String],
     pub(super) duplicate_items: &'a [String],
+    pub(super) long_exact_prose_assertions: &'a [String],
 }
 
 pub(super) fn format_spec_metrics_html(metrics: &SpecMetricsSummary) -> String {
@@ -273,6 +274,7 @@ pub(super) fn format_repo_signals_html(coverage: &ProjectedRepoSignals) -> Strin
     if coverage.counts.is_empty()
         && coverage.unowned_items.is_empty()
         && coverage.duplicate_items.is_empty()
+        && coverage.long_exact_prose_assertions.is_empty()
     {
         return String::new();
     }
@@ -292,9 +294,12 @@ pub(super) fn format_repo_signals_html(coverage: &ProjectedRepoSignals) -> Strin
                 .map(projected_explanation)
                 .collect::<Vec<_>>(),
         }),
-        verbose: !coverage.unowned_items.is_empty() || !coverage.duplicate_items.is_empty(),
+        verbose: !coverage.unowned_items.is_empty()
+            || !coverage.duplicate_items.is_empty()
+            || !coverage.long_exact_prose_assertions.is_empty(),
         unowned_items: &coverage.unowned_items,
         duplicate_items: &coverage.duplicate_items,
+        long_exact_prose_assertions: &coverage.long_exact_prose_assertions,
     })
 }
 
