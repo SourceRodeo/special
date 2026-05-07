@@ -50,6 +50,7 @@ from release_review_pipeline import (
 from release_review_swarm import (
     DEFAULT_SWARM_COUNT,
     MAX_SWARM_COUNT,
+    recommended_swarm_count,
     run_swarm_review,
     swarm_dry_run_preview,
 )
@@ -99,12 +100,13 @@ def parse_args() -> argparse.Namespace:
     model_group.add_argument(
         "--swarm",
         nargs="?",
-        const=DEFAULT_SWARM_COUNT,
+        const=0,
         type=swarm_count,
         metavar="COUNT",
         help=(
             f"Run COUNT parallel full-repo DeepSeek V4 Flash review agents through "
-            f"OpenCode with mutating tools denied. Defaults to {DEFAULT_SWARM_COUNT}."
+            f"OpenCode with mutating tools denied. Omit COUNT to auto-size from repo text "
+            f"with a floor of {DEFAULT_SWARM_COUNT}."
         ),
     )
     parser.add_argument(
@@ -283,18 +285,23 @@ def main() -> int:
             )
     version = load_version(root)
     head = args.head or ("@" if backend == "jj" else "HEAD")
-    swarm_count_value = int(args.swarm) if args.swarm is not None else None
-    full_scan = bool(args.full or swarm_count_value)
+    requested_swarm_count = int(args.swarm) if args.swarm is not None else None
+    full_scan = bool(args.full or requested_swarm_count is not None)
     base = None if full_scan else (args.base or discover_latest_semver_tag(root, backend, head))
     review_files = (
         list_repo_text_files(root, backend)
-        if swarm_count_value
+        if requested_swarm_count is not None
         else full_scan_files(root, backend)
         if full_scan
         else changed_files_from_diff(root, backend, base, head)
     )
 
-    if swarm_count_value:
+    if requested_swarm_count is not None:
+        swarm_count_value = (
+            recommended_swarm_count(root, review_files)
+            if requested_swarm_count == 0
+            else requested_swarm_count
+        )
         if args.dry_run:
             print(
                 json.dumps(

@@ -32,12 +32,22 @@ It should capture durable structured output while staying code-focused:
 spec-owned wrapper,
 structured output,
 DeepSeek swarm mode,
+selective swarm context,
 code-only surface,
 read-only sandbox,
 no web,
 durable output,
 local only, and
 manual only.
+
+For a broad release pass, let the wrapper choose the swarm width:
+
+```sh
+python3 scripts/review-rust-release-style.py --swarm
+```
+
+That keeps each DeepSeek/OpenCode prompt selective. Pass an explicit count only
+when you intentionally want a smaller or larger review swarm.
 
 ## Distribution Checks
 

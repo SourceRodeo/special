@@ -20,6 +20,9 @@ the smart release-review mode uses `gpt-5.4`.
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_MODEL
 the swarm release-review mode uses DeepSeek V4 Flash through OpenCode with mutating tools denied.
 
+@spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_SELECTIVE_CONTEXT
+the swarm release-review mode divides repo text across review agents instead of sending the whole repo to every agent.
+
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT
 the release-review wrapper validates structured warning output against the review contract.
 
@@ -154,6 +157,7 @@ fn release_review_uses_deepseek_swarm_when_requested() {
         .as_array()
         .expect("swarm preview should expose agent prompts");
     assert_eq!(chunks.len(), 2);
+    assert_ne!(chunks[0]["files"], chunks[1]["files"]);
     assert!(
         payload["changed_files"]
             .as_array()
@@ -162,6 +166,56 @@ fn release_review_uses_deepseek_swarm_when_requested() {
             .any(|path| {
                 path.as_str() == Some("codex-plugin/special/skills/special-workflow/SKILL.md")
             })
+    );
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_SELECTIVE_CONTEXT
+fn release_review_swarm_assigns_selective_repo_slices() {
+    let payload = release_review_dry_run(&["--swarm"]);
+    let changed_files = payload["changed_files"]
+        .as_array()
+        .expect("changed_files should be an array");
+    let chunks = payload["review_passes"][0]["chunks"]
+        .as_array()
+        .expect("swarm preview should expose agent prompts");
+    assert!(
+        chunks.len() >= 3,
+        "auto-sized swarm should keep the default floor"
+    );
+    assert!(
+        payload["runner_warnings"]
+            .as_array()
+            .expect("runner warnings should be an array")
+            .is_empty(),
+        "auto-sized swarm should fit Special's current repo text surface without omissions"
+    );
+
+    let mut expected: Vec<&str> = changed_files
+        .iter()
+        .map(|path| path.as_str().expect("changed file should be text"))
+        .collect();
+    let mut assigned = Vec::new();
+    for chunk in chunks {
+        let chunk_files = chunk["files"]
+            .as_array()
+            .expect("chunk files should be an array");
+        assert!(
+            chunk_files.len() < changed_files.len(),
+            "each swarm agent should receive a selective content slice"
+        );
+        let prompt = chunk["prompt"].as_str().expect("prompt should be text");
+        assert!(prompt.contains("Repo file manifest"));
+        assert!(prompt.contains("context-only"));
+        for path in chunk_files {
+            assigned.push(path.as_str().expect("chunk file should be text"));
+        }
+    }
+    expected.sort_unstable();
+    assigned.sort_unstable();
+    assert_eq!(
+        assigned, expected,
+        "swarm slices should cover the review surface exactly once"
     );
 }
 

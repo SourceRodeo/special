@@ -34,12 +34,22 @@ It should capture durable structured output while staying code-focused:
 [spec-owned wrapper](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SPEC_OWNED),
 [structured output](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT),
 [DeepSeek swarm mode](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_MODEL),
+[selective swarm context](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SWARM_SELECTIVE_CONTEXT),
 [code-only surface](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.CODE_ONLY_SURFACE),
 [read-only sandbox](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.READ_ONLY_SANDBOX),
 [no web](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.NO_WEB),
 [durable output](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.DURABLE_OUTPUT),
 [local only](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.LOCAL_ONLY), and
 [manual only](documents://spec/SPECIAL.QUALITY.RUST.RELEASE_REVIEW.MANUAL_ONLY).
+
+For a broad release pass, let the wrapper choose the swarm width:
+
+```sh
+python3 scripts/review-rust-release-style.py --swarm
+```
+
+That keeps each DeepSeek/OpenCode prompt selective. Pass an explicit count only
+when you intentionally want a smaller or larger review swarm.
 
 ## Distribution Checks
 
