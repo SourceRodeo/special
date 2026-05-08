@@ -1187,9 +1187,8 @@ fn collect_markdown_refs(
 ) {
     let mut in_code_fence = false;
     let mut previous_docs_line = false;
-    for (index, line) in content.lines().enumerate() {
-        let line_number = index + 1;
-        if starts_markdown_fence(line) {
+    for (line_number, _, raw) in markdown_source_lines(content) {
+        if starts_markdown_fence(raw) {
             in_code_fence = !in_code_fence;
             previous_docs_line = false;
             continue;
@@ -1197,13 +1196,13 @@ fn collect_markdown_refs(
         if in_code_fence {
             continue;
         }
-        let parsed = parse_markdown_documents_line(line, path, line_number, refs, diagnostics);
+        let parsed = parse_markdown_documents_line(raw, path, line_number, refs, diagnostics);
         if parsed && previous_docs_line {
             push_stacked_document_line_diagnostic(path, line_number, diagnostics);
         }
         previous_docs_line = parsed;
-        collect_document_link_refs(path, line, line_number, refs, diagnostics);
-        collect_reserved_special_link_diagnostics(path, line, line_number, diagnostics);
+        collect_document_link_refs(path, raw, line_number, refs, diagnostics);
+        collect_reserved_special_link_diagnostics(path, raw, line_number, diagnostics);
     }
 }
 
@@ -1217,9 +1216,7 @@ fn write_markdown_output(
     let mut in_code_fence = false;
     let mut previous_docs_line = false;
 
-    for (index, line) in content.split_inclusive('\n').enumerate() {
-        let line_number = index + 1;
-        let raw = line.trim_end_matches('\n').trim_end_matches('\r');
+    for (line_number, line, raw) in markdown_source_lines(content) {
         if starts_markdown_fence(raw) {
             in_code_fence = !in_code_fence;
             previous_docs_line = false;
@@ -1255,6 +1252,17 @@ fn write_markdown_output(
     }
 
     output
+}
+
+fn markdown_source_lines(content: &str) -> impl Iterator<Item = (usize, &str, &str)> {
+    content
+        .split_inclusive('\n')
+        .enumerate()
+        .map(|(index, line)| (index + 1, line, trim_markdown_line_ending(line)))
+}
+
+fn trim_markdown_line_ending(line: &str) -> &str {
+    line.trim_end_matches('\n').trim_end_matches('\r')
 }
 
 fn parse_markdown_documents_line(
