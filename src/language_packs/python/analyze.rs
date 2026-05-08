@@ -30,7 +30,7 @@ use tree_sitter::{Node, Parser};
 pub(crate) fn analyze_module(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     context: &PythonRepoAnalysisContext,
     include_traceability: bool,
 ) -> Result<ProviderModuleAnalysis> {
@@ -96,7 +96,7 @@ pub(crate) fn build_repo_analysis_context(
     scoped_source_files: Option<&[PathBuf]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> PythonRepoAnalysisContext {
     let traceability_pack = PythonTraceabilityPack;
@@ -151,7 +151,7 @@ impl TraceabilityLanguagePack for PythonTraceabilityPack {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     ) -> Vec<TraceabilityOwnedItem> {
         collect_owned_items(root, implementations, file_ownership)
     }
@@ -163,7 +163,7 @@ fn build_traceability_analysis_for_python(
     scoped_source_files: Option<&[PathBuf]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<TraceabilityAnalysis> {
     let source_graphs = parse_python_source_graphs(root, source_files)?;
     let metadata = parse_python_source_metadata(root, &source_graphs)?;
@@ -186,7 +186,7 @@ fn assemble_traceability_inputs_for_python(
     metadata: PythonSourceMetadata,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> TraceabilityInputs {
     let repo_items = collect_repo_items(&source_graphs, file_ownership);
     let context_items = collect_context_items(&source_graphs, file_ownership);
@@ -345,14 +345,14 @@ fn parse_python_import_index(path: &Path, text: &str) -> Result<PythonImportInde
 
 fn collect_repo_items(
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     collect_traceability_items(source_graphs, file_ownership, false)
 }
 
 fn collect_context_items(
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     collect_traceability_items(source_graphs, file_ownership, true)
 }
@@ -360,7 +360,7 @@ fn collect_context_items(
 // @applies ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
 fn collect_traceability_items(
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_tests: bool,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = source_graphs
@@ -398,7 +398,7 @@ fn collect_traceability_items(
 fn collect_owned_items(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = Vec::new();
     let mut seen = BTreeSet::new();
@@ -435,7 +435,7 @@ fn collect_owned_items(
 fn parse_owned_implementation_graph(
     root: &Path,
     implementation: &ImplementRef,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Option<ParsedSourceGraph> {
     if let Some(body) = &implementation.body {
         return parse_source_graph(&implementation.location.path, body);

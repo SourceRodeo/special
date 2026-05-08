@@ -16,7 +16,7 @@ pub(super) fn build_module_summary(
     root: &Path,
     module: &ModuleDecl,
     parsed: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     repo_contexts: &registry::RepoAnalysisContexts,
     options: ModuleAnalysisOptions,
 ) -> Result<

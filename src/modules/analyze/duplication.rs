@@ -22,7 +22,7 @@ const MIN_DUPLICATE_SUBSTANTIVE_SCORE: usize = 4;
 pub(super) fn apply_duplicate_item_summary(
     root: &Path,
     parsed: &crate::model::ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     coverage: &mut ArchitectureRepoSignalsSummary,
 ) -> Result<()> {
     apply_duplicate_item_summary_in_files(root, parsed, file_ownership, None, coverage)
@@ -31,7 +31,7 @@ pub(super) fn apply_duplicate_item_summary(
 pub(super) fn apply_duplicate_item_summary_in_files(
     root: &Path,
     parsed: &crate::model::ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     source_files: Option<&[PathBuf]>,
     coverage: &mut ArchitectureRepoSignalsSummary,
 ) -> Result<()> {
@@ -131,7 +131,7 @@ pub(super) fn apply_duplicate_item_summary_in_files(
 fn collect_owned_items(
     root: &Path,
     implementations: &[&crate::model::ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     source_files: Option<&BTreeSet<PathBuf>>,
 ) -> Result<Vec<SourceItem>> {
     let mut items = Vec::new();

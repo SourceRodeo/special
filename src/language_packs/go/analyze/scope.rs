@@ -29,7 +29,7 @@ pub(super) fn build_traceability_scope_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>> {
     let source_graphs = parse_go_source_graphs(root, source_files)?;
     let static_edges = build_static_call_edges(root, &source_graphs);
@@ -72,7 +72,7 @@ pub(super) fn build_traceability_scope_facts(
 pub(super) fn expand_traceability_closure_from_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     facts: &[u8],
 ) -> Result<Vec<PathBuf>> {
     if scoped_source_files.is_empty() {
@@ -153,7 +153,7 @@ pub(super) fn build_scoped_traceability_analysis_from_cached_or_live_graph_facts
     scoped_source_files: &[PathBuf],
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<TraceabilityAnalysis> {
     Ok(crate::modules::analyze::traceability_core::build_traceability_analysis(
         build_scoped_traceability_inputs_from_cached_or_live_graph_facts(
@@ -173,7 +173,7 @@ pub(super) fn build_scoped_traceability_inputs_from_cached_or_live_graph_facts(
     scoped_source_files: &[PathBuf],
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<TraceabilityInputs> {
     let (source_graphs, static_edges) = match decode_traceability_graph_facts(graph_facts) {
         Ok(Some(decoded)) => decoded,

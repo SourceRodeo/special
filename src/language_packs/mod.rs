@@ -42,36 +42,32 @@ pub(crate) trait LanguagePackAnalysisContext {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
         options: ModuleAnalysisOptions,
     ) -> Result<ProviderModuleAnalysis>;
 }
 
-pub(crate) type BuildRepoAnalysisContextFn = for<'a> fn(
+pub(crate) type BuildRepoAnalysisContextFn = fn(
     &Path,
     &[PathBuf],
     Option<&[PathBuf]>,
     Option<&[u8]>,
     &ParsedRepo,
     &ParsedArchitecture,
-    &BTreeMap<PathBuf, FileOwnership<'a>>,
+    &BTreeMap<PathBuf, FileOwnership>,
     bool,
 ) -> Box<dyn LanguagePackAnalysisContext>;
 
-pub(crate) type BuildTraceabilityScopeFactsFn = for<'a> fn(
+pub(crate) type BuildTraceabilityScopeFactsFn = fn(
     &Path,
     &[PathBuf],
     &[PathBuf],
     &ParsedRepo,
-    &BTreeMap<PathBuf, FileOwnership<'a>>,
+    &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>>;
 
-pub(crate) type ExpandTraceabilityClosureFromFactsFn = fn(
-    &[PathBuf],
-    &[PathBuf],
-    &BTreeMap<PathBuf, FileOwnership<'_>>,
-    &[u8],
-) -> Result<Vec<PathBuf>>;
+pub(crate) type ExpandTraceabilityClosureFromFactsFn =
+    fn(&[PathBuf], &[PathBuf], &BTreeMap<PathBuf, FileOwnership>, &[u8]) -> Result<Vec<PathBuf>>;
 
 pub(crate) struct TraceabilityScopeFactsDescriptor {
     pub(crate) build_facts: BuildTraceabilityScopeFactsFn,

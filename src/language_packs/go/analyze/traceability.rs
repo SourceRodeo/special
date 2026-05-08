@@ -42,7 +42,7 @@ impl TraceabilityLanguagePack for GoTraceabilityPack {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     ) -> Vec<TraceabilityOwnedItem> {
         collect_owned_items(root, implementations, file_ownership)
     }
@@ -77,7 +77,7 @@ pub(super) fn build_traceability_analysis_from_cached_or_live_graph_facts(
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     _parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     _traceability_pack: &GoTraceabilityPack,
 ) -> Result<TraceabilityAnalysis> {
     Ok(crate::modules::analyze::traceability_core::build_traceability_analysis(
@@ -96,7 +96,7 @@ pub(super) fn build_traceability_inputs_from_cached_or_live_graph_facts(
     source_files: &[PathBuf],
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<TraceabilityInputs> {
     let (source_graphs, static_edges) = match decode_traceability_graph_facts(graph_facts) {
         Ok(Some(decoded)) => decoded,
@@ -150,7 +150,7 @@ pub(super) fn parse_go_source_graphs(
 // @applies ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
 pub(super) fn collect_repo_items(
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = source_graphs
         .iter()
@@ -191,7 +191,7 @@ pub(super) fn collect_repo_items(
 fn collect_owned_items(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = Vec::new();
     let mut seen = BTreeSet::new();
@@ -228,7 +228,7 @@ fn collect_owned_items(
 fn parse_owned_implementation_graph(
     root: &Path,
     implementation: &ImplementRef,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Option<ParsedSourceGraph> {
     if let Some(body) = &implementation.body {
         return parse_source_graph(&implementation.location.path, body);

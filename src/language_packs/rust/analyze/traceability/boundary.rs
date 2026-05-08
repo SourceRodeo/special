@@ -158,7 +158,7 @@ pub(super) fn derive_scoped_traceability_boundary(
 // @applies ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
 pub(super) fn collect_repo_items(
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     mediated_reasons: &BTreeMap<String, RustMediatedReason>,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = source_graphs

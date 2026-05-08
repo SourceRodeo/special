@@ -28,7 +28,7 @@ pub(crate) type TypeScriptContractTestContext = (
     TempProjectDir,
     crate::model::ParsedRepo,
     crate::model::ParsedArchitecture,
-    std::collections::BTreeMap<PathBuf, FileOwnership<'static>>,
+    std::collections::BTreeMap<PathBuf, FileOwnership>,
 );
 
 pub(crate) type TypeScriptContractComparisonContext = (

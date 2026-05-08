@@ -46,7 +46,7 @@ mod traceability;
 pub(crate) fn analyze_module(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     context: &GoRepoAnalysisContext,
     include_traceability: bool,
 ) -> Result<ProviderModuleAnalysis> {
@@ -122,7 +122,7 @@ pub(crate) fn build_traceability_scope_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>> {
     scope::build_traceability_scope_facts(
         root,
@@ -136,7 +136,7 @@ pub(crate) fn build_traceability_scope_facts(
 pub(crate) fn expand_traceability_closure_from_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     facts: &[u8],
 ) -> Result<Vec<PathBuf>> {
     scope::expand_traceability_closure_from_facts(source_files, scoped_source_files, file_ownership, facts)
@@ -150,7 +150,7 @@ pub(crate) fn build_repo_analysis_context(
     traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> GoRepoAnalysisContext {
     let traceability_pack = GoTraceabilityPack;

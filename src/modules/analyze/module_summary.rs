@@ -22,7 +22,7 @@ mod provider;
 pub(super) fn build_module_analysis(
     root: &Path,
     parsed: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     repo_contexts: &registry::RepoAnalysisContexts,
     options: ModuleAnalysisOptions,
 ) -> Result<BTreeMap<String, ModuleAnalysisSummary>> {

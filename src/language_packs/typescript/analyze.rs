@@ -57,7 +57,7 @@ use surface::{
 pub(crate) fn analyze_module(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     context: &TypeScriptRepoAnalysisContext,
     include_traceability: bool,
 ) -> Result<ProviderModuleAnalysis> {
@@ -126,7 +126,7 @@ pub(crate) fn build_repo_analysis_context(
     traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> TypeScriptRepoAnalysisContext {
     let traceability_pack = TypeScriptTraceabilityPack;
@@ -194,7 +194,7 @@ impl TraceabilityLanguagePack for TypeScriptTraceabilityPack {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     ) -> Vec<TraceabilityOwnedItem> {
         collect_owned_items(root, implementations, file_ownership)
     }
@@ -207,7 +207,7 @@ fn build_traceability_analysis_for_typescript(
     traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<TraceabilityAnalysis> {
     let inputs =
         if scoped_graph_discovery_requested(scoped_source_files, traceability_graph_facts) {
@@ -247,7 +247,7 @@ fn build_scoped_discovered_traceability_inputs_for_typescript(
     scoped_source_files: &[PathBuf],
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<TraceabilityInputs> {
     let source_graphs = parse_typescript_source_graphs(root, source_files);
     let repo_items = collect_repo_items(&source_graphs, file_ownership);
@@ -288,7 +288,7 @@ fn assemble_traceability_inputs_for_typescript(
     tool_call_edges: BTreeMap<String, BTreeSet<String>>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> TraceabilityInputs {
     let repo_items = collect_repo_items(&source_graphs, file_ownership);
     let context_items = collect_context_items(&source_graphs, file_ownership);
@@ -315,7 +315,7 @@ fn build_traceability_inputs_for_typescript(
     traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<TraceabilityInputs> {
     let (source_graphs, tool_call_edges) =
         match decode_traceability_graph_facts(traceability_graph_facts) {
@@ -353,7 +353,7 @@ pub(crate) fn build_traceability_scope_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>> {
     let source_graphs = parse_typescript_source_graphs(root, source_files);
     let parser_edges = build_parser_call_edges(&source_graphs);
@@ -451,7 +451,7 @@ fn narrow_scoped_traceability_inputs_for_typescript(
 pub(crate) fn expand_traceability_closure_from_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     facts: &[u8],
 ) -> Result<Vec<PathBuf>> {
     if scoped_source_files.is_empty() {
@@ -549,7 +549,7 @@ fn parse_typescript_source_graphs(
 // @applies ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
 fn collect_repo_items(
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = source_graphs
         .iter()
@@ -590,7 +590,7 @@ fn collect_repo_items(
 // @applies ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
 fn collect_context_items(
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = source_graphs
         .iter()
@@ -622,7 +622,7 @@ fn collect_context_items(
 fn collect_owned_items(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = Vec::new();
     let mut seen = BTreeSet::new();
@@ -659,7 +659,7 @@ fn collect_owned_items(
 fn parse_owned_implementation_graph(
     root: &Path,
     implementation: &ImplementRef,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Option<ParsedSourceGraph> {
     if let Some(body) = &implementation.body {
         return parse_source_graph(&implementation.location.path, body);
@@ -908,7 +908,7 @@ fn build_reverse_reachable_tool_call_edges_for_scoped_files(
     root: &Path,
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
     scoped_source_files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     parser_edges: &BTreeMap<String, BTreeSet<String>>,
 ) -> Result<BTreeMap<String, BTreeSet<String>>> {
     let callable_items = collect_callable_items(source_graphs);

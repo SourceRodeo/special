@@ -69,7 +69,7 @@ pub(super) fn build_repo_analysis_contexts(
     scoped_source_files: Option<&[PathBuf]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> RepoAnalysisContexts {
     let available_languages = languages_in_files(source_files);
@@ -172,7 +172,7 @@ fn prepare_traceability_inputs(
     source_files: &[PathBuf],
     scoped_source_files: Option<&[PathBuf]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> TraceabilityPreparation {
     if !include_traceability {
@@ -254,7 +254,7 @@ fn resolve_traceability_source_files(
     source_files: &[PathBuf],
     scoped_source_files: Option<&[PathBuf]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<(Vec<PathBuf>, Option<Vec<u8>>)> {
     let Some(scoped_source_files) = scoped_source_files else {
         return Ok((source_files.to_vec(), None));
@@ -372,7 +372,7 @@ pub(super) fn analyze_module_language(
     language: SourceLanguage,
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     contexts: &RepoAnalysisContexts,
     options: ModuleAnalysisOptions,
 ) -> Result<ProviderModuleAnalysis> {
@@ -403,7 +403,7 @@ impl LanguagePackAnalysisContext for ExplicitTraceabilityUnavailableContext {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
         options: ModuleAnalysisOptions,
     ) -> Result<ProviderModuleAnalysis> {
         let mut analysis =

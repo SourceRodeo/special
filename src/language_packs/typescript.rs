@@ -68,7 +68,7 @@ impl LanguagePackAnalysisContext for analyze::TypeScriptRepoAnalysisContext {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
         options: ModuleAnalysisOptions,
     ) -> Result<ProviderModuleAnalysis> {
         analyze::analyze_module(root, implementations, file_ownership, self, options.traceability)
@@ -83,7 +83,7 @@ fn build_repo_analysis_context(
     traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> Box<dyn LanguagePackAnalysisContext> {
     Box::new(analyze::build_repo_analysis_context(
@@ -107,7 +107,7 @@ fn build_traceability_scope_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>> {
     analyze::build_traceability_scope_facts(
         root,
@@ -121,7 +121,7 @@ fn build_traceability_scope_facts(
 fn expand_traceability_closure_from_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     facts: &[u8],
 ) -> Result<Vec<PathBuf>> {
     analyze::expand_traceability_closure_from_facts(

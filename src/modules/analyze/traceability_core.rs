@@ -552,7 +552,7 @@ pub(crate) trait TraceabilityLanguagePack {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &std::collections::BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &std::collections::BTreeMap<PathBuf, FileOwnership>,
     ) -> Vec<TraceabilityOwnedItem>;
 }
 
@@ -1666,7 +1666,7 @@ pub(crate) fn merge_trace_graph_edges(
 }
 
 pub(crate) fn owned_module_ids_for_path(
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     path: &Path,
 ) -> Vec<String> {
     let Some(ownership) = file_ownership.get(path) else {

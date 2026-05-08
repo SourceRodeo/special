@@ -15,7 +15,7 @@ use super::super::{
 pub(super) fn build_provider_analysis(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     repo_contexts: &registry::RepoAnalysisContexts,
     options: ModuleAnalysisOptions,
 ) -> Result<ProviderModuleAnalysis> {

@@ -1188,14 +1188,14 @@ fn filter_summary_to_display_path(
 
 fn index_file_ownership_for_test(
     parsed: &crate::model::ParsedArchitecture,
-) -> BTreeMap<PathBuf, FileOwnership<'_>> {
-    let mut files: BTreeMap<PathBuf, FileOwnership<'_>> = BTreeMap::new();
+) -> BTreeMap<PathBuf, FileOwnership> {
+    let mut files: BTreeMap<PathBuf, FileOwnership> = BTreeMap::new();
     for implementation in &parsed.implements {
         let entry = files.entry(implementation.location.path.clone()).or_default();
         if implementation.body_location.is_some() {
-            entry.item_scoped.push(implementation);
+            entry.item_scoped.push(implementation.clone());
         } else {
-            entry.file_scoped.push(implementation);
+            entry.file_scoped.push(implementation.clone());
         }
     }
     files

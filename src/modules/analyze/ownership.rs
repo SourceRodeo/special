@@ -12,23 +12,23 @@ use anyhow::{Context, Result};
 use crate::model::{ImplementRef, ModuleMetricsSummary, ParsedArchitecture};
 
 #[derive(Debug, Default)]
-pub(crate) struct FileOwnership<'a> {
-    pub(crate) file_scoped: Vec<&'a ImplementRef>,
-    pub(crate) item_scoped: Vec<&'a ImplementRef>,
+pub(crate) struct FileOwnership {
+    pub(crate) file_scoped: Vec<ImplementRef>,
+    pub(crate) item_scoped: Vec<ImplementRef>,
 }
 
-pub(super) fn index_file_ownership<'a>(
-    parsed: &'a ParsedArchitecture,
-) -> BTreeMap<PathBuf, FileOwnership<'a>> {
-    let mut files: BTreeMap<PathBuf, FileOwnership<'a>> = BTreeMap::new();
+pub(super) fn index_file_ownership(
+    parsed: &ParsedArchitecture,
+) -> BTreeMap<PathBuf, FileOwnership> {
+    let mut files: BTreeMap<PathBuf, FileOwnership> = BTreeMap::new();
     for implementation in &parsed.implements {
         let entry = files
             .entry(implementation.location.path.clone())
             .or_default();
         if implementation.body_location.is_some() {
-            entry.item_scoped.push(implementation);
+            entry.item_scoped.push(implementation.clone());
         } else {
-            entry.file_scoped.push(implementation);
+            entry.file_scoped.push(implementation.clone());
         }
     }
     files
@@ -43,7 +43,7 @@ pub(crate) fn display_path(root: &Path, path: &Path) -> PathBuf {
 pub(super) fn build_module_metrics(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<ModuleMetricsSummary> {
     let mut summary = ModuleMetricsSummary::default();
     visit_owned_texts(root, implementations, file_ownership, |_path, text| {
@@ -56,7 +56,7 @@ pub(super) fn build_module_metrics(
 pub(crate) fn visit_owned_texts<F>(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     mut visit: F,
 ) -> Result<()>
 where

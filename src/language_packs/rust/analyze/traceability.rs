@@ -77,7 +77,7 @@ impl TraceabilityLanguagePack for RustTraceabilityPack {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     ) -> Vec<TraceabilityOwnedItem> {
         collect_owned_items(root, implementations, file_ownership, true)
     }
@@ -115,7 +115,7 @@ impl RustMediatedReason {
 fn build_traceability_inputs_from_parts(
     parsed_repo: &ParsedRepo,
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     mut graph: TraceGraph,
     mediated_reasons: &BTreeMap<String, RustMediatedReason>,
 ) -> TraceabilityInputs {
@@ -170,7 +170,7 @@ pub(super) fn build_traceability_scope_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>> {
     let toolchain_project = super::toolchain::probe_local_toolchain_project(root);
     let semantic_fact_source = selected_semantic_fact_source(toolchain_project.as_ref());
@@ -232,7 +232,7 @@ pub(super) fn build_traceability_scope_facts(
 pub(super) fn expand_traceability_closure_from_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     facts: &[u8],
 ) -> Result<Vec<PathBuf>> {
     if scoped_source_files.is_empty() {
@@ -299,7 +299,7 @@ pub(super) fn build_traceability_analysis_from_cached_or_live_graph_facts(
     source_files: &[PathBuf],
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     traceability_pack: &RustTraceabilityPack,
 ) -> Result<TraceabilityAnalysis> {
     Ok(crate::modules::analyze::traceability_core::build_traceability_analysis(
@@ -319,7 +319,7 @@ fn build_traceability_inputs_from_cached_or_live_graph_facts(
     source_files: &[PathBuf],
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     traceability_pack: &RustTraceabilityPack,
 ) -> Result<TraceabilityInputs> {
     let (source_graphs, parser_edges, mediated_reasons, _) =
@@ -367,7 +367,7 @@ pub(super) fn build_scoped_traceability_analysis_from_cached_or_live_graph_facts
     scoped_source_files: &[PathBuf],
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     traceability_pack: &RustTraceabilityPack,
 ) -> Result<TraceabilityAnalysis> {
     Ok(crate::modules::analyze::traceability_core::build_traceability_analysis(
@@ -389,7 +389,7 @@ fn build_scoped_traceability_inputs_from_cached_or_live_graph_facts(
     scoped_source_files: &[PathBuf],
     graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     traceability_pack: &RustTraceabilityPack,
 ) -> Result<TraceabilityInputs> {
     let (source_graphs, parser_edges, mediated_reasons, scoped_semantic_edges) =
@@ -577,7 +577,7 @@ fn expand_mediated_reasons_through_graph(
 fn collect_owned_items(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     dedupe: bool,
 ) -> Vec<TraceabilityOwnedItem> {
     let mut items = Vec::new();
@@ -605,7 +605,7 @@ fn collect_owned_items(
 fn owned_items_from_implementation(
     root: &Path,
     implementation: &ImplementRef,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Vec<TraceabilityOwnedItem> {
     let Some(graph) = parse_owned_implementation_graph(root, implementation, file_ownership) else {
         return Vec::new();
@@ -647,7 +647,7 @@ fn owned_items_from_implementation(
 fn parse_owned_implementation_graph(
     root: &Path,
     implementation: &ImplementRef,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Option<ParsedSourceGraph> {
     if let Some(body) = &implementation.body {
         return parse_source_graph(&implementation.location.path, body);

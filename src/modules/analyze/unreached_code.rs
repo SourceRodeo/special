@@ -17,7 +17,7 @@ use super::read_owned_file_text;
 pub(super) fn apply_unowned_item_summary(
     root: &Path,
     files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     coverage: &mut ArchitectureRepoSignalsSummary,
 ) -> Result<()> {
     let mut details = Vec::new();

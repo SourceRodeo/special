@@ -20,7 +20,7 @@ pub(crate) type TypeScriptFixtureContext = (
     crate::model::ParsedRepo,
     crate::model::ParsedArchitecture,
     Vec<PathBuf>,
-    BTreeMap<PathBuf, FileOwnership<'static>>,
+    BTreeMap<PathBuf, FileOwnership>,
 );
 
 pub(crate) fn build_typescript_fixture_context(
@@ -43,7 +43,7 @@ pub(crate) fn build_typescript_fixture_context(
         ignore_patterns: &[],
     })
     .expect("fixture files should be discovered");
-    let file_ownership = index_file_ownership_for_test_owned(&parsed_architecture);
+    let file_ownership = index_file_ownership_for_test(&parsed_architecture);
 
     Some((
         root,
@@ -60,7 +60,7 @@ pub(crate) fn build_typescript_summary_from_closure(
     scoped_source_files: Option<&[PathBuf]>,
     parsed_repo: &crate::model::ParsedRepo,
     parsed_architecture: &crate::model::ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'static>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Option<ArchitectureTraceabilitySummary> {
     let graph_facts = match analyze::build_traceability_graph_facts(root, closure_files) {
         Ok(facts) => facts,
@@ -127,17 +127,18 @@ pub(crate) fn summary_identity(summary: &ArchitectureTraceabilitySummary) -> Str
     serde_json::to_string(summary).expect("traceability summary should serialize")
 }
 
-pub(crate) fn index_file_ownership_for_test_owned(
+pub(crate) fn index_file_ownership_for_test(
     parsed: &crate::model::ParsedArchitecture,
-) -> BTreeMap<PathBuf, FileOwnership<'static>> {
-    let mut files: BTreeMap<PathBuf, FileOwnership<'static>> = BTreeMap::new();
+) -> BTreeMap<PathBuf, FileOwnership> {
+    let mut files: BTreeMap<PathBuf, FileOwnership> = BTreeMap::new();
     for implementation in &parsed.implements {
-        let leaked = Box::leak(Box::new(implementation.clone()));
-        let entry = files.entry(leaked.location.path.clone()).or_default();
-        if leaked.body_location.is_some() {
-            entry.item_scoped.push(leaked);
+        let entry = files
+            .entry(implementation.location.path.clone())
+            .or_default();
+        if implementation.body_location.is_some() {
+            entry.item_scoped.push(implementation.clone());
         } else {
-            entry.file_scoped.push(leaked);
+            entry.file_scoped.push(implementation.clone());
         }
     }
     files

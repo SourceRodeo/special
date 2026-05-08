@@ -60,7 +60,7 @@ pub(crate) fn build_traceability_scope_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
     parsed_repo: &ParsedRepo,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>> {
     traceability::build_traceability_scope_facts(
         root,
@@ -74,7 +74,7 @@ pub(crate) fn build_traceability_scope_facts(
 pub(crate) fn expand_traceability_closure_from_facts(
     source_files: &[PathBuf],
     scoped_source_files: &[PathBuf],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     facts: &[u8],
 ) -> Result<Vec<PathBuf>> {
     traceability::expand_traceability_closure_from_facts(
@@ -93,7 +93,7 @@ pub(crate) fn build_repo_analysis_context(
     traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     _parsed_architecture: &crate::model::ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> RustRepoAnalysisContext {
     let traceability_pack =
@@ -148,7 +148,7 @@ pub(crate) fn analysis_environment_fingerprint(root: &Path) -> String {
 pub(crate) fn analyze_module(
     root: &Path,
     implementations: &[&ImplementRef],
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     context: &RustRepoAnalysisContext,
     include_traceability: bool,
 ) -> Result<ProviderModuleAnalysis> {

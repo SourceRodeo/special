@@ -1349,7 +1349,7 @@ fn assert_direct_scoped_go_analysis_matches_full_then_filtered(
         ignore_patterns: &[],
     })
     .expect("fixture files should be discovered");
-    let file_ownership = index_file_ownership_for_test_owned(&parsed_architecture);
+    let file_ownership = index_file_ownership_for_test(&parsed_architecture);
     let scoped_source_file = resolve_scoped_source_file(&discovered.source_files, &root, scoped_path);
 
     let full_analysis = super::traceability::build_traceability_analysis_from_cached_or_live_graph_facts(
@@ -1401,7 +1401,7 @@ fn build_go_boundary_context(
         ignore_patterns: &[],
     })
     .expect("fixture files should be discovered");
-    let file_ownership = index_file_ownership_for_test_owned(&parsed_architecture);
+    let file_ownership = index_file_ownership_for_test(&parsed_architecture);
     let full_inputs =
         super::traceability::build_traceability_inputs_from_cached_or_live_graph_facts(
             &root,
@@ -1650,7 +1650,7 @@ fn build_go_reference_comparison_context(
         ignore_patterns: &[],
     })
     .expect("fixture files should be discovered");
-    let file_ownership = index_file_ownership_for_test_owned(&parsed_architecture);
+    let file_ownership = index_file_ownership_for_test(&parsed_architecture);
     let full_inputs =
         super::traceability::build_traceability_inputs_from_cached_or_live_graph_facts(
             &root,
@@ -1714,7 +1714,7 @@ fn assert_go_scope_facts_expand_to_exact_closure(
         ignore_patterns: &[],
     })
     .expect("fixture files should be discovered");
-    let file_ownership = index_file_ownership_for_test_owned(&parsed_architecture);
+    let file_ownership = index_file_ownership_for_test(&parsed_architecture);
     let facts = super::build_traceability_scope_facts(&root, &discovered.source_files, &discovered.source_files, &parsed_repo, &file_ownership)
         .expect("go scope facts should build");
     let scoped_source_file = resolve_scoped_source_file(&discovered.source_files, &root, scoped_path);
@@ -1766,7 +1766,7 @@ fn assert_go_scope_facts_runtime_matches_full_then_filtered_summary(
         ignore_patterns: &[],
     })
     .expect("fixture files should be discovered");
-    let file_ownership = index_file_ownership_for_test_owned(&parsed_architecture);
+    let file_ownership = index_file_ownership_for_test(&parsed_architecture);
     let facts = super::build_traceability_scope_facts(&root, &discovered.source_files, &discovered.source_files, &parsed_repo, &file_ownership)
         .expect("go scope facts should build");
     let scoped_source_file = resolve_scoped_source_file(&discovered.source_files, &root, scoped_path);
@@ -2168,17 +2168,18 @@ fn stable_id_suffixes(item_ids: &BTreeSet<String>) -> BTreeSet<String> {
         .collect()
 }
 
-fn index_file_ownership_for_test_owned(
+fn index_file_ownership_for_test(
     parsed: &crate::model::ParsedArchitecture,
-) -> BTreeMap<PathBuf, FileOwnership<'static>> {
-    let mut files: BTreeMap<PathBuf, FileOwnership<'static>> = BTreeMap::new();
+) -> BTreeMap<PathBuf, FileOwnership> {
+    let mut files: BTreeMap<PathBuf, FileOwnership> = BTreeMap::new();
     for implementation in &parsed.implements {
-        let leaked = Box::leak(Box::new(implementation.clone()));
-        let entry = files.entry(leaked.location.path.clone()).or_default();
-        if leaked.body_location.is_some() {
-            entry.item_scoped.push(leaked);
+        let entry = files
+            .entry(implementation.location.path.clone())
+            .or_default();
+        if implementation.body_location.is_some() {
+            entry.item_scoped.push(implementation.clone());
         } else {
-            entry.file_scoped.push(leaked);
+            entry.file_scoped.push(implementation.clone());
         }
     }
     files

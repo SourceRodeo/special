@@ -46,7 +46,7 @@ impl LanguagePackAnalysisContext for analyze::PythonRepoAnalysisContext {
         &self,
         root: &Path,
         implementations: &[&ImplementRef],
-        file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+        file_ownership: &BTreeMap<PathBuf, FileOwnership>,
         options: ModuleAnalysisOptions,
     ) -> Result<ProviderModuleAnalysis> {
         analyze::analyze_module(root, implementations, file_ownership, self, options.traceability)
@@ -61,7 +61,7 @@ fn build_repo_analysis_context(
     _traceability_graph_facts: Option<&[u8]>,
     parsed_repo: &ParsedRepo,
     parsed_architecture: &ParsedArchitecture,
-    file_ownership: &BTreeMap<PathBuf, FileOwnership<'_>>,
+    file_ownership: &BTreeMap<PathBuf, FileOwnership>,
     include_traceability: bool,
 ) -> Box<dyn LanguagePackAnalysisContext> {
     Box::new(analyze::build_repo_analysis_context(
