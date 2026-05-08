@@ -100,7 +100,8 @@ fn collect_code_owned_body<'a>(lines: &'a [&'a str], start: usize) -> Vec<&'a st
         if saw_open_brace && brace_depth <= 0 {
             break;
         }
-        if should_stop_code_signature(trimmed, saw_open_brace) {
+        if should_stop_code_signature(trimmed, saw_open_brace, next_nonblank_trimmed(lines, index))
+        {
             break;
         }
 
@@ -133,7 +134,11 @@ fn update_brace_state(line: &str, brace_depth: &mut i32, saw_open_brace: &mut bo
     }
 }
 
-fn should_stop_code_signature(trimmed: &str, saw_open_brace: bool) -> bool {
+fn should_stop_code_signature(
+    trimmed: &str,
+    saw_open_brace: bool,
+    next_trimmed: Option<&str>,
+) -> bool {
     if saw_open_brace || trimmed.is_empty() {
         return false;
     }
@@ -143,8 +148,26 @@ fn should_stop_code_signature(trimmed: &str, saw_open_brace: bool) -> bool {
         || trimmed.ends_with('[')
         || trimmed.ends_with('=')
         || trimmed.starts_with("#[")
-        || trimmed.starts_with('@');
+        || trimmed.starts_with('@')
+        || trimmed == "where"
+        || trimmed.starts_with("where ")
+        || matches!(next_trimmed, Some(next) if starts_code_continuation(next));
     !continues && (trimmed.ends_with(';') || !trimmed.contains('('))
+}
+
+fn next_nonblank_trimmed<'a>(lines: &'a [&'a str], index: usize) -> Option<&'a str> {
+    lines
+        .iter()
+        .skip(index + 1)
+        .map(|line| line.trim())
+        .find(|trimmed| !trimmed.is_empty())
+}
+
+fn starts_code_continuation(trimmed: &str) -> bool {
+    trimmed == "where"
+        || trimmed.starts_with("where ")
+        || trimmed.starts_with('{')
+        || trimmed.starts_with("->")
 }
 
 fn collect_python_owned_body<'a>(lines: &'a [&'a str], start: usize) -> Vec<&'a str> {

@@ -86,6 +86,66 @@ fn extracts_generic_block_comment_blocks() {
 }
 
 #[test]
+// @verifies SPECIAL.PARSE.BLOCK_COMMENTS
+fn extracts_rust_impl_with_multiline_where_body() {
+    let content = [
+        "/**",
+        " * @implements APP.RENDERER",
+        " */",
+        "impl Renderer for JsonRenderer",
+        "where",
+        "    JsonRenderer: Send,",
+        "{",
+        "    fn render(&self) {}",
+        "}",
+        "",
+    ]
+    .join("\n");
+    let blocks = extract("src/example.rs", &content);
+
+    let body = &blocks[0]
+        .owned_item
+        .as_ref()
+        .expect("owned item should be present")
+        .body;
+    assert!(body.starts_with("impl Renderer for JsonRenderer"));
+    assert!(body.contains("where\n    JsonRenderer: Send,"));
+    assert!(body.contains("fn render(&self) {}"));
+    assert!(body.ends_with('}'));
+}
+
+#[test]
+// @verifies SPECIAL.PARSE.BLOCK_COMMENTS
+fn extracts_rust_function_with_multiline_where_body() {
+    let content = [
+        "/**",
+        " * @verifies APP.RENDERER",
+        " */",
+        "pub fn render_all<T>(items: &[T])",
+        "where",
+        "    T: Render,",
+        "{",
+        "    for item in items {",
+        "        item.render();",
+        "    }",
+        "}",
+        "",
+    ]
+    .join("\n");
+    let blocks = extract("src/example.rs", &content);
+
+    let body = &blocks[0]
+        .owned_item
+        .as_ref()
+        .expect("owned item should be present")
+        .body;
+    assert!(body.starts_with("pub fn render_all<T>(items: &[T])"));
+    assert!(body.contains("where\n    T: Render,"));
+    assert!(body.contains("item.render();"));
+    assert!(body.ends_with('}'));
+}
+
+#[test]
 // @verifies SPECIAL.PARSE.TYPESCRIPT_BLOCK_COMMENTS
 fn extracts_block_comment_blocks() {
     let blocks = extract(
