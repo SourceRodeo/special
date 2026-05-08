@@ -6,7 +6,9 @@ Cache hit, invalidation, and malformed-entry tests in `src/cache/tests/behavior.
 use crate::config::SpecialVersion;
 use crate::model::ModuleAnalysisOptions;
 
-use super::super::fingerprint::language_pack_scope_facts_fingerprint;
+use super::super::fingerprint::{
+    RepoAnalysisScopeKind, language_pack_scope_facts_fingerprint, scoped_repo_analysis_fingerprint,
+};
 use super::super::storage::cache_file_path;
 use super::super::storage::{read_blob_cache, write_blob_cache};
 use super::super::{
@@ -147,6 +149,39 @@ fn scoped_repo_analysis_cache_hits_on_second_load() {
     let second = snapshot_cache_stats();
     assert!(second.repo_analysis_hits > first.repo_analysis_hits);
     assert_eq!(second.repo_analysis_misses, first.repo_analysis_misses);
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
+fn target_and_within_analysis_fingerprints_are_disjoint() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-scope-kind-fingerprint");
+    write_repo_fixture(&root);
+    let parsed_repo =
+        load_or_parse_repo(&root, &[], SpecialVersion::V1).expect("parse should succeed");
+    let scoped_paths = vec![std::path::PathBuf::from("app.rs")];
+
+    let target = scoped_repo_analysis_fingerprint(
+        &root,
+        &[],
+        SpecialVersion::V1,
+        &parsed_repo,
+        RepoAnalysisScopeKind::Target,
+        &scoped_paths,
+    )
+    .expect("target fingerprint should be built");
+    let within = scoped_repo_analysis_fingerprint(
+        &root,
+        &[],
+        SpecialVersion::V1,
+        &parsed_repo,
+        RepoAnalysisScopeKind::Within,
+        &scoped_paths,
+    )
+    .expect("within fingerprint should be built");
+
+    assert_ne!(target, within);
 
     std::fs::remove_dir_all(&root).expect("temp root should be removed");
 }

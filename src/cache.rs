@@ -153,18 +153,14 @@ pub fn load_or_build_scoped_repo_analysis_summary(
         ignore_patterns,
         version,
         parsed_repo,
+        fingerprint::RepoAnalysisScopeKind::Target,
         scoped_paths,
     )?;
-    let scope_hash = {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        for path in crate::modules::analyze::normalized_scope_paths(root, scoped_paths) {
-            path.hash(&mut hasher);
-        }
-        hasher.finish()
-    };
+    let scope_hash = repo_analysis_scope_hash(
+        root,
+        fingerprint::RepoAnalysisScopeKind::Target,
+        scoped_paths,
+    );
     let cache_path = storage::cache_file_path(
         root,
         &format!("repo-analysis-scope-{scope_hash:016x}-v{CACHE_SCHEMA_VERSION}.json"),
@@ -206,19 +202,14 @@ pub fn load_or_build_bounded_repo_analysis_summary(
         ignore_patterns,
         version,
         parsed_repo,
+        fingerprint::RepoAnalysisScopeKind::Within,
         within_paths,
     )?;
-    let scope_hash = {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        "bounded".hash(&mut hasher);
-        for path in crate::modules::analyze::normalized_scope_paths(root, within_paths) {
-            path.hash(&mut hasher);
-        }
-        hasher.finish()
-    };
+    let scope_hash = repo_analysis_scope_hash(
+        root,
+        fingerprint::RepoAnalysisScopeKind::Within,
+        within_paths,
+    );
     let cache_path = storage::cache_file_path(
         root,
         &format!("repo-analysis-within-{scope_hash:016x}-v{CACHE_SCHEMA_VERSION}.json"),
@@ -328,6 +319,22 @@ fn parse_dialect(version: SpecialVersion) -> ParseDialect {
         SpecialVersion::V0 => ParseDialect::CompatibilityV0,
         SpecialVersion::V1 => ParseDialect::CurrentV1,
     }
+}
+
+fn repo_analysis_scope_hash(
+    root: &Path,
+    scope_kind: fingerprint::RepoAnalysisScopeKind,
+    scoped_paths: &[std::path::PathBuf],
+) -> u64 {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = DefaultHasher::new();
+    scope_kind.hash(&mut hasher);
+    for path in crate::modules::analyze::normalized_scope_paths(root, scoped_paths) {
+        path.hash(&mut hasher);
+    }
+    hasher.finish()
 }
 
 #[cfg(test)]

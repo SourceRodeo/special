@@ -16,6 +16,12 @@ use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::model::{ModuleAnalysisOptions, ParsedRepo};
 use crate::modules::analyze;
 
+#[derive(Clone, Copy, Hash)]
+pub(super) enum RepoAnalysisScopeKind {
+    Target,
+    Within,
+}
+
 pub(super) fn repo_fingerprint(
     root: &Path,
     ignore_patterns: &[String],
@@ -52,10 +58,12 @@ pub(super) fn scoped_repo_analysis_fingerprint(
     ignore_patterns: &[String],
     version: SpecialVersion,
     parsed_repo: &ParsedRepo,
+    scope_kind: RepoAnalysisScopeKind,
     scoped_paths: &[std::path::PathBuf],
 ) -> Result<u64> {
     let mut hasher = DefaultHasher::new();
     repo_analysis_fingerprint(root, ignore_patterns, version, parsed_repo)?.hash(&mut hasher);
+    scope_kind.hash(&mut hasher);
     for path in analyze::normalized_scope_paths(root, scoped_paths) {
         path.hash(&mut hasher);
     }
