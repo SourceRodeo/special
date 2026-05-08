@@ -9,7 +9,7 @@ use serde_json::Value;
 
 use crate::support::{
     find_node_by_id, run_special, temp_repo_dir, write_ambiguous_coupling_module_analysis_fixture,
-    write_coupling_module_analysis_fixture,
+    write_coupling_module_analysis_fixture, write_quality_module_analysis_fixture,
 };
 
 fn assert_module_coupling_output(stdout: &str) {
@@ -48,6 +48,38 @@ fn modules_metrics_surface_module_coupling() {
     assert!(shared_stdout.contains("fan in: 1"));
     assert!(shared_stdout.contains("afferent coupling: 1"));
     assert!(shared_stdout.contains("instability: 0.00"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.MODULE_COMMAND.METRICS.COUPLING
+fn modules_metrics_render_zero_dependency_instability_as_zero() {
+    let root = temp_repo_dir("special-cli-modules-metrics-zero-coupling");
+    write_quality_module_analysis_fixture(&root);
+
+    let text_output = run_special(&root, &["arch", "DEMO", "--metrics"]);
+    assert!(text_output.status.success());
+    let text = String::from_utf8(text_output.stdout).expect("stdout should be utf-8");
+    assert!(text.contains("fan in: 0"));
+    assert!(text.contains("fan out: 0"));
+    assert!(text.contains("instability: 0.00"));
+    assert!(!text.contains("NaN"));
+
+    let json_output = run_special(&root, &["arch", "DEMO", "--metrics", "--json"]);
+    assert!(json_output.status.success());
+    let json: Value =
+        serde_json::from_slice(&json_output.stdout).expect("json output should be valid json");
+    let demo = json["nodes"]
+        .as_array()
+        .and_then(|nodes| nodes.iter().find_map(|node| find_node_by_id(node, "DEMO")))
+        .expect("demo module should be present");
+    assert_eq!(demo["analysis"]["coupling"]["fan_in"], Value::from(0));
+    assert_eq!(demo["analysis"]["coupling"]["fan_out"], Value::from(0));
+    assert_eq!(
+        demo["analysis"]["coupling"]["instability"],
+        Value::from(0.0)
+    );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
