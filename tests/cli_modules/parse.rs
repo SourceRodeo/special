@@ -312,6 +312,56 @@ fn modules_attach_inline_markdown_implements_to_containing_section() {
 }
 
 #[test]
+// @verifies SPECIAL.MODULE_PARSE.IMPLEMENTS.MARKDOWN_SCOPE
+fn modules_markdown_implements_ignores_fenced_headings_after_annotation() {
+    let root = temp_repo_dir("special-cli-modules-markdown-fenced-heading");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("docs.md"),
+        concat!(
+            "### `@area DOCS`\n",
+            "Docs area.\n\n",
+            "### `@module DOCS.GUIDE`\n",
+            "Guide module.\n\n",
+            "## Guide\n",
+            "@implements DOCS.GUIDE\n",
+            "```markdown\n",
+            "## Reference\n",
+            "```\n",
+            "Keep this in the guide body.\n\n",
+            "## Reference\n",
+            "Do not include this next section.\n",
+        ),
+    )
+    .expect("markdown fixture should be written");
+
+    let output = run_special(&root, &["arch", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let guide = json["nodes"]
+        .as_array()
+        .and_then(|nodes| {
+            nodes
+                .iter()
+                .find_map(|node| find_node_by_id(node, "DOCS.GUIDE"))
+        })
+        .expect("DOCS.GUIDE module should be present");
+    let implementation =
+        expect_single_implementation(guide, "markdown section implementation should be recorded");
+    let body = implementation["body"]
+        .as_str()
+        .expect("markdown implementation body should be text");
+    assert!(body.contains("```markdown\n## Reference\n```"));
+    assert!(body.contains("Keep this in the guide body."));
+    assert!(!body.contains("Do not include this next section."));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.LINT_COMMAND.UNKNOWN_IMPLEMENTS_REFS
 fn lint_reports_unknown_implements_references() {
     let root = temp_repo_dir("special-cli-modules-lint-unknown");

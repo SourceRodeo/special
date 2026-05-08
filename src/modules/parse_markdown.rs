@@ -291,10 +291,23 @@ fn markdown_implementation_section(
 
 fn next_heading_after_attachment_lines(lines: &[&str], cursor: usize) -> Option<usize> {
     let mut cursor = skip_blank_doc_lines(lines, cursor);
+    let mut in_code_fence = markdown_fence_state_before(lines, cursor);
     while cursor < lines.len() && is_markdown_architecture_attachment_line(lines[cursor]) {
         cursor = skip_blank_doc_lines(lines, cursor + 1);
+        in_code_fence = markdown_fence_state_before(lines, cursor);
     }
-    (cursor < lines.len() && markdown_heading_level(lines[cursor]).is_some()).then_some(cursor)
+    (cursor < lines.len() && !in_code_fence && markdown_heading_level(lines[cursor]).is_some())
+        .then_some(cursor)
+}
+
+fn markdown_fence_state_before(lines: &[&str], cursor: usize) -> bool {
+    let mut in_code_fence = false;
+    for line in lines.iter().take(cursor) {
+        if starts_markdown_fence(line) {
+            in_code_fence = !in_code_fence;
+        }
+    }
+    in_code_fence
 }
 
 fn containing_markdown_heading(lines: &[&str], annotation_index: usize) -> Option<usize> {
