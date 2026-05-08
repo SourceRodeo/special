@@ -96,7 +96,8 @@ use std::{
 use support::{
     latest_reachable_semver_tag, latest_reachable_semver_tag_for_repo,
     python_entrypoint_runtime_flag, python3_command, release_review_changed_line_ranges,
-    release_review_chunk_helper, release_review_dry_run, release_review_extract_context_ranges,
+    release_review_chunk_helper, release_review_chunks_for_files_and_contexts,
+    release_review_dry_run, release_review_extract_context_ranges,
     release_review_extract_full_scan_context_ranges, release_review_merge_responses,
     release_review_passes_for, release_review_schema, release_review_validate_response_shape_err,
     release_review_validate_response_shape_ok, workflow_files,
@@ -839,6 +840,47 @@ fn release_review_adds_default_pass_for_unmatched_changed_files() {
                 .expect("files should be an array")
                 .iter()
                 .any(|value| value.as_str() == Some("tests/support/quality.rs"))
+    }));
+}
+
+#[test]
+fn release_review_keeps_diff_only_test_files_without_context() {
+    let payload = release_review_chunks_for_files_and_contexts(
+        &["tests/with_context.rs", "tests/diff_only.rs"],
+        json!([
+            {
+                "path": "tests/with_context.rs",
+                "start_line": 1,
+                "end_line": 1,
+                "content": "#[test]\nfn covers_context() {}"
+            }
+        ]),
+    );
+    let chunks = payload["chunks"]
+        .as_array()
+        .expect("chunks should be an array");
+
+    assert!(chunks.iter().any(|chunk| {
+        chunk["files"]
+            .as_array()
+            .expect("files should be an array")
+            .iter()
+            .any(|path| path.as_str() == Some("tests/with_context.rs"))
+            && !chunk["file_contexts"]
+                .as_array()
+                .expect("file contexts should be an array")
+                .is_empty()
+    }));
+    assert!(chunks.iter().any(|chunk| {
+        chunk["files"]
+            .as_array()
+            .expect("files should be an array")
+            .iter()
+            .any(|path| path.as_str() == Some("tests/diff_only.rs"))
+            && chunk["file_contexts"]
+                .as_array()
+                .expect("file contexts should be an array")
+                .is_empty()
     }));
 }
 

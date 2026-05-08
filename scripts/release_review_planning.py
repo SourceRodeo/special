@@ -371,14 +371,10 @@ def build_pass_chunks(
         for path in chunk["files"]
         if chunk["file_contexts"]
     }
-    has_current_test_context = any(
-        str(entry["path"]).startswith("tests/") for entry in file_contexts
-    )
     diff_only_files = [
         path
         for path in review_pass["files"]
         if path not in covered_paths
-        and not (has_current_test_context and path.startswith("tests/"))
     ]
 
     if diff_only_files:

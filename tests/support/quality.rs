@@ -249,6 +249,41 @@ print(json.dumps(module.build_review_passes(files)))
     release_review_python_helper(script, files)
 }
 
+pub fn release_review_chunks_for_files_and_contexts(files: &[&str], contexts: Value) -> Value {
+    let script = r#"
+import importlib.util
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+files = json.loads(sys.argv[2])
+contexts = json.loads(sys.argv[3])
+spec = importlib.util.spec_from_file_location(
+    "release_review", root / "scripts" / "review-rust-release-style.py"
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+review_pass = {"name": "test", "focus": ["chunk planning"], "files": files}
+chunks, runner_warnings = module.build_pass_chunks(
+    root,
+    sys.argv[4],
+    "jj",
+    None,
+    "@",
+    True,
+    review_pass,
+    contexts,
+)
+print(json.dumps({"chunks": chunks, "runner_warnings": runner_warnings}))
+"#;
+
+    let files_json = serde_json::to_string(files).expect("files should serialize");
+    let contexts_json = serde_json::to_string(&contexts).expect("contexts should serialize");
+    let version = current_package_version();
+    release_review_python_helper(script, &[&files_json, &contexts_json, &version])
+}
+
 pub fn release_review_merge_responses(responses: &Value) -> Value {
     let script = r#"
 import importlib.util
