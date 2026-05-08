@@ -234,7 +234,7 @@ summary
   possible pattern clusters: 2
   possible missing pattern applications: 1
   long prose outside docs: 3
-  exact long-prose test assertions: 0
+  long prose test literals: 0
 duplicate source shapes by file
   src/billing/export.ts: 4
   src/billing/refunds.ts: 3
@@ -256,7 +256,7 @@ Contract details: `special health` supports
 [missing pattern applications](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS),
 [pattern clusters](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION),
 [long prose outside docs](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS),
-and [long exact prose assertions](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS).
+and [long prose test literals](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_PROSE_TEST_LITERALS).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.MCP
 @applies DOCS.COMMAND_REFERENCE_ENTRY

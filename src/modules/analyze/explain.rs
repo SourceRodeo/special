@@ -128,8 +128,8 @@ pub(crate) fn metric_explanation(key: MetricExplanationKey) -> MetricExplanation
             "count of long natural-language blocks outside configured docs source/output paths that pass the prose-shape filter and do not contain `documents://`, `@documents`, or `@filedocuments` evidence.",
         ),
         MetricExplanationKey::LongExactProseAssertions => explanation(
-            "this highlights tests that pin long prose to exact string matching instead of checking smaller semantic pieces.",
-            "count of long human-prose string literals used as exact assertion targets in recognized test or fixture source files.",
+            "this highlights tests that embed long prose directly in source instead of checking smaller semantic pieces or structured results.",
+            "count of long human-prose string literals embedded in recognized test or fixture source files.",
         ),
         MetricExplanationKey::HighestComplexityItem => explanation(
             "this is one of the most structurally complex owned items inside the module boundary.",

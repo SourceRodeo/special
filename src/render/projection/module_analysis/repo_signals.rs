@@ -26,7 +26,7 @@ pub(in crate::render) fn project_repo_signals_view(
             MetricExplanationKey::LongProseOutsideDocs,
         ),
         explanation(
-            "long exact prose assertions",
+            "long prose test literals",
             MetricExplanationKey::LongExactProseAssertions,
         ),
     ];
@@ -45,7 +45,7 @@ pub(in crate::render) fn project_repo_signals_view(
             ),
             count("long prose outside docs", coverage.long_prose_outside_docs),
             count(
-                "long exact prose assertions",
+                "long prose test literals",
                 coverage.long_exact_prose_assertions,
             ),
         ],

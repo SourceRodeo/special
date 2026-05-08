@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+use std::collections::BTreeSet;
 use tree_sitter::{Node, Parser};
 
 use crate::model::{ArchitectureLongExactProseAssertion, ArchitectureRepoSignalsSummary};
@@ -58,7 +59,7 @@ impl TestLanguage {
     }
 }
 
-pub(super) fn apply_long_exact_prose_assertion_summary(
+pub(super) fn apply_long_prose_test_literal_summary(
     root: &Path,
     files: &[PathBuf],
     summary: &mut ArchitectureRepoSignalsSummary,
@@ -72,10 +73,12 @@ pub(super) fn apply_long_exact_prose_assertion_summary(
             continue;
         }
         let source = fs::read_to_string(path)?;
-        findings.extend(find_long_exact_prose_assertions(
-            root, path, language, &source,
-        ));
+        findings.extend(find_long_prose_test_literals(root, path, language, &source));
     }
+    let mut seen = BTreeSet::new();
+    findings.retain(|finding| {
+        seen.insert((finding.path.clone(), finding.line, finding.literal.clone()))
+    });
     findings.sort_by(|left, right| {
         left.path
             .cmp(&right.path)
@@ -95,7 +98,7 @@ fn is_test_surface(path: &Path) -> bool {
     text.contains("test_fixtures") || text.contains("/fixtures/")
 }
 
-fn find_long_exact_prose_assertions(
+fn find_long_prose_test_literals(
     root: &Path,
     path: &Path,
     language: TestLanguage,
@@ -133,13 +136,17 @@ fn collect_findings(
 ) {
     match language {
         TestLanguage::Rust => collect_rust_node(root, path, node, source, findings),
-        TestLanguage::Python if node.kind() == "assert_statement" => {
-            collect_literal_descendants(root, path, language, node, source, "assert", findings);
-        }
-        _ if node.kind() == "call_expression" => {
-            collect_exact_call_literals(root, path, language, node, source, findings);
-        }
         _ => {}
+    }
+
+    if let Some(literal) = string_literal(node, source) {
+        let context = literal_context(language, node, source);
+        record_literal(root, path, language, node, context, &literal, findings);
+    } else if matches!(language, TestLanguage::Python) && node.kind() == "string" {
+        for literal in python_string_literals(node, source) {
+            let context = literal_context(language, node, source);
+            record_literal(root, path, language, node, context, &literal, findings);
+        }
     }
 
     let mut cursor = node.walk();
@@ -214,49 +221,6 @@ fn collect_rust_assert_macro_literals(
     }
 }
 
-fn collect_exact_call_literals(
-    root: &Path,
-    path: &Path,
-    language: TestLanguage,
-    node: Node<'_>,
-    source: &str,
-    findings: &mut Vec<ArchitectureLongExactProseAssertion>,
-) {
-    let Some(function) = node
-        .child_by_field_name("function")
-        .or_else(|| node.child_by_field_name("callee"))
-    else {
-        return;
-    };
-    let callee_text = function
-        .utf8_text(source.as_bytes())
-        .unwrap_or_default()
-        .to_string();
-    let Some(callee) = exact_callee(&callee_text) else {
-        return;
-    };
-    let arguments = node.child_by_field_name("arguments").unwrap_or(node);
-    collect_literal_descendants(root, path, language, arguments, source, callee, findings);
-}
-
-fn collect_literal_descendants(
-    root: &Path,
-    path: &Path,
-    language: TestLanguage,
-    node: Node<'_>,
-    source: &str,
-    callee: &str,
-    findings: &mut Vec<ArchitectureLongExactProseAssertion>,
-) {
-    if let Some(literal) = string_literal(node, source) {
-        record_literal(root, path, language, node, callee, &literal, findings);
-    }
-    let mut cursor = node.walk();
-    for child in node.named_children(&mut cursor) {
-        collect_literal_descendants(root, path, language, child, source, callee, findings);
-    }
-}
-
 fn collect_text_literals(
     root: &Path,
     path: &Path,
@@ -294,7 +258,40 @@ fn record_literal(
     });
 }
 
-fn exact_callee(callee: &str) -> Option<&'static str> {
+fn literal_context<'a>(language: TestLanguage, node: Node<'a>, source: &'a str) -> &'static str {
+    let mut current = node.parent();
+    while let Some(ancestor) = current {
+        if matches!(language, TestLanguage::Python) && ancestor.kind() == "assert_statement" {
+            return "assert";
+        }
+        if ancestor.kind() == "macro_invocation" {
+            return rust_macro_context(ancestor, source).unwrap_or("macro");
+        }
+        if matches!(ancestor.kind(), "call" | "call_expression")
+            && let Some(function) = ancestor
+                .child_by_field_name("function")
+                .or_else(|| ancestor.child_by_field_name("callee"))
+            && let Ok(callee_text) = function.utf8_text(source.as_bytes())
+        {
+            return known_callee(callee_text).unwrap_or("call");
+        }
+        current = ancestor.parent();
+    }
+    "literal"
+}
+
+fn rust_macro_context<'a>(node: Node<'a>, source: &'a str) -> Option<&'static str> {
+    let macro_node = node.child_by_field_name("macro")?;
+    let macro_name = macro_node.utf8_text(source.as_bytes()).ok()?;
+    match macro_name {
+        "assert" => Some("assert"),
+        "assert_eq" => Some("assert_eq"),
+        "assert_ne" => Some("assert_ne"),
+        _ => None,
+    }
+}
+
+fn known_callee(callee: &str) -> Option<&'static str> {
     for candidate in [
         "contains",
         "starts_with",
@@ -347,6 +344,21 @@ fn strip_rawish(text: &str) -> Option<&str> {
     let start = text.find('"')? + 1;
     let end = text[start..].rfind('"')? + start;
     Some(&text[start..end])
+}
+
+fn python_string_literals(node: Node<'_>, source: &str) -> Vec<String> {
+    let text = node.utf8_text(source.as_bytes()).unwrap_or_default();
+    if let Some(stripped) = strip_quoted(text) {
+        return vec![stripped.to_string()];
+    }
+    let mut literals = Vec::new();
+    let mut cursor = node.walk();
+    for child in node.named_children(&mut cursor) {
+        if let Some(literal) = string_literal(child, source) {
+            literals.push(literal);
+        }
+    }
+    literals
 }
 
 fn human_word_count(text: &str) -> usize {

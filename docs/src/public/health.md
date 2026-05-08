@@ -26,7 +26,7 @@ summary
   possible pattern clusters: 6
   possible missing pattern applications: 3
   long prose outside docs: 9
-  exact long-prose test assertions: 2
+  long prose test literals: 2
 duplicate source shapes by file
   src/billing/invoices.ts: 5
   src/billing/refunds.ts: 4
@@ -154,10 +154,11 @@ The right move depends on the prose:
 - short local implementation context can stay near the code
 - obsolete prose should be deleted
 
-[`exact long-prose test assertions`](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS)
-reports tests that assert long human prose as one exact string. Prefer checking
-the smallest contractual pieces of human output, or expose a structured result
-and test that structure.
+[`long prose test literals`](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_PROSE_TEST_LITERALS)
+reports tests that embed long human prose directly in source. Prefer checking
+the smallest contractual pieces of human output, exposing a structured result,
+or moving large prose samples into a fixture when the full prose is the test
+subject.
 
 @applies DOCS.CROSS_SURFACE_WORKFLOW
 ## A Health-First Existing-Repo Pass

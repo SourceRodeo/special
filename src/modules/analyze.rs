@@ -149,8 +149,8 @@ pub(crate) fn build_repo_analysis_summary(
     )?;
     status::emit_analysis_status("computing duplicate-logic signals across owned implementation");
     duplication::apply_duplicate_item_summary(root, parsed, &file_ownership, &mut repo_signals)?;
-    status::emit_analysis_status("scanning test surfaces for long exact prose assertions");
-    test_quality::apply_long_exact_prose_assertion_summary(root, scoped_files, &mut repo_signals)?;
+    status::emit_analysis_status("scanning test surfaces for long prose literals");
+    test_quality::apply_long_prose_test_literal_summary(root, scoped_files, &mut repo_signals)?;
     if let Some(boundary) = scope_boundary.as_ref() {
         repo_scope::filter_repo_signals_to_scope(boundary, &mut repo_signals);
     }
@@ -246,8 +246,8 @@ pub(crate) fn build_bounded_repo_analysis_summary(
         Some(corpus_files),
         &mut repo_signals,
     )?;
-    status::emit_analysis_status("scanning test surfaces for long exact prose assertions");
-    test_quality::apply_long_exact_prose_assertion_summary(root, corpus_files, &mut repo_signals)?;
+    status::emit_analysis_status("scanning test surfaces for long prose literals");
+    test_quality::apply_long_prose_test_literal_summary(root, corpus_files, &mut repo_signals)?;
 
     status::emit_analysis_status(&format!(
         "building language analysis contexts from {} bounded source files",

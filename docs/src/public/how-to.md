@@ -55,7 +55,7 @@ repo-wide list.
 | possible pattern clusters | `special patterns --metrics` | Promote a real repeated structure into `@pattern`, or do no action. |
 | possible missing pattern applications | `special health --metrics --target PATH --verbose` | Add `@applies` where the pattern is really present. |
 | long prose outside docs | `special docs --metrics` | Promote, link, or remove the prose deliberately. |
-| exact long-prose test assertions | focused test review | Assert smaller contractual pieces or test a structured representation. |
+| long prose test literals | focused test review | Assert smaller contractual pieces, test a structured representation, or move large samples into fixtures. |
 
 Health is the broad scanning command. Once it identifies a concrete question,
 move to the surface command that owns the connection: `specs` for claims and

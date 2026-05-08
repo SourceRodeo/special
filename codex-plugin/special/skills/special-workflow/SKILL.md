@@ -17,8 +17,8 @@ traceability. Use the surfaces as one workflow, not as independent checkboxes.
    investigation queue: source outside architecture suggests ownership work,
    untraced implementation suggests proof or facade work, duplicate source
    shapes suggest helper extraction or an adopted pattern, long prose outside
-   docs suggests docs migration, and exact long-prose assertions suggest smaller
-   semantic tests.
+   docs suggests docs migration, and long prose test literals suggest smaller
+   semantic tests, structured outputs, or fixtures.
 3. If the task is creating a new behavior or new repo slice, start with
    `special_specs` for the product claim and `special_arch` for ownership.
 4. Use `special_patterns` when a repeated implementation shape appears; do not

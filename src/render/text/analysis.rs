@@ -46,7 +46,7 @@ pub(super) fn format_repo_signals(coverage: &ProjectedRepoSignals) -> String {
             .expect("string writes should succeed");
     }
     for item in &coverage.long_exact_prose_assertions {
-        writeln!(output, "  long exact prose assertion: {item}")
+        writeln!(output, "  long prose test literal: {item}")
             .expect("string writes should succeed");
     }
 
@@ -111,7 +111,7 @@ fn append_signal_detail_lines(output: &mut String, coverage: &ProjectedRepoSigna
             .expect("string writes should succeed");
     }
     for item in &coverage.long_exact_prose_assertions {
-        writeln!(output, "  long exact prose assertion: {item}")
+        writeln!(output, "  long prose test literal: {item}")
             .expect("string writes should succeed");
     }
 }

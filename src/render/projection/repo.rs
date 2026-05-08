@@ -70,7 +70,7 @@ pub(in crate::render) fn project_repo_health_metric_sections(
                 metrics.docs.long_prose_outside_docs,
             ),
             metric_count(
-                "exact long-prose test assertions",
+                "long prose test literals",
                 metrics.tests.exact_long_prose_assertions,
             ),
         ],
@@ -111,7 +111,7 @@ pub(in crate::render) fn project_repo_health_metric_sections(
     );
     push_grouped_metric_section(
         &mut sections,
-        "exact long-prose test assertions by file",
+        "long prose test literals by file",
         &metrics.tests.exact_long_prose_assertions_by_file,
     );
     if let Some(traceability) = &metrics.traceability {
@@ -225,7 +225,7 @@ fn repo_health_summary_explanations() -> Vec<ProjectedExplanation> {
             MetricExplanationKey::LongProseOutsideDocs,
         ),
         repo_health_explanation(
-            "exact long-prose test assertions",
+            "long prose test literals",
             MetricExplanationKey::LongExactProseAssertions,
         ),
     ]

@@ -142,8 +142,8 @@ special health reports long natural-language prose blocks outside configured doc
 
 @group SPECIAL.HEALTH_COMMAND.TEST_QUALITY
 
-@spec SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS
-special health reports long human-prose string literals used as exact assertion targets in recognized test and fixture source files as non-blocking repo-wide quality data.
+@spec SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_PROSE_TEST_LITERALS
+special health reports long human-prose string literals embedded in recognized test and fixture source files as non-blocking repo-wide quality data.
 
 */
 // @fileimplements SPECIAL.TESTS.CLI_REPO
@@ -326,8 +326,8 @@ fn repo_surfaces_unowned_items() {
 }
 
 #[test]
-// @verifies SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_EXACT_PROSE_ASSERTIONS
-fn repo_surfaces_long_exact_prose_assertion_signals() {
+// @verifies SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_PROSE_TEST_LITERALS
+fn repo_surfaces_long_prose_test_literal_signals() {
     let root = temp_repo_dir("special-cli-repo-long-exact-prose");
     let tests_dir = root.join("tests");
     fs::create_dir_all(&tests_dir).expect("tests directory should be created");
@@ -342,6 +342,17 @@ fn exact_copy_assertion() {
 "#,
     )
     .expect("test fixture should be written");
+    fs::write(
+        tests_dir.join("helper_prose.py"),
+        concat!(
+            "def contains(text):\n",
+            "    return text\n\n",
+            "def test_copy_helper():\n",
+            "    contains(\"this copied helper prose has many words ",
+            "and should still be surfaced as stringly test prose\")\n",
+        ),
+    )
+    .expect("python test fixture should be written");
 
     let output = run_special(&root, &["health", "--json", "--verbose"]);
     assert!(output.status.success());
@@ -349,11 +360,20 @@ fn exact_copy_assertion() {
     let json: Value =
         serde_json::from_slice(&output.stdout).expect("json output should be valid json");
     let signals = &json["analysis"]["repo_signals"];
-    assert_eq!(signals["long_exact_prose_assertions"], Value::from(1));
-    let detail = &signals["long_exact_prose_assertion_details"][0];
-    assert_eq!(detail["path"], Value::from("tests/exact_prose.rs"));
-    assert_eq!(detail["language"], Value::from("rust"));
-    assert_eq!(detail["callee"], Value::from("contains"));
+    assert_eq!(signals["long_exact_prose_assertions"], Value::from(2));
+    let details = signals["long_exact_prose_assertion_details"]
+        .as_array()
+        .expect("long prose details should be present");
+    assert!(details.iter().any(|detail| {
+        detail["path"] == Value::from("tests/exact_prose.rs")
+            && detail["language"] == Value::from("rust")
+            && detail["callee"] == Value::from("contains")
+    }));
+    assert!(details.iter().any(|detail| {
+        detail["path"] == Value::from("tests/helper_prose.py")
+            && detail["language"] == Value::from("python")
+            && detail["callee"] == Value::from("contains")
+    }));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
@@ -398,7 +418,7 @@ fn repo_metrics_text_surfaces_repo_health_counts() {
     assert!(stdout.contains("summary"));
     assert!(stdout.contains("duplicate source shapes: 2"));
     assert!(stdout.contains("source outside architecture: 0"));
-    assert!(stdout.contains("exact long-prose test assertions: 0"));
+    assert!(stdout.contains("long prose test literals: 0"));
     assert!(stdout.contains("duplicate source shapes by file"));
     assert!(stdout.contains("alpha.rs: 1"));
     assert!(stdout.contains("beta.rs: 1"));
@@ -420,7 +440,7 @@ fn repo_metrics_verbose_text_surfaces_metric_explanations() {
     assert!(stdout.contains("source outside architecture meaning:"));
     assert!(stdout.contains("untraced implementation exact:"));
     assert!(stdout.contains("possible pattern clusters meaning:"));
-    assert!(stdout.contains("exact long-prose test assertions exact:"));
+    assert!(stdout.contains("long prose test literals exact:"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

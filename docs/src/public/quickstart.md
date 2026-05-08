@@ -175,7 +175,7 @@ summary
   possible pattern clusters: 0
   possible missing pattern applications: 0
   long prose outside docs: 0
-  exact long-prose test assertions: 0
+  long prose test literals: 0
 untraced implementation by file
   src/export.ts: 1
 ```
