@@ -21,7 +21,6 @@ use crate::modules::analyze::traceability_core::use_rust_reference_traceability_
 /// files. `context_items` are the broader working set used for collection:
 /// projected items plus same-module peers. `seed_ids` are the broad reverse-
 /// walk seeds derived from that working context.
-#[cfg_attr(not(test), allow(dead_code))]
 pub(super) struct ScopedTraceabilityBoundary {
     pub(super) projected_item_ids: BTreeSet<String>,
     pub(super) context_items: Vec<TraceabilityOwnedItem>,
@@ -41,7 +40,6 @@ pub(super) type ScopedTraceabilityContract = ProjectedTraceabilityContract;
 
 /// Slow exact reverse-closure reference derived from the full Go item graph for
 /// the current scoped exact contract.
-#[cfg_attr(not(test), allow(dead_code))]
 pub(super) type ScopedTraceabilityReference = ProjectedTraceabilityReference;
 
 impl ScopedTraceabilityBoundary {
@@ -63,7 +61,6 @@ impl ScopedTraceabilityBoundary {
     /// scoped boundary. This is the target set used by the shared projected-
     /// contract theorem family.
     #[cfg_attr(not(test), allow(dead_code))]
-    // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn exact_contract(
         &self,
         graph: &TraceGraph,
@@ -74,7 +71,7 @@ impl ScopedTraceabilityBoundary {
         build_projected_traceability_contract(self.projected_item_ids.clone(), graph)
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
+    // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn reference(&self, graph: &TraceGraph) -> Result<ScopedTraceabilityReference, String> {
         #[cfg(test)]
         use_rust_reference_traceability_kernel_for_tests();
@@ -86,7 +83,6 @@ impl ScopedTraceabilityBoundary {
     }
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn derive_scoped_traceability_boundary(
     repo_items: Vec<TraceabilityOwnedItem>,
     scoped_source_files: &[PathBuf],

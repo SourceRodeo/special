@@ -84,7 +84,6 @@ impl ProjectedProofProtocol for ScopedTraceabilityReference {
 }
 
 impl ScopedTraceabilityBoundary {
-    #[cfg_attr(not(test), allow(dead_code))]
     pub(super) fn working_contract(&self) -> ScopedTraceabilityContract {
         ScopedTraceabilityContract {
             projected_files: self.projected_files.clone(),
@@ -95,8 +94,6 @@ impl ScopedTraceabilityBoundary {
         }
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
-    // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn exact_contract(
         &self,
         candidate_files: &[PathBuf],
@@ -105,7 +102,7 @@ impl ScopedTraceabilityBoundary {
         Ok(self.reference(candidate_files, full_inputs)?.contract)
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
+    // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn reference(
         &self,
         candidate_files: &[PathBuf],

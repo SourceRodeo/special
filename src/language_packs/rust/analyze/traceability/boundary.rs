@@ -58,7 +58,6 @@ pub(super) type ScopedTraceabilityContract = ProjectedTraceabilityContract;
 /// This is the implementation-shaped bridge to the stronger Lean theorem:
 /// given a declared target set, what exact reverse closure does the full graph
 /// actually induce for those targets?
-#[cfg_attr(not(test), allow(dead_code))]
 pub(super) type ScopedTraceabilityReference = ProjectedTraceabilityReference;
 
 impl ScopedTraceabilityBoundary {
@@ -86,7 +85,6 @@ impl ScopedTraceabilityBoundary {
     /// reverse-reachable semantic dependency needed by those support-backed
     /// projected items. The target set itself is therefore allowed to be
     /// smaller than the retained context item set.
-    // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn exact_contract(
         &self,
         graph: &TraceGraph,
@@ -97,7 +95,7 @@ impl ScopedTraceabilityBoundary {
         build_projected_traceability_contract(self.projected_item_ids.clone(), graph)
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
+    // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn reference(&self, graph: &TraceGraph) -> Result<ScopedTraceabilityReference, String> {
         #[cfg(test)]
         use_rust_reference_traceability_kernel_for_tests();
