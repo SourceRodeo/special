@@ -98,7 +98,7 @@ fn diff_uses_declared_git_changed_paths_for_relationship_review() {
 }
 
 #[test]
-// @verifies SPECIAL.CLI.EXPLICIT_PATH_SCOPE
+// @verifies SPECIAL.DESIGN_PRINCIPLES.EXPLICIT_PATH_SCOPE
 fn diff_rejects_positional_path_scope() {
     let root = temp_repo_dir("special-cli-diff-no-positional-scope");
     write_diff_fixture(&root, Some("none"));

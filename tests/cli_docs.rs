@@ -641,7 +641,7 @@ fn docs_validate_reports_unknown_targets() {
 }
 
 #[test]
-// @verifies SPECIAL.CLI.EXPLICIT_PATH_SCOPE
+// @verifies SPECIAL.DESIGN_PRINCIPLES.EXPLICIT_PATH_SCOPE
 fn docs_rejects_hidden_positional_path_scope() {
     let root = temp_repo_dir("special-cli-docs-positional");
     write_docs_fixture(&root);

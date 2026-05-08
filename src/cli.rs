@@ -8,6 +8,9 @@ special help surface and top-level command descriptions.
 @group SPECIAL.VERSION
 special top-level version output surface.
 
+@group SPECIAL.DESIGN_PRINCIPLES
+special cross-command product design principles.
+
 @spec SPECIAL.HELP.TOP_LEVEL_COMMANDS
 special `--help` lists the top-level commands with purpose-oriented summaries.
 
@@ -35,7 +38,7 @@ special help text groups examples by user task instead of listing every command 
 @spec SPECIAL.VERSION.FLAGS
 special `-v` and `--version` print the current CLI version and exit successfully.
 
-@spec SPECIAL.CLI.EXPLICIT_PATH_SCOPE
+@spec SPECIAL.DESIGN_PRINCIPLES.EXPLICIT_PATH_SCOPE
 Special commands that scope an analysis view by path require explicit --target PATH instead of accepting ambiguous positional path scopes.
 
 @spec SPECIAL.DIFF_COMMAND

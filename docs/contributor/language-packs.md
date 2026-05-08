@@ -17,6 +17,15 @@ that bar visible through
 tooling or parser boundaries
 and the built-in language-pack admission checks.
 
+## Registry Layout
+
+Top-level files in `src/language_packs` are built-in pack entries. Keep entry
+files named after the language, such as `rust.rs` or `python.rs`, and give each
+entry a `DESCRIPTOR`. Put helpers, fixtures, and implementation modules under a
+language or shared subdirectory. The build script follows that
+top-level entry layout
+and rejects accidental top-level helper files with a layout error.
+
 ## Scoped Analysis
 
 Scoped health must not become a shallow path filter. For supported packs,
@@ -42,4 +51,3 @@ Go carries tool edges
 and reference edges.
 Python must surface parse failures
 instead of silently succeeding.
-

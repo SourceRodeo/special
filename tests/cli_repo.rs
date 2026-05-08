@@ -776,7 +776,7 @@ fn repo_scope_progress_limits_traceability_contexts_to_scoped_languages() {
 }
 
 #[test]
-// @verifies SPECIAL.CLI.EXPLICIT_PATH_SCOPE
+// @verifies SPECIAL.DESIGN_PRINCIPLES.EXPLICIT_PATH_SCOPE
 fn repo_rejects_positional_path_scope() {
     let root = temp_repo_dir("special-cli-health-no-positional-scope");
     write_duplicate_item_signals_module_analysis_fixture(&root);

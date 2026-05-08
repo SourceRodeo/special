@@ -32,7 +32,11 @@ fn main() {
                 return None;
             }
             let stem = path.file_stem()?.to_str()?;
-            (stem != "mod").then(|| stem.to_string())
+            if stem == "mod" {
+                return None;
+            }
+            assert_language_pack_entry_shape(&path);
+            Some(stem.to_string())
         })
         .collect::<Vec<_>>();
     pack_modules.sort();
@@ -57,6 +61,21 @@ fn main() {
 
     if build_lean_kernel_enabled() {
         build_embedded_lean_kernel(&manifest_dir, &out_dir);
+    }
+}
+
+fn assert_language_pack_entry_shape(path: &Path) {
+    let source = fs::read_to_string(path).unwrap_or_else(|error| {
+        panic!(
+            "read language pack registry entry candidate {}: {error}",
+            path.display()
+        )
+    });
+    if !source.contains("pub(crate) const DESCRIPTOR: LanguagePackDescriptor") {
+        panic!(
+            "top-level src/language_packs/*.rs files are built-in language pack entries and must declare `pub(crate) const DESCRIPTOR: LanguagePackDescriptor`; move shared helpers under a language-pack subdirectory instead. Offending file: {}",
+            path.display()
+        );
     }
 }
 

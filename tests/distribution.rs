@@ -39,7 +39,10 @@ special keeps a GitHub Actions release workflow in `.github/workflows/release.ym
 special GitHub release automation embeds the standalone Lean traceability kernel in host-native local artifact builds so those released `special` binaries can use the Lean kernel without requiring Lean at user runtime; cross-target artifact builds do not embed a host-built Lean executable.
 
 @spec SPECIAL.DISTRIBUTION.BUILD_SCRIPT.LANGUAGE_PACK_REGISTRY
-special's Cargo build script generates a compile-time built-in language-pack registry from shipped language-pack source files.
+special's Cargo build script generates a compile-time built-in language-pack registry from top-level shipped language-pack entry files.
+
+@spec SPECIAL.DISTRIBUTION.BUILD_SCRIPT.LANGUAGE_PACK_REGISTRY.TOP_LEVEL_ENTRIES_ONLY
+special's Cargo build script treats top-level Rust source files in `src/language_packs` as built-in language-pack entries, skips only the Rust module root, and rejects top-level helper files with a clear layout error that tells maintainers to put shared helpers under a language-pack subdirectory.
 
 @spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.PUBLISHED
 special publishes GitHub Releases for versioned distribution.
@@ -574,9 +577,24 @@ fn build_script_generates_the_builtin_language_pack_registry() {
         build_script.contains("REGISTERED_LANGUAGE_PACKS"),
         "generated registry should expose the built-in language pack descriptor list"
     );
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.BUILD_SCRIPT.LANGUAGE_PACK_REGISTRY.TOP_LEVEL_ENTRIES_ONLY
+fn build_script_rejects_top_level_language_pack_helpers() {
+    let build_script = read_repo_file("build.rs");
+
     assert!(
-        build_script.contains("stem != \"mod\"") && !build_script.contains("stem != \"python\""),
-        "registry generation should skip helper modules without excluding the built-in Python pack"
+        build_script.contains("assert_language_pack_entry_shape"),
+        "registry generation should validate top-level language-pack entry shape"
+    );
+    assert!(
+        build_script.contains("move shared helpers under a language-pack subdirectory"),
+        "registry generation should explain where shared helpers belong"
+    );
+    assert!(
+        build_script.contains("stem == \"mod\""),
+        "registry generation should skip only the Rust module root"
     );
 }
 
@@ -602,7 +620,7 @@ fn built_in_language_pack_admission_uses_descriptor_registration() {
         assert!(source.contains("parse_source_graph"));
     }
     assert!(build_script.contains("language_pack_registry.rs"));
-    assert!(build_script.contains("stem != \"mod\""));
+    assert!(build_script.contains("assert_language_pack_entry_shape"));
     assert!(syntax_registry.contains("language_packs::descriptors()"));
     assert!(syntax_core.contains("registry::parse_source_graph_at_path"));
 }
