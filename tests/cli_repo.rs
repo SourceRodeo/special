@@ -159,7 +159,10 @@ mod typescript_test_fixtures;
 use std::collections::hash_map::DefaultHasher;
 use std::fs;
 use std::hash::{Hash, Hasher};
-use std::thread;
+use std::io::{BufRead, BufReader, Read};
+use std::process::{Child, ExitStatus};
+use std::sync::mpsc;
+use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use serde_json::Value;
@@ -548,42 +551,40 @@ fn concurrent_health_runs_wait_cleanly_for_a_shared_cache_fill() {
     let root = temp_repo_dir("special-cli-health-cache-contention");
     write_duplicate_item_signals_module_analysis_fixture(&root);
 
-    let cache_lock = {
-        let mut hasher = DefaultHasher::new();
-        root.hash(&mut hasher);
-        let root_hash = hasher.finish();
-        std::env::temp_dir()
-            .join("special-cache")
-            .join(format!("{root_hash:016x}"))
-            .join("repo-analysis-v2.json.lock")
-    };
+    let warmup = run_special(&root, &["health", "--json"]);
+    assert!(
+        warmup.status.success(),
+        "warmup run failed: {}",
+        String::from_utf8_lossy(&warmup.stderr)
+    );
+
+    let cache_path = current_repo_analysis_cache_path(&root);
+    fs::remove_file(&cache_path).expect("repo analysis cache entry should be removable");
+    let cache_lock = cache_lock_path(&cache_path);
     if let Some(parent) = cache_lock.parent() {
         fs::create_dir_all(parent).expect("cache dir should exist");
     }
     fs::write(&cache_lock, b"locked").expect("lock file should be written");
 
-    let first = spawn_special(&root, &["health", "--json"]);
-    let second = spawn_special(&root, &["health", "--json"]);
+    let first = spawn_special_with_cache_wait_marker(&root);
+    let second = spawn_special_with_cache_wait_marker(&root);
 
-    thread::sleep(Duration::from_millis(150));
+    first.wait_for_cache_wait_status("first");
+    second.wait_for_cache_wait_status("second");
     fs::remove_file(&cache_lock).expect("lock file should be removed");
 
-    let first_output = first
-        .wait_with_output()
-        .expect("first concurrent run should finish");
-    let second_output = second
-        .wait_with_output()
-        .expect("second concurrent run should finish");
+    let first_output = first.wait_with_captured_output();
+    let second_output = second.wait_with_captured_output();
 
     assert!(
         first_output.status.success(),
         "first run failed: {}",
-        String::from_utf8_lossy(&first_output.stderr)
+        first_output.stderr
     );
     assert!(
         second_output.status.success(),
         "second run failed: {}",
-        String::from_utf8_lossy(&second_output.stderr)
+        second_output.stderr
     );
 
     let first_json: Value =
@@ -593,6 +594,121 @@ fn concurrent_health_runs_wait_cleanly_for_a_shared_cache_fill() {
     assert_eq!(first_json, second_json);
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+fn current_repo_analysis_cache_path(root: &std::path::Path) -> std::path::PathBuf {
+    let root = root.canonicalize().expect("repo root should canonicalize");
+    let mut hasher = DefaultHasher::new();
+    root.hash(&mut hasher);
+    let root_hash = hasher.finish();
+    let cache_dir = std::env::temp_dir()
+        .join("special-cache")
+        .join(format!("{root_hash:016x}"));
+    fs::read_dir(&cache_dir)
+        .unwrap_or_else(|error| panic!("cache dir should be readable: {error}"))
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("repo-analysis-v") && name.ends_with(".json"))
+        })
+        .unwrap_or_else(|| {
+            panic!(
+                "repo analysis cache entry should exist in {}",
+                cache_dir.display()
+            )
+        })
+}
+
+fn cache_lock_path(cache_path: &std::path::Path) -> std::path::PathBuf {
+    let mut path = cache_path.as_os_str().to_os_string();
+    path.push(".lock");
+    path.into()
+}
+
+struct RunningSpecialWithCapturedOutput {
+    child: Child,
+    stdout: JoinHandle<Vec<u8>>,
+    stderr: JoinHandle<String>,
+    cache_wait: mpsc::Receiver<()>,
+}
+
+struct CapturedSpecialOutput {
+    status: ExitStatus,
+    stdout: Vec<u8>,
+    stderr: String,
+}
+
+fn spawn_special_with_cache_wait_marker(
+    root: &std::path::Path,
+) -> RunningSpecialWithCapturedOutput {
+    let mut child = spawn_special(root, &["health", "--json"]);
+    let mut stdout = child.stdout.take().expect("stdout should be piped");
+    let stderr = child.stderr.take().expect("stderr should be piped");
+    let (cache_wait_tx, cache_wait_rx) = mpsc::channel();
+
+    let stdout = thread::spawn(move || {
+        let mut output = Vec::new();
+        stdout
+            .read_to_end(&mut output)
+            .expect("child stdout should be readable");
+        output
+    });
+    let stderr = thread::spawn(move || {
+        let mut reader = BufReader::new(stderr);
+        let mut output = String::new();
+        let mut notified = false;
+        loop {
+            let mut line = String::new();
+            let bytes = reader
+                .read_line(&mut line)
+                .expect("child stderr should be readable");
+            if bytes == 0 {
+                break;
+            }
+            if !notified && line.contains("waiting to reuse its cached result") {
+                let _ = cache_wait_tx.send(());
+                notified = true;
+            }
+            output.push_str(&line);
+        }
+        output
+    });
+
+    RunningSpecialWithCapturedOutput {
+        child,
+        stdout,
+        stderr,
+        cache_wait: cache_wait_rx,
+    }
+}
+
+impl RunningSpecialWithCapturedOutput {
+    fn wait_for_cache_wait_status(&self, label: &str) {
+        self.cache_wait
+            .recv_timeout(Duration::from_secs(10))
+            .unwrap_or_else(|_| {
+                panic!("{label} child should report cache wait before lock release")
+            });
+    }
+
+    fn wait_with_captured_output(mut self) -> CapturedSpecialOutput {
+        let status = self.child.wait().expect("child process should finish");
+        let stdout = self
+            .stdout
+            .join()
+            .expect("stdout reader should finish cleanly");
+        let stderr = self
+            .stderr
+            .join()
+            .expect("stderr reader should finish cleanly");
+        CapturedSpecialOutput {
+            status,
+            stdout,
+            stderr,
+        }
+    }
 }
 
 #[test]
