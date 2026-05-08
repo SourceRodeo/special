@@ -6,99 +6,27 @@ Architecture analysis, traceability, dependency, and quality summary domain type
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ArchitectureRepoSignalsSummary {
     pub unowned_items: usize,
-    #[serde(default)]
-    pub unowned_item_details: Vec<ArchitectureUnownedItem>,
     pub duplicate_items: usize,
-    #[serde(default)]
-    pub duplicate_item_details: Vec<ArchitectureDuplicateItem>,
     pub possible_missing_pattern_applications: usize,
-    #[serde(default, skip_deserializing)]
+    pub possible_pattern_clusters: usize,
+    pub long_prose_outside_docs: usize,
+    pub long_exact_prose_assertions: usize,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unowned_item_details: Vec<ArchitectureUnownedItem>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub duplicate_item_details: Vec<ArchitectureDuplicateItem>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Vec::is_empty")]
     pub possible_missing_pattern_application_details:
         Vec<crate::model::PatternMissingApplicationCandidate>,
-    pub possible_pattern_clusters: usize,
-    #[serde(default, skip_deserializing)]
+    #[serde(default, skip_deserializing, skip_serializing_if = "Vec::is_empty")]
     pub possible_pattern_cluster_details: Vec<crate::model::PatternClusterCandidate>,
-    pub long_prose_outside_docs: usize,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub long_prose_outside_docs_details: Vec<ArchitectureLongProseBlock>,
-    pub long_exact_prose_assertions: usize,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub long_exact_prose_assertion_details: Vec<ArchitectureLongExactProseAssertion>,
-}
-
-impl Serialize for ArchitectureRepoSignalsSummary {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut field_count = 8;
-        if !self.unowned_item_details.is_empty() {
-            field_count += 1;
-        }
-        if !self.duplicate_item_details.is_empty() {
-            field_count += 1;
-        }
-        if !self.possible_missing_pattern_application_details.is_empty() {
-            field_count += 1;
-        }
-        if !self.possible_pattern_cluster_details.is_empty() {
-            field_count += 1;
-        }
-        if !self.long_prose_outside_docs_details.is_empty() {
-            field_count += 1;
-        }
-        if !self.long_exact_prose_assertion_details.is_empty() {
-            field_count += 1;
-        }
-        let mut state =
-            serializer.serialize_struct("ArchitectureRepoSignalsSummary", field_count)?;
-        state.serialize_field("unowned_items", &self.unowned_items)?;
-        state.serialize_field("duplicate_items", &self.duplicate_items)?;
-        state.serialize_field(
-            "possible_missing_pattern_applications",
-            &self.possible_missing_pattern_applications,
-        )?;
-        state.serialize_field("possible_pattern_clusters", &self.possible_pattern_clusters)?;
-        state.serialize_field("long_prose_outside_docs", &self.long_prose_outside_docs)?;
-        state.serialize_field(
-            "long_exact_prose_assertions",
-            &self.long_exact_prose_assertions,
-        )?;
-        if !self.unowned_item_details.is_empty() {
-            state.serialize_field("unowned_item_details", &self.unowned_item_details)?;
-        }
-        if !self.duplicate_item_details.is_empty() {
-            state.serialize_field("duplicate_item_details", &self.duplicate_item_details)?;
-        }
-        if !self.possible_missing_pattern_application_details.is_empty() {
-            state.serialize_field(
-                "possible_missing_pattern_application_details",
-                &self.possible_missing_pattern_application_details,
-            )?;
-        }
-        if !self.possible_pattern_cluster_details.is_empty() {
-            state.serialize_field(
-                "possible_pattern_cluster_details",
-                &self.possible_pattern_cluster_details,
-            )?;
-        }
-        if !self.long_prose_outside_docs_details.is_empty() {
-            state.serialize_field(
-                "long_prose_outside_docs_details",
-                &self.long_prose_outside_docs_details,
-            )?;
-        }
-        if !self.long_exact_prose_assertion_details.is_empty() {
-            state.serialize_field(
-                "long_exact_prose_assertion_details",
-                &self.long_exact_prose_assertion_details,
-            )?;
-        }
-        state.end()
-    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
