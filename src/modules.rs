@@ -73,13 +73,6 @@ pub fn build_module_document(
     Ok((document, lint))
 }
 
-pub(crate) fn build_module_document_from_parsed(
-    parsed: &ParsedArchitecture,
-    filter: ModuleFilter,
-) -> ModuleDocument {
-    materialize::build_module_document(parsed, filter, None)
-}
-
 pub fn build_repo_document(
     root: &Path,
     ignore_patterns: &[String],
@@ -158,82 +151,6 @@ pub fn build_repo_document(
         },
         lint,
     ))
-}
-
-pub(crate) fn build_repo_document_from_parsed(
-    root: &Path,
-    ignore_patterns: &[String],
-    version: SpecialVersion,
-    parsed: &ParsedArchitecture,
-    parsed_repo: &crate::model::ParsedRepo,
-    options: RepoDocumentOptions<'_>,
-) -> Result<RepoDocument> {
-    let mut summary = if let Some(within_paths) = options.within_scope_paths {
-        load_or_build_bounded_repo_analysis_summary(
-            root,
-            ignore_patterns,
-            version,
-            parsed,
-            parsed_repo,
-            within_paths,
-        )?
-    } else if let Some(scoped_paths) = options.target_scope_paths {
-        load_or_build_scoped_repo_analysis_summary(
-            root,
-            ignore_patterns,
-            version,
-            parsed,
-            parsed_repo,
-            scoped_paths,
-        )?
-    } else {
-        load_or_build_repo_analysis_summary(root, ignore_patterns, version, parsed, parsed_repo)?
-    };
-    if let Some(target_scope_paths) = options.target_scope_paths
-        && Some(target_scope_paths) != options.within_scope_paths
-    {
-        analyze::filter_repo_analysis_summary_to_paths(
-            root,
-            ignore_patterns,
-            target_scope_paths,
-            &mut summary,
-        )?;
-    }
-    if let Some(symbol) = options.symbol {
-        analyze::filter_repo_analysis_summary_to_symbol(symbol, &mut summary);
-    }
-    apply_health_ignore_unexplained(
-        root,
-        options.health_ignore_unexplained_patterns,
-        &mut summary,
-    )?;
-    apply_pattern_opportunity_signals(root, ignore_patterns, parsed, options, &mut summary)?;
-    analyze::apply_long_prose_outside_docs_summary(
-        root,
-        ignore_patterns,
-        options.docs_outputs,
-        health_signal_scope_paths(options),
-        summary
-            .repo_signals
-            .as_mut()
-            .expect("repo health should always include repo signals"),
-    )?;
-
-    Ok(RepoDocument {
-        metrics: options
-            .metrics
-            .then(|| {
-                build_repo_metrics(
-                    root,
-                    ignore_patterns,
-                    version,
-                    &summary,
-                    options.docs_outputs,
-                )
-            })
-            .transpose()?,
-        analysis: Some(summary),
-    })
 }
 
 fn apply_health_ignore_unexplained(

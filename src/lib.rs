@@ -1,6 +1,6 @@
 /**
 @module SPECIAL
-Repository root application surface for `special`. This module wires together the bare `special` overview plus the `special specs`, `special arch`, and `special health` command surfaces, along with the underlying spec, architecture, render, and discovery subsystems, without owning their internal rules.
+Repository root application surface for `special`. This module wires together top-level CLI help plus the `special specs`, `special arch`, and `special health` command surfaces, along with the underlying spec, architecture, render, and discovery subsystems, without owning their internal rules.
 */
 // @fileimplements SPECIAL
 mod annotation_syntax;
@@ -16,7 +16,6 @@ mod index;
 mod language_packs;
 mod model;
 mod modules;
-mod overview;
 mod parser;
 mod patterns;
 mod planned_syntax;

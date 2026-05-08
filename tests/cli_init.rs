@@ -166,16 +166,16 @@ fn top_level_help_lists_command_summaries() {
 }
 
 #[test]
-// @verifies SPECIAL.HELP.ROOT_OVERVIEW
-fn top_level_help_explains_bare_special_overview() {
-    let root = temp_repo_dir("special-cli-help-overview");
+// @verifies SPECIAL.HELP.ROOT_HELP
+fn top_level_help_explains_bare_special_help() {
+    let root = temp_repo_dir("special-cli-root-help");
 
     let output = run_special(&root, &["--help"]);
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     assert!(stdout.contains("no subcommand"));
-    assert!(stdout.contains("compact health overview"));
+    assert!(stdout.contains("help"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

@@ -12,7 +12,7 @@ special mcp
 ```
 
 The server exposes bounded tools
-for status, overview, specs, architecture, patterns, docs, lint, and health.
+for status, specs, architecture, patterns, docs, lint, and health.
 It can also return docs output
 and report a
 plugin version notice

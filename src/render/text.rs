@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.RENDER.TEXT
-Renders projected specs, modules, repo health, overviews, and lint diagnostics into human-readable text output while centralizing shared text metric helpers.
+Renders projected specs, modules, repo health, and lint diagnostics into human-readable text output while centralizing shared text metric helpers.
 */
 // @fileimplements SPECIAL.RENDER.TEXT
 use crate::model::{
@@ -14,8 +14,6 @@ mod attachments;
 mod lint;
 #[path = "text/module.rs"]
 mod module;
-#[path = "text/overview.rs"]
-mod overview;
 #[path = "text/repo.rs"]
 mod repo;
 #[path = "text/spec.rs"]
@@ -23,7 +21,6 @@ mod spec;
 
 pub(super) use self::lint::render_lint_text;
 pub(super) use self::module::render_module_text;
-pub(super) use self::overview::render_overview_text;
 pub(super) use self::repo::render_repo_text;
 pub(super) use self::spec::render_spec_text;
 

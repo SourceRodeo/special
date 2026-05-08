@@ -211,69 +211,6 @@ pub struct RepoTraceabilityMetrics {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct OverviewDocument {
-    pub lint: OverviewLintSummary,
-    pub specs: OverviewSpecsSummary,
-    pub arch: OverviewArchSummary,
-    pub health: OverviewHealthSummary,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub traceability: Option<OverviewTraceabilitySummary>,
-}
-
-// Keep the curated root-overview recommendations in one place. The CLI parse
-// tests prove each listed command still belongs to the current command surface.
-pub const OVERVIEW_LOOK_NEXT_COMMANDS: &[&str] = &[
-    "special lint",
-    "special specs",
-    "special specs --metrics",
-    "special specs --unverified",
-    "special arch",
-    "special arch --metrics",
-    "special arch --unimplemented",
-    "special health",
-    "special health --metrics",
-];
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OverviewLintSummary {
-    pub errors: usize,
-    pub warnings: usize,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OverviewSpecsSummary {
-    pub total_specs: usize,
-    pub planned_specs: usize,
-    pub deprecated_specs: usize,
-    pub unverified_specs: usize,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OverviewArchSummary {
-    pub total_modules: usize,
-    pub total_areas: usize,
-    pub unimplemented_modules: usize,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OverviewHealthSummary {
-    pub duplicate_items: usize,
-    pub unowned_items: usize,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OverviewTraceabilitySummary {
-    pub analyzed_items: usize,
-    pub current_spec_items: usize,
-    pub statically_mediated_items: usize,
-    pub unverified_test_items: usize,
-    pub unexplained_items: usize,
-    pub unexplained_review_surface_items: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unavailable_reason: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
 pub struct LintReport {
     pub diagnostics: Vec<Diagnostic>,
 }

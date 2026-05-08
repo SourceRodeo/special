@@ -1,82 +1,58 @@
-#[allow(dead_code)]
-#[path = "../src/language_packs/rust/test_fixtures.rs"]
-mod rust_test_fixtures;
 /**
 @module SPECIAL.TESTS.CLI_OVERVIEW
-Bare `special` overview command tests in `tests/cli_overview.rs`.
+Bare `special` root command tests in `tests/cli_overview.rs`.
 */
 // @fileimplements SPECIAL.TESTS.CLI_OVERVIEW
 #[path = "support/cli.rs"]
 mod support;
-#[allow(dead_code)]
-#[path = "../src/language_packs/typescript/test_fixtures.rs"]
-mod typescript_test_fixtures;
 
 use std::fs;
 
-use serde_json::Value;
-
-use rust_test_fixtures::write_traceability_module_analysis_fixture;
-use support::{run_special, temp_repo_dir, write_lint_error_fixture};
-use typescript_test_fixtures::write_typescript_traceability_fixture;
+use support::{run_special, temp_repo_dir};
 
 #[test]
-// @verifies SPECIAL.OVERVIEW.COMMAND
-fn bare_special_prints_compact_repo_overview() {
-    let root = temp_repo_dir("special-cli-overview");
-    write_traceability_module_analysis_fixture(&root);
+// @verifies SPECIAL.HELP.ROOT_HELP
+fn bare_special_prints_top_level_help() {
+    let root = temp_repo_dir("special-cli-root-help");
 
     let output = run_special(&root, &[]);
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("special\n"));
-    assert!(stdout.contains("  lint\n"));
-    assert!(stdout.contains("  specs\n"));
-    assert!(stdout.contains("  arch\n"));
-    assert!(stdout.contains("  health\n"));
-    assert!(stdout.contains("  look next\n"));
-    assert!(stdout.contains("special specs --metrics"));
-    assert!(stdout.contains("special arch --metrics"));
-    assert!(stdout.contains("special health --metrics"));
-    assert!(!stdout.contains("traceability\n"));
+    assert!(stdout.contains("Usage: special"));
+    assert!(stdout.contains("Commands:"));
+    assert!(stdout.contains("specs"));
+    assert!(stdout.contains("health"));
+    assert!(stdout.contains("Examples:"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
-// @verifies SPECIAL.OVERVIEW.COMMAND.JSON
-fn bare_special_json_emits_compact_overview() {
-    let root = temp_repo_dir("special-cli-overview-json");
-    write_typescript_traceability_fixture(&root);
+// @verifies SPECIAL.HELP.SUBCOMMAND
+fn bare_special_matches_help_subcommand() {
+    let root = temp_repo_dir("special-cli-root-help-matches-help");
+
+    let root_output = run_special(&root, &[]);
+    let help_output = run_special(&root, &["help"]);
+    assert!(root_output.status.success());
+    assert!(help_output.status.success());
+
+    assert_eq!(root_output.stdout, help_output.stdout);
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+fn bare_special_json_requires_a_command() {
+    let root = temp_repo_dir("special-cli-root-json");
 
     let output = run_special(&root, &["--json"]);
-    assert!(output.status.success());
-
-    let json: Value =
-        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
-    assert_eq!(json["lint"]["errors"], 0);
-    assert_eq!(json["specs"]["total_specs"], 1);
-    assert_eq!(json["arch"]["total_modules"], 2);
-    assert!(json["health"]["duplicate_items"].is_number());
-    assert!(json["health"]["unowned_items"].is_number());
-    assert!(json.get("traceability").is_none());
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
-}
-
-#[test]
-// @verifies SPECIAL.OVERVIEW.COMMAND.FAILS_ON_LINT_ERRORS
-fn bare_special_fails_when_combined_lint_has_errors() {
-    let root = temp_repo_dir("special-cli-overview-lint-error");
-    write_lint_error_fixture(&root);
-
-    let output = run_special(&root, &[]);
     assert!(!output.status.success());
 
-    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("special\n"));
-    assert!(stdout.contains("errors: 1"));
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("top-level --json has no root document"));
+    assert!(stderr.contains("special --help"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

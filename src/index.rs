@@ -28,8 +28,7 @@ use anyhow::Result;
 use crate::cache::load_or_parse_repo;
 use crate::config::SpecialVersion;
 use crate::model::{
-    AttestScope, LintReport, ParsedRepo, SpecDocument, SpecFilter, SpecMetricsSummary,
-    grouped_counts,
+    AttestScope, LintReport, SpecDocument, SpecFilter, SpecMetricsSummary, grouped_counts,
 };
 
 mod lint;
@@ -58,18 +57,6 @@ pub fn build_lint_report(
 ) -> Result<LintReport> {
     let parsed = load_or_parse_repo(root, ignore_patterns, version)?;
     Ok(lint_from_parsed(&parsed))
-}
-
-pub(crate) fn build_spec_document_from_parsed(
-    parsed: &ParsedRepo,
-    filter: SpecFilter,
-    metrics: bool,
-) -> SpecDocument {
-    materialize_spec(parsed, filter, metrics, None)
-}
-
-pub(crate) fn build_lint_report_from_parsed(parsed: &ParsedRepo) -> LintReport {
-    lint_from_parsed(parsed)
 }
 
 pub(crate) fn build_spec_metrics(

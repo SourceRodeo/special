@@ -14,7 +14,7 @@ special mcp
 ```
 
 The server exposes [bounded tools](documents://spec/SPECIAL.MCP_COMMAND.TOOLS)
-for status, overview, specs, architecture, patterns, docs, lint, and health.
+for status, specs, architecture, patterns, docs, lint, and health.
 It can also return [docs output](documents://spec/SPECIAL.MCP_COMMAND.DOCS_OUTPUT)
 and report a
 [plugin version notice](documents://spec/SPECIAL.MCP_COMMAND.PLUGIN_VERSION_NOTICE)

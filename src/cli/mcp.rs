@@ -38,13 +38,11 @@ use crate::model::{
 use crate::modules::{
     RepoDocumentOptions, build_module_document, build_module_lint_report, build_repo_document,
 };
-use crate::overview::build_overview_document;
 use crate::patterns::build_pattern_document;
 use crate::render::{
     render_lint_text, render_module_html, render_module_json, render_module_text,
-    render_overview_json, render_overview_text, render_pattern_json, render_pattern_text,
-    render_repo_html, render_repo_json, render_repo_text, render_spec_html, render_spec_json,
-    render_spec_text,
+    render_pattern_json, render_pattern_text, render_repo_html, render_repo_json, render_repo_text,
+    render_spec_html, render_spec_json, render_spec_text,
 };
 
 const PROTOCOL_VERSION: &str = "2025-06-18";
@@ -163,7 +161,6 @@ fn handle_tool_call(current_dir: &Path, params: Option<&Value>) -> Result<Value>
     let arguments = params.get("arguments").unwrap_or(&Value::Null);
     let result = match name {
         "special_status" => status_tool(current_dir),
-        "special_overview" => overview_tool(current_dir, arguments),
         "special_specs" => specs_tool(current_dir, arguments),
         "special_arch" => arch_tool(current_dir, arguments),
         "special_patterns" => patterns_tool(current_dir, arguments),
@@ -182,11 +179,6 @@ fn tool_definitions() -> Vec<Value> {
             "special_status",
             "Resolve the active Special project root and configuration source before choosing the next repo-contract tool.",
             object_schema(vec![]),
-        ),
-        tool(
-            "special_overview",
-            "Summarize lint, specs, architecture, and health so an agent can orient before editing.",
-            output_schema(),
         ),
         tool(
             "special_specs",
@@ -362,10 +354,6 @@ fn text_or_json_property() -> (&'static str, Value) {
     )
 }
 
-fn output_schema() -> Value {
-    object_schema(vec![text_or_json_property()])
-}
-
 #[derive(Debug)]
 struct ToolOutput {
     text: String,
@@ -409,24 +397,6 @@ impl StatusOutput {
             warning: resolution.warning(),
         }
     }
-}
-
-fn overview_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
-    let resolution = resolve_project_root(current_dir)?;
-    let document = build_overview_document(
-        &resolution.root,
-        &resolution.ignore_patterns,
-        resolution.version,
-    )?;
-    let rendered = if format(arguments)? == OutputFormat::Json {
-        render_overview_json(&document)?
-    } else {
-        render_overview_text(&document)
-    };
-    Ok(ToolOutput {
-        text: rendered,
-        is_error: document.lint.errors > 0,
-    })
 }
 
 fn specs_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {

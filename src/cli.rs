@@ -23,8 +23,8 @@ special help text presents the architecture command as `special arch`.
 @spec SPECIAL.HELP.HEALTH_COMMAND
 special help text presents the code-health command as `special health`.
 
-@spec SPECIAL.HELP.ROOT_OVERVIEW
-special help text explains that bare `special` prints a compact health overview.
+@spec SPECIAL.HELP.ROOT_HELP
+special help text explains that bare `special` prints the top-level help surface.
 
 @spec SPECIAL.HELP.SKILLS_COMMAND_SHAPES
 special help text explains the `skills`, `skills SKILL_ID`, and `skills install [SKILL_ID]` command shapes.
@@ -64,7 +64,6 @@ mod docs;
 mod init;
 mod mcp;
 mod modules;
-mod overview;
 mod patterns;
 mod repo;
 mod skills;
@@ -76,7 +75,6 @@ use self::docs::{DocsArgs, execute_docs};
 use self::init::execute_init;
 use self::mcp::{McpArgs, execute_mcp};
 use self::modules::{ModulesArgs, execute_modules};
-use self::overview::{OverviewArgs, execute_overview};
 use self::patterns::{PatternsArgs, execute_patterns};
 use self::repo::{HealthArgs, execute_health};
 use self::skills::{SkillsArgs, execute_skills};
@@ -86,7 +84,7 @@ use self::spec::{SpecArgs, execute_lint, execute_spec};
 #[command(
     name = "special",
     bin_name = "special",
-    about = "Connect repo claims, proof, ownership, patterns, docs, and health signals. Run with no subcommand for a compact health overview.",
+    about = "Connect repo claims, proof, ownership, patterns, docs, and health signals. Run with no subcommand for help.",
     after_help = "Examples:\n  Start a fresh project:\n    special init\n    special specs APP.EXPORT --verbose\n    special arch APP.EXPORT --verbose\n    special docs build\n    special lint\n\n  Understand an existing project:\n    special init\n    special health --metrics\n    special patterns --metrics\n    special health --target src/export.ts --symbol exportCsv\n\n  Review changed relationships:\n    special diff\n    special diff --metrics\n    special diff --target src/export.ts --verbose\n\n  Work one surface:\n    special specs --unverified\n    special arch --unimplemented\n    special patterns APP.ROW_NORMALIZER --verbose\n    special docs --metrics\n\n  Use with agents and skills:\n    special mcp\n    special skills\n    special skills install define-product-specs",
     args_conflicts_with_subcommands = true,
     disable_help_subcommand = true
@@ -144,23 +142,6 @@ enum Command {
     Skills(SkillsArgs),
 }
 
-#[cfg(test)]
-mod tests {
-    use super::Cli;
-    use crate::model::OVERVIEW_LOOK_NEXT_COMMANDS;
-    use clap::Parser;
-
-    #[test]
-    fn overview_recommendations_parse_as_current_cli_commands() {
-        for command in OVERVIEW_LOOK_NEXT_COMMANDS {
-            let argv: Vec<&str> = command.split_whitespace().collect();
-            Cli::try_parse_from(argv).unwrap_or_else(|err| {
-                panic!("overview recommendation `{command}` should parse: {err}")
-            });
-        }
-    }
-}
-
 pub fn run_from_env() -> ExitCode {
     let args: Vec<_> = env::args_os().collect();
 
@@ -200,7 +181,12 @@ fn execute(cli: Cli) -> Result<ExitCode> {
         Some(Command::Skills(args)) => execute_skills(args, &current_dir),
         Some(Command::Specs(args)) => execute_spec(args, &current_dir),
         Some(Command::Lint) => execute_lint(&current_dir),
-        None => execute_overview(OverviewArgs { json: cli.json }, &current_dir),
+        None if cli.json => {
+            anyhow::bail!(
+                "top-level --json has no root document; choose a command or run `special --help`"
+            )
+        }
+        None => Ok(print_top_level_help()),
     }
 }
 
