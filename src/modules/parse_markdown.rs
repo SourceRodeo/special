@@ -350,7 +350,7 @@ fn markdown_section_body(
     section: &MarkdownSection,
     annotation_index: usize,
 ) -> String {
-    let mut in_code_fence = false;
+    let mut in_code_fence = markdown_fence_state_before(lines, section.start);
     lines[section.start..section.end]
         .iter()
         .enumerate()
@@ -399,4 +399,23 @@ fn markdown_heading_level(line: &str) -> Option<usize> {
         .nth(level)
         .is_some_and(char::is_whitespace)
         .then_some(level)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MarkdownSection, markdown_section_body};
+
+    #[test]
+    fn section_body_preserves_fence_parity_before_section_start() {
+        let lines = [
+            "```markdown",
+            "## Inside example",
+            "@applies DOCS.EXAMPLE",
+            "```",
+        ];
+        let body = markdown_section_body(&lines, &MarkdownSection { start: 1, end: 3 }, 2);
+
+        assert!(body.contains("## Inside example"));
+        assert!(body.contains("@applies DOCS.EXAMPLE"));
+    }
 }
