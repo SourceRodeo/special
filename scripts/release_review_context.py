@@ -228,15 +228,18 @@ def parse_changed_line_ranges(diff: str) -> dict[str, list[tuple[int, int]]]:
     current_path: str | None = None
     current_new_line: int | None = None
     pending_deletion_anchor: int | None = None
+    pending_deletion_count = 0
 
     def flush_pending_deletion() -> None:
-        nonlocal pending_deletion_anchor
+        nonlocal pending_deletion_anchor, pending_deletion_count
         if current_path is None or pending_deletion_anchor is None:
             return
+        deletion_end = pending_deletion_anchor + pending_deletion_count - 1
         ranges.setdefault(current_path, []).append(
-            (pending_deletion_anchor, pending_deletion_anchor)
+            (pending_deletion_anchor, deletion_end)
         )
         pending_deletion_anchor = None
+        pending_deletion_count = 0
 
     for line in diff.splitlines():
         if line.startswith("diff --git "):
@@ -267,10 +270,13 @@ def parse_changed_line_ranges(diff: str) -> dict[str, list[tuple[int, int]]]:
             ranges.setdefault(current_path, []).append((current_new_line, current_new_line))
             current_new_line += 1
             pending_deletion_anchor = None
+            pending_deletion_count = 0
             continue
 
         if line.startswith("-"):
-            pending_deletion_anchor = max(current_new_line, 1)
+            if pending_deletion_anchor is None:
+                pending_deletion_anchor = max(current_new_line, 1)
+            pending_deletion_count += 1
             continue
 
         flush_pending_deletion()

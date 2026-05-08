@@ -919,6 +919,26 @@ index 1111111..2222222 100644
 }
 
 #[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SYNTAX_AWARE_CHANGED_CONTEXT
+fn release_review_tracks_consecutive_deletion_spans() {
+    let diff = r#"diff --git a/scripts/example.py b/scripts/example.py
+index 1111111..2222222 100644
+--- a/scripts/example.py
++++ b/scripts/example.py
+@@ -20,6 +20,3 @@ def demo():
+     keep_before()
+-    removed_one()
+-    removed_two()
+-    removed_three()
+     keep_after()
+     trailing()
+"#;
+
+    let ranges = release_review_changed_line_ranges(diff);
+    assert_eq!(ranges, json!({"scripts/example.py": [[21, 23]]}));
+}
+
+#[test]
 // @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.WARN_ONLY
 fn release_review_exits_successfully_when_codex_returns_warnings() {
     let output_path = unique_review_temp_repo("warn-only-output").join("review.json");
