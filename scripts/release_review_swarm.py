@@ -81,8 +81,9 @@ def build_swarm_prompt(
 Perform an independent implementation-quality release review over your assigned repo slice.
 Focus on correctness, behavioral regressions, parser and graph-model bugs, CLI/MCP/plugin boundary mismatches, release risks, test honesty, and maintainability problems.
 Use the included file contents as your starting slice.
-You may use allowed read-only OpenCode tools to inspect repo-local files when that improves evidence or checks a cross-file relationship.
-Anchor findings in concrete repo files you inspected.
+Use allowed read-only OpenCode tools to inspect repo-local files whenever a finding depends on callers, tests, specs, docs, release automation, or another cross-file relationship.
+Before calling something a release blocker or behavioral regression, search/read the related verification files named by imports, grep hits, nearby docs, specs, or tests; if you did not verify that path, label the finding as unverified instead of presenting it as established.
+Anchor findings in concrete repo files you inspected, including the files that confirm or rule out the cross-file claim.
 Do not perform a product strategy, spec-authoring, or architecture-preference review.
 Do not recommend changing intended Special semantics unless the implementation contradicts an existing claim, command behavior, or documented contract.
 

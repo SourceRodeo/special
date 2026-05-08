@@ -164,7 +164,9 @@ fn release_review_uses_deepseek_swarm_when_requested() {
     let prompt = chunks[0]["prompt"].as_str().expect("prompt should be text");
     assert!(prompt.contains("plain Markdown findings"));
     assert!(prompt.contains("allowed read-only OpenCode tools"));
-    assert!(prompt.contains("Anchor findings in concrete repo files you inspected."));
+    assert!(prompt.contains("search/read the related verification files"));
+    assert!(prompt.contains("label the finding as unverified"));
+    assert!(prompt.contains("including the files that confirm or rule out the cross-file claim"));
     assert!(!prompt.contains("Return only JSON"));
     assert!(!prompt.contains("only make findings anchored in file contents included"));
     assert!(
