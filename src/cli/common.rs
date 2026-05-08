@@ -17,12 +17,14 @@ pub(super) fn report_cache_stats(status: &CommandStatus) {
 pub(super) fn resolve_cli_paths(current_dir: &Path, paths: &[PathBuf]) -> Vec<PathBuf> {
     paths
         .iter()
-        .map(|path| {
-            if path.is_absolute() {
-                path.clone()
-            } else {
-                current_dir.join(path)
-            }
-        })
+        .map(|path| resolve_cli_path(current_dir, path))
         .collect()
+}
+
+pub(super) fn resolve_cli_path(current_dir: &Path, path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        current_dir.join(path)
+    }
 }

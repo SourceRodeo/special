@@ -26,6 +26,7 @@ mod syntax;
 #[cfg(test)]
 mod test_support;
 mod text_lines;
+mod trace;
 mod tree_sitter_utils;
 
 pub use cli::run_from_env;

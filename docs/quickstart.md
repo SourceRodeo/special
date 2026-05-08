@@ -165,17 +165,17 @@ summary
   duplicate source shapes: 0
   possible pattern clusters: 0
   possible missing pattern applications: 0
-  long prose outside docs: 0
+  uncaptured prose outside docs: 0
   long prose test literals: 0
 untraced implementation by file
   src/export.ts: 1
 ```
 
 Use this output to choose the next review. In this example the architecture,
-pattern, docs, and test-prose queues are clean, but one implementation item is
-still not connected to proof. The next move is to inspect `src/export.ts`, not to
-invent more annotations. Use `special docs --metrics` for explicit documentation
-graph coverage.
+pattern, uncaptured-prose, and test-prose queues are clean, but one
+implementation item is still not connected to proof. The next move is to
+inspect `src/export.ts`, not to invent more annotations. Use
+`special docs --metrics` for explicit documentation graph coverage.
 
 That loop is the point of the fresh-project path: connect the claim, proof,
 implementation, repeated structure, and reader-facing docs, then let health scan

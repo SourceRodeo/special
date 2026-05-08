@@ -27,9 +27,13 @@ traceability. Use the surfaces as one workflow, not as independent checkboxes.
    modules, areas, or patterns. For docs relationship audits, use Special's
    parsed relationship view as the inventory: run `special_docs` with
    `metrics`, `verbose`, and a narrow `target` for the file or subtree being
-   reviewed. Then check each linked target with the matching surface:
-   `special_specs`, `special_arch`, or `special_patterns` with `verbose`.
-6. Run `special_lint` after edits to catch broken ids, misplaced annotations,
+   reviewed. Then use `special_trace` on the relevant surface to inspect the
+   current source text, linked target, and attached evidence in one packet.
+6. Use `special_trace` when the task is an explicit relationship audit:
+   docs-to-target, spec-to-proof, module-to-implementation, or
+   pattern-to-application. Trace packets are deterministic context bundles, not
+   truth judgments.
+7. Run `special_lint` after edits to catch broken ids, misplaced annotations,
    and graph errors.
 
 Use `special_docs_output` only when the task explicitly needs public docs output
@@ -55,7 +59,8 @@ the input tree, and no overwrite of files that still contain docs evidence.
 - When auditing docs claims, do not build the inventory with raw text search.
   Start from `special_docs` metrics plus verbose target detail so ignored files,
   docs-source rules, generated-output rules, and parsed relationship semantics
-  match Special's product behavior.
+  match Special's product behavior. Use `special_trace` for the review packets
+  you hand to a human or model.
 - For existing repos, do not model the whole project on day one. Let health and
   pattern metrics identify one narrow slice worth making durable. Prefer a file
   or subsystem that appears in multiple queues, then rerun the same scoped

@@ -19,6 +19,8 @@ The first-class surfaces are:
 - Docs: generated reader docs tied back to repo truth.
 - Health: repo analysis that shows which source, docs, tests, and repeated
   structures deserve attention.
+- Trace: deterministic relationship packets for audits that need the current
+  source text, linked target, and attached evidence in one view.
 - Diff: VCS-scoped relationship review for changed source and docs.
 
 ## Install It
@@ -88,7 +90,7 @@ summary
   untraced implementation: 34
   duplicate source shapes: 7
   possible pattern clusters: 2
-  long prose outside docs: 3
+  uncaptured prose outside docs: 3
 duplicate source shapes by file
   src/billing/export.ts: 4
   src/billing/refunds.ts: 3
@@ -108,13 +110,15 @@ when the repository already has code, tests, and docs.
 | Patterns | `special patterns` | You need to review intentional repeated implementation structures. |
 | Docs | `special docs` | You need to validate docs links or build generated docs output. |
 | Health | `special health` | You need repo-wide signals that go beyond explicit graph edges. |
+| Trace | `special trace` | You need deterministic packets for a docs, spec, architecture, or pattern audit. |
 | Diff | `special diff` | You changed files and need the relationship review queue affected by that VCS diff. |
 
 The commands are meant to be used together. `health` shows inferred signals and
 off-graph gaps, `patterns` reviews repeated source shapes, `specs` records
 behavior and proof, `arch` records ownership, `docs` makes reader-facing claims
-traceable, `diff` focuses review on changed relationships, and `lint` checks
-that the explicit graph still holds together.
+traceable, `trace` builds explicit audit packets, `diff` focuses review on
+changed relationships, and `lint` checks that the explicit graph still holds
+together.
 
 ## Read Next
 

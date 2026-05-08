@@ -130,6 +130,9 @@ The `special patterns` command reference entry.
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DOCS
 The `special docs` command reference entry.
 
+### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.TRACE
+The `special trace` command reference entry.
+
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DIFF
 The `special diff` command reference entry.
 

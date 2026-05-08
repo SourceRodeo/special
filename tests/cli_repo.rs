@@ -138,7 +138,7 @@ special health surfaces repo-wide unowned item indicators so code outside declar
 Health documentation-adjacent raw analysis signals.
 
 @spec SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS
-special health reports long natural-language prose blocks outside configured docs sources when the block has no docs evidence link or docs annotation.
+special health reports uncaptured natural-language prose outside configured docs sources as advisory review data when the block has no docs evidence link, docs annotation, or Special annotation declaration.
 
 @group SPECIAL.HEALTH_COMMAND.TEST_QUALITY
 
@@ -481,6 +481,47 @@ fn repo_surfaces_long_prose_outside_configured_docs() {
         ),
     )
     .expect("notes markdown should be written");
+    fs::write(
+        root.join("architecture.md"),
+        concat!(
+            "@area APP.REFERENCE\n",
+            "This annotation body is intentionally long enough. ",
+            "It should look like explanatory prose. ",
+            "It declares a Special contract surface. ",
+            "It is not ordinary uncaptured notes. ",
+            "Health should keep it out. ",
+            "Annotation bodies already live in the graph.\n",
+        ),
+    )
+    .expect("architecture markdown should be written");
+    fs::create_dir_all(root.join("src")).expect("source dir should be created");
+    fs::write(
+        root.join("src/lib.rs"),
+        concat!(
+            "/**\n",
+            "@module APP.TRACE\n",
+            "This source annotation body describes a module. ",
+            "It has enough language to trigger the heuristic. ",
+            "It still belongs to the Special graph. ",
+            "It is not uncaptured prose. ",
+            "The detector should ignore this annotation block. ",
+            "Declarations should not be forced into stubs.\n\n",
+            "@spec APP.TRACE.CONTRACT\n",
+            "This spec body contains source-local contract text. ",
+            "It is intentionally meaningful. ",
+            "Contract declarations need useful prose for audits. ",
+            "Health should not count it as stray docs.\n",
+            "*/\n",
+            "// @fileimplements APP.TRACE\n",
+            "pub const COMMENT_TOKEN: &str = \"/*\";\n",
+            "pub const FIRST_NOTE: &str = \"short policy note.\";\n",
+            "pub const SECOND_NOTE: &str = \"another source phrase.\";\n",
+            "pub const THIRD_NOTE: &str = \"more source words.\";\n",
+            "pub const FOURTH_NOTE: &str = \"final source sentence.\";\n",
+            "pub fn trace_surface() {}\n",
+        ),
+    )
+    .expect("source annotation body should be written");
 
     let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
     assert!(output.status.success());

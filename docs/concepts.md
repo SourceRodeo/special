@@ -7,7 +7,7 @@ easier to review after a change. It does that with two complementary jobs:
 
 1. It scans the repo for signals worth reviewing: source outside declared
    ownership, implementation with no visible proof path, repeated source shapes,
-   possible missing pattern applications, long prose outside docs, exact prose
+   possible missing pattern applications, uncaptured prose outside docs, exact prose
    assertions in tests, and changed relationships.
 2. It lets you connect the important facts directly in source: product claims,
    tests and attestations, architecture ownership, adopted implementation
@@ -75,7 +75,7 @@ Question answered: where is this product surface explained to readers?
 `Health` joins
 the other surfaces. It reports raw inferred queues such as source outside
 architecture, untraced implementation, duplicate source shapes, possible missing
-pattern applications, and long prose outside docs.
+pattern applications, and uncaptured prose outside docs.
 
 Question answered: what part of the repo is still hard to explain?
 

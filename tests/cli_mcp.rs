@@ -46,6 +46,7 @@ fn mcp_initializes_and_lists_special_tools_as_jsonrpc_lines() {
     assert!(tool_names.contains(&"special_status"));
     assert!(tool_names.contains(&"special_specs"));
     assert!(tool_names.contains(&"special_docs_output"));
+    assert!(tool_names.contains(&"special_trace"));
 }
 
 #[test]
@@ -239,6 +240,61 @@ fn mcp_docs_output_tool_scrubs_docs_output() {
     assert!(!rendered.contains("documents://"));
 }
 
+#[test]
+// @verifies SPECIAL.MCP_COMMAND.TOOLS
+fn mcp_trace_tool_returns_relationship_packets() {
+    let root = temp_repo_dir("special-cli-mcp-trace-tool");
+    write_mcp_fixture(&root);
+    fs::create_dir_all(root.join("tests")).expect("tests dir should be created");
+    fs::write(
+        root.join("tests/export.test.ts"),
+        [
+            "// ",
+            &fixture_annotation_line("verifies", "EXPORT.CSV.HEADERS"),
+            "test(\"headers\", () => {\n",
+            "  expect(true).toBe(true);\n",
+            "});\n",
+        ]
+        .concat(),
+    )
+    .expect("test fixture should be written");
+
+    let output = run_special_with_input(
+        &root,
+        &["mcp"],
+        &mcp_handshake_then(json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "special_trace",
+                "arguments": {
+                    "surface": "specs",
+                    "id": "EXPORT.CSV.HEADERS",
+                    "format": "json"
+                }
+            }
+        })),
+    );
+
+    assert!(
+        output.status.success(),
+        "mcp trace should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let responses = jsonrpc_responses(output.stdout);
+    assert_eq!(responses[1]["result"]["isError"], false);
+    let packets: Value =
+        serde_json::from_str(tool_text(&responses[1])).expect("trace response should be json");
+    assert_eq!(packets["surface"], "specs");
+    assert_eq!(packets["summary"]["packets"], 1);
+    assert_eq!(packets["packets"][0]["target"]["id"], "EXPORT.CSV.HEADERS");
+    assert_eq!(
+        packets["packets"][0]["evidence"][0]["relationship"],
+        "@verifies"
+    );
+}
+
 fn write_mcp_fixture(root: &Path) {
     fs::write(
         root.join("special.toml"),
@@ -248,16 +304,21 @@ fn write_mcp_fixture(root: &Path) {
     fs::create_dir_all(root.join("specs")).expect("specs dir should be created");
     fs::write(
         root.join("specs/root.md"),
-        concat!(
-            "@group EXPORT\n",
+        [
+            &fixture_annotation_line("group", "EXPORT"),
             "Export behavior.\n\n",
-            "@group EXPORT.CSV\n",
+            &fixture_annotation_line("group", "EXPORT.CSV"),
             "CSV export behavior.\n\n",
-            "@spec EXPORT.CSV.HEADERS\n",
+            &fixture_annotation_line("spec", "EXPORT.CSV.HEADERS"),
             "CSV exports include headers.\n",
-        ),
+        ]
+        .concat(),
     )
     .expect("spec fixture should be written");
+}
+
+fn fixture_annotation_line(name: &str, id: &str) -> String {
+    format!("@{name} {id}\n")
 }
 
 fn jsonrpc_responses(stdout: Vec<u8>) -> Vec<Value> {

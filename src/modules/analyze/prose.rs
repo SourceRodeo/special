@@ -7,6 +7,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
+use crate::annotation_syntax::{
+    is_reserved_special_annotation, normalize_markdown_declaration_line,
+};
 use crate::config::DocsOutputConfig;
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::model::{ArchitectureLongProseBlock, ArchitectureRepoSignalsSummary};
@@ -86,6 +89,7 @@ fn markdown_path(path: &Path) -> bool {
 fn markdown_prose_blocks(root: &Path, path: &Path, text: &str) -> Vec<ArchitectureLongProseBlock> {
     let mut findings = Vec::new();
     let mut in_fence = false;
+    let mut in_annotation_body = false;
     let mut block = Vec::<(usize, &str)>::new();
 
     for (index, line) in text.lines().enumerate() {
@@ -93,15 +97,27 @@ fn markdown_prose_blocks(root: &Path, path: &Path, text: &str) -> Vec<Architectu
         let trimmed = line.trim();
         if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
             flush_block(root, path, &mut block, &mut findings);
+            in_annotation_body = false;
             in_fence = !in_fence;
-            continue;
-        }
-        if in_fence || markdown_boundary(trimmed) {
-            flush_block(root, path, &mut block, &mut findings);
             continue;
         }
         if trimmed.is_empty() {
             flush_block(root, path, &mut block, &mut findings);
+            in_annotation_body = false;
+            continue;
+        }
+        if markdown_special_annotation_line(trimmed) {
+            flush_block(root, path, &mut block, &mut findings);
+            in_annotation_body = true;
+            continue;
+        }
+        if in_fence || markdown_boundary(trimmed) {
+            flush_block(root, path, &mut block, &mut findings);
+            in_annotation_body = false;
+            continue;
+        }
+        if in_annotation_body {
+            continue;
         } else {
             block.push((line_number, trimmed));
         }
@@ -154,9 +170,8 @@ fn source_comment_prose_blocks(
             block.push((line_number, comment.to_string()));
             continue;
         }
-        if let Some(start) = trimmed.find("/*") {
+        if let Some(after_start) = trimmed.strip_prefix("/*") {
             flush_owned_block(root, path, &mut block, &mut findings);
-            let after_start = &trimmed[start + 2..];
             let (comment, closed) = strip_block_comment_line(after_start);
             if !comment.trim().is_empty() {
                 block.push((line_number, comment));
@@ -224,21 +239,38 @@ fn flush_borrowed_block(
     if block.is_empty() {
         return;
     }
+    if carries_docs_or_special_evidence(block) {
+        return;
+    }
     let text = block
         .iter()
         .map(|(_, line)| line.trim())
         .collect::<Vec<_>>()
         .join(" ");
-    if carries_docs_evidence(&text) {
-        return;
-    }
     if let Some(finding) = score_prose_block(root, path, block[0].0, &text) {
         findings.push(finding);
     }
 }
 
+fn carries_docs_or_special_evidence(block: &[(usize, &str)]) -> bool {
+    block
+        .iter()
+        .any(|(_, line)| carries_docs_evidence(line) || is_reserved_special_annotation(line.trim()))
+        || carries_docs_evidence(
+            &block
+                .iter()
+                .map(|(_, line)| line.trim())
+                .collect::<Vec<_>>()
+                .join(" "),
+        )
+}
+
 fn carries_docs_evidence(text: &str) -> bool {
     text.contains("documents://") || text.contains("@documents") || text.contains("@filedocuments")
+}
+
+fn markdown_special_annotation_line(trimmed: &str) -> bool {
+    normalize_markdown_declaration_line(trimmed).is_some_and(is_reserved_special_annotation)
 }
 
 fn score_prose_block(

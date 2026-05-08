@@ -22,21 +22,21 @@ summary
   duplicate source shapes: 17
   possible pattern clusters: 6
   possible missing pattern applications: 3
-  long prose outside docs: 9
+  uncaptured prose outside docs: 9
   long prose test literals: 2
 duplicate source shapes by file
   src/billing/invoices.ts: 5
   src/billing/refunds.ts: 4
   src/admin/export.ts: 3
 possible missing pattern applications: 3
-long prose outside docs by file
+uncaptured prose outside docs by file
   src/billing/rules.ts: 4
   src/admin/export.ts: 2
 ```
 
 Read this as a signal list, not as a failure list. The report says the
-repo has repeated billing/export shapes, a few pattern candidates, prose that
-may belong in docs, and implementation paths Special cannot yet connect to
+repo has repeated billing/export shapes, a few pattern candidates, prose worth
+reviewing deliberately, and implementation paths Special cannot yet connect to
 current proof.
 
 ## Source Outside Architecture
@@ -131,11 +131,12 @@ not style rules or broad principles.
 
 ## Long Prose and Test Assertions
 
-`long prose outside docs`
-reports natural-language blocks outside configured docs sources when the block
-has no docs evidence link or docs annotation. This catches policy prose,
-workflow explanations, and copied documentation that can drift inside source
-comments.
+`uncaptured prose outside docs`
+is an advisory review queue for substantial natural-language blocks outside
+configured docs sources when the block has no docs evidence link, docs
+annotation, or Special declaration. It is not a ban on comments. It catches
+policy prose, workflow explanations, and copied documentation that may deserve a
+deliberate home.
 
 The right move depends on the prose:
 
@@ -143,6 +144,8 @@ The right move depends on the prose:
   `documents://` links
 - maintainer-only explanation may belong in contributor docs
 - short local implementation context can stay near the code
+- useful source-local contract text can stay in `@spec`, `@module`, `@pattern`,
+  or other Special declaration bodies
 - obsolete prose should be deleted
 
 `long prose test literals`

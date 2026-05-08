@@ -66,7 +66,7 @@ pub(in crate::render) fn project_repo_health_metric_sections(
                 metrics.patterns.possible_missing_applications,
             ),
             metric_count(
-                "long prose outside docs",
+                "uncaptured prose outside docs",
                 metrics.docs.long_prose_outside_docs,
             ),
             metric_count(
@@ -106,7 +106,7 @@ pub(in crate::render) fn project_repo_health_metric_sections(
     );
     push_grouped_metric_section(
         &mut sections,
-        "long prose outside docs by file",
+        "uncaptured prose outside docs by file",
         &metrics.docs.long_prose_outside_docs_by_file,
     );
     push_grouped_metric_section(
@@ -221,7 +221,7 @@ fn repo_health_summary_explanations() -> Vec<ProjectedExplanation> {
             MetricExplanationKey::PossibleMissingPatternApplications,
         ),
         repo_health_explanation(
-            "long prose outside docs",
+            "uncaptured prose outside docs",
             MetricExplanationKey::LongProseOutsideDocs,
         ),
         repo_health_explanation(

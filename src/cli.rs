@@ -72,6 +72,7 @@ mod repo;
 mod skills;
 mod spec;
 mod status;
+mod trace;
 
 use self::diff::{DiffArgs, execute_diff};
 use self::docs::{DocsArgs, execute_docs};
@@ -82,13 +83,14 @@ use self::patterns::{PatternsArgs, execute_patterns};
 use self::repo::{HealthArgs, execute_health};
 use self::skills::{SkillsArgs, execute_skills};
 use self::spec::{SpecArgs, execute_lint, execute_spec};
+use self::trace::{TraceArgs, execute_trace};
 
 #[derive(Debug, Parser)]
 #[command(
     name = "special",
     bin_name = "special",
     about = "Connect repo claims, proof, ownership, patterns, docs, and health signals. Run with no subcommand for help.",
-    after_help = "Examples:\n  Start a fresh project:\n    special init\n    special specs APP.EXPORT --verbose\n    special arch APP.EXPORT --verbose\n    special docs build\n    special lint\n\n  Understand an existing project:\n    special init\n    special health --metrics\n    special patterns --metrics\n    special health --target src/export.ts --symbol exportCsv\n\n  Review changed relationships:\n    special diff\n    special diff --metrics\n    special diff --target src/export.ts --verbose\n\n  Work one surface:\n    special specs --unverified\n    special arch --unimplemented\n    special patterns APP.ROW_NORMALIZER --verbose\n    special docs --metrics\n\n  Use with agents and skills:\n    special mcp\n    special skills\n    special skills install define-product-specs",
+    after_help = "Examples:\n  Start a fresh project:\n    special init\n    special specs APP.EXPORT --verbose\n    special arch APP.EXPORT --verbose\n    special docs build\n    special lint\n\n  Understand an existing project:\n    special init\n    special health --metrics\n    special patterns --metrics\n    special health --target src/export.ts --symbol exportCsv\n\n  Review changed relationships:\n    special diff\n    special diff --metrics\n    special diff --target src/export.ts --verbose\n\n  Trace explicit evidence:\n    special trace specs --id APP.EXPORT\n    special trace docs --target docs/src/public/commands.md\n    special trace arch --id APP.EXPORT\n    special trace patterns --id APP.ROW_NORMALIZER\n\n  Work one surface:\n    special specs --unverified\n    special arch --unimplemented\n    special patterns APP.ROW_NORMALIZER --verbose\n    special docs --metrics\n\n  Use with agents and skills:\n    special mcp\n    special skills\n    special skills install define-product-specs",
     args_conflicts_with_subcommands = true,
     disable_help_subcommand = true
 )]
@@ -132,6 +134,11 @@ enum Command {
         about = "Show explicit relationships affected by current VCS changes"
     )]
     Diff(DiffArgs),
+    #[command(
+        name = "trace",
+        about = "Build explicit relationship evidence packets for audit"
+    )]
+    Trace(TraceArgs),
     #[command(about = "Serve bounded Special tools for agents over stdio")]
     Mcp(McpArgs),
     #[command(about = "Fail on broken ids, misplaced annotations, and graph errors")]
@@ -180,6 +187,7 @@ fn execute(cli: Cli) -> Result<ExitCode> {
         Some(Command::Health(args)) => execute_health(args, &current_dir),
         Some(Command::Docs(args)) => execute_docs(args, &current_dir),
         Some(Command::Diff(args)) => execute_diff(args, &current_dir),
+        Some(Command::Trace(args)) => execute_trace(args, &current_dir),
         Some(Command::Mcp(args)) => execute_mcp(args, &current_dir),
         Some(Command::Skills(args)) => execute_skills(args, &current_dir),
         Some(Command::Specs(args)) => execute_spec(args, &current_dir),

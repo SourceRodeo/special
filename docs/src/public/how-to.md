@@ -23,7 +23,7 @@ signals to find one place where an explicit connection would clarify the repo:
 | `source outside architecture` in `src/billing` | declare a billing module and attach the implementation it owns |
 | `duplicate source shapes` in export code | extract a helper or name an adopted export pattern |
 | `untraced implementation` near business logic | move behavior behind a tested module facade or add direct proof for a real product claim |
-| `long prose outside docs` in policy code | move reader-facing explanation into generated docs source and link it to the relevant claim |
+| `uncaptured prose outside docs` in policy code | decide whether the prose should stay local, move into generated docs, connect to a docs claim, or be removed |
 
 Then run the loop around that slice:
 
@@ -54,7 +54,7 @@ repo-wide list.
 | duplicate source shapes | `special health --metrics --verbose --target PATH` | Decide whether to extract a helper, name a pattern, or leave local parallelism visible. |
 | possible pattern clusters | `special patterns --metrics` | Promote a real repeated structure into `@pattern`, or do no action. |
 | possible missing pattern applications | `special health --metrics --target PATH --verbose` | Add `@applies` where the pattern is really present. |
-| long prose outside docs | `special docs --metrics` | Promote, link, or remove the prose deliberately. |
+| uncaptured prose outside docs | focused source or docs review | Keep useful local comments, move reader-facing prose into docs, connect docs claims, or remove stale prose. |
 | long prose test literals | focused test review | Assert smaller contractual pieces, test a structured representation, or move large samples into fixtures. |
 
 Health is the broad scanning command. Once it identifies a concrete question,
@@ -72,7 +72,7 @@ summary
   duplicate source shapes: 6
   possible pattern clusters: 2
   possible missing pattern applications: 1
-  long prose outside docs: 3
+  uncaptured prose outside docs: 3
 duplicate source shapes by file
   src/billing/export.ts: 4
   src/billing/refunds.ts: 2

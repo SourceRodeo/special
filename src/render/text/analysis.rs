@@ -42,7 +42,7 @@ pub(super) fn format_repo_signals(coverage: &ProjectedRepoSignals) -> String {
             .expect("string writes should succeed");
     }
     for item in &coverage.long_prose_outside_docs {
-        writeln!(output, "  long prose outside docs: {item}")
+        writeln!(output, "  uncaptured prose outside docs: {item}")
             .expect("string writes should succeed");
     }
     for item in &coverage.long_exact_prose_assertions {
@@ -107,7 +107,7 @@ fn append_signal_detail_lines(output: &mut String, coverage: &ProjectedRepoSigna
             .expect("string writes should succeed");
     }
     for item in &coverage.long_prose_outside_docs {
-        writeln!(output, "  long prose outside docs: {item}")
+        writeln!(output, "  uncaptured prose outside docs: {item}")
             .expect("string writes should succeed");
     }
     for item in &coverage.long_exact_prose_assertions {

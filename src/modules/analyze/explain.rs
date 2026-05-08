@@ -124,8 +124,8 @@ pub(crate) fn metric_explanation(key: MetricExplanationKey) -> MetricExplanation
             "count of source or docs bodies above the configured pattern-similarity threshold without a matching applied pattern.",
         ),
         MetricExplanationKey::LongProseOutsideDocs => explanation(
-            "this highlights substantial prose outside configured docs sources and without docs evidence, so explanatory text can be promoted, linked, or removed deliberately.",
-            "count of long natural-language blocks outside configured docs source/output paths that pass the prose-shape filter and do not contain `documents://`, `@documents`, or `@filedocuments` evidence.",
+            "this is an advisory review queue for substantial prose that is not in generated docs and is not already captured by Special annotations; it does not mean comments are bad or that every local explanation must become public docs.",
+            "count of long natural-language blocks outside configured docs source/output paths that pass the prose-shape filter and do not contain docs evidence or a reserved Special annotation declaration.",
         ),
         MetricExplanationKey::LongExactProseAssertions => explanation(
             "this highlights tests that embed long prose directly in source instead of checking smaller semantic pieces or structured results.",

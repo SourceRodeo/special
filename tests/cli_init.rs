@@ -128,18 +128,20 @@ fn top_level_help_lists_command_summaries() {
     assert_eq!(
         command_names,
         vec![
-            "specs", "arch", "patterns", "health", "docs", "diff", "mcp", "lint", "init", "skills"
+            "specs", "arch", "patterns", "health", "docs", "diff", "trace", "mcp", "lint", "init",
+            "skills"
         ]
     );
 
     let summaries: BTreeMap<_, _> = top_level_help_commands(&stdout).into_iter().collect();
-    let expectations: [(&str, &[&str]); 10] = [
+    let expectations: [(&str, &[&str]); 11] = [
         ("specs", &["claims", "proof"]),
         ("arch", &["ownership", "boundaries"]),
         ("patterns", &["patterns", "fit"]),
         ("health", &["raw", "analysis"]),
         ("docs", &["links", "metrics"]),
         ("diff", &["relationships", "vcs", "changes"]),
+        ("trace", &["relationship", "evidence"]),
         ("mcp", &["agents"]),
         ("lint", &["broken", "errors"]),
         ("init", &["special.toml"]),
@@ -198,6 +200,7 @@ fn top_level_help_groups_examples_by_user_task() {
         "Start a fresh project:",
         "Understand an existing project:",
         "Review changed relationships:",
+        "Trace explicit evidence:",
         "Work one surface:",
         "Use with agents and skills:",
     ] {
@@ -209,6 +212,7 @@ fn top_level_help_groups_examples_by_user_task() {
         "special health --metrics",
         "special patterns --metrics",
         "special diff --metrics",
+        "special trace specs --id APP.EXPORT",
         "special specs --unverified",
         "special arch --unimplemented",
         "special docs --metrics",

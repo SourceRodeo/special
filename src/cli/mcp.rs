@@ -47,6 +47,9 @@ use crate::render::{
     render_pattern_json, render_pattern_text, render_repo_html, render_repo_json, render_repo_text,
     render_spec_html, render_spec_json, render_spec_text,
 };
+use crate::trace::{
+    TraceOptions, TraceSurface, build_trace_document, render_trace_json, render_trace_text,
+};
 
 const PROTOCOL_VERSION: &str = "2025-06-18";
 
@@ -196,6 +199,7 @@ fn handle_tool_call(current_dir: &Path, params: Option<&Value>) -> Result<Value>
         "special_patterns" => patterns_tool(current_dir, arguments),
         "special_docs" => docs_tool(current_dir, arguments),
         "special_docs_output" => docs_output_tool(current_dir, arguments),
+        "special_trace" => trace_tool(current_dir, arguments),
         "special_lint" => lint_tool(current_dir),
         "special_health" => health_tool(current_dir, arguments),
         _ => bail!("unknown Special MCP tool `{name}`"),
@@ -286,6 +290,19 @@ fn tool_definitions() -> Vec<Value> {
                     "output",
                     "Output file or directory for explicit output writing.",
                 ),
+            ]),
+        ),
+        tool(
+            "special_trace",
+            "Build deterministic relationship packets for specs, docs, architecture, or patterns. Use this for explicit docs-to-spec, spec-to-proof, module-to-implementation, and pattern-to-application audits.",
+            object_schema(vec![
+                trace_surface_property(),
+                string_property("id", "Optional id or id subtree to scope trace packets."),
+                string_array_property(
+                    "target",
+                    "Optional source file or subtree paths to scope trace packets.",
+                ),
+                text_or_json_property(),
             ]),
         ),
         tool(
@@ -380,6 +397,17 @@ fn text_or_json_property() -> (&'static str, Value) {
             "type": "string",
             "enum": ["text", "json"],
             "description": "Output format. Defaults to text."
+        }),
+    )
+}
+
+fn trace_surface_property() -> (&'static str, Value) {
+    (
+        "surface",
+        json!({
+            "type": "string",
+            "enum": ["specs", "docs", "arch", "patterns"],
+            "description": "Trace surface to packetize."
         }),
     )
 }
@@ -583,6 +611,41 @@ fn docs_output_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput>
         text: rendered,
         is_error: report.has_errors(),
     })
+}
+
+fn trace_tool(current_dir: &Path, arguments: &Value) -> Result<ToolOutput> {
+    let resolution = resolve_project_root(current_dir)?;
+    let target_paths = resolve_cli_paths(current_dir, &path_args(arguments, "target")?);
+    let document = build_trace_document(
+        &resolution.root,
+        &resolution.ignore_patterns,
+        resolution.version,
+        trace_surface_arg(arguments)?,
+        TraceOptions {
+            id: optional_string_arg(arguments, "id")?,
+            target_paths,
+        },
+    )?;
+    let rendered = match format(arguments)? {
+        OutputFormat::Text => render_trace_text(&document),
+        OutputFormat::Json => render_trace_json(&document)?,
+        OutputFormat::Html => bail!("special_trace supports only text or json format"),
+    };
+    Ok(ToolOutput {
+        text: rendered,
+        is_error: false,
+    })
+}
+
+fn trace_surface_arg(arguments: &Value) -> Result<TraceSurface> {
+    match optional_string_arg(arguments, "surface")?.as_deref() {
+        Some("specs") => Ok(TraceSurface::Specs),
+        Some("docs") => Ok(TraceSurface::Docs),
+        Some("arch") => Ok(TraceSurface::Arch),
+        Some("patterns") => Ok(TraceSurface::Patterns),
+        None => bail!("special_trace requires surface"),
+        Some(surface) => bail!("unsupported trace surface `{surface}`"),
+    }
 }
 
 fn render_configured_outputs(

@@ -22,7 +22,7 @@ pub(in crate::render) fn project_repo_signals_view(
             MetricExplanationKey::DuplicateItems,
         ),
         explanation(
-            "long prose outside docs",
+            "uncaptured prose outside docs",
             MetricExplanationKey::LongProseOutsideDocs,
         ),
         explanation(
@@ -43,7 +43,10 @@ pub(in crate::render) fn project_repo_signals_view(
                 "possible pattern clusters",
                 coverage.possible_pattern_clusters,
             ),
-            count("long prose outside docs", coverage.long_prose_outside_docs),
+            count(
+                "uncaptured prose outside docs",
+                coverage.long_prose_outside_docs,
+            ),
             count(
                 "long prose test literals",
                 coverage.long_exact_prose_assertions,

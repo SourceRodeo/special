@@ -172,6 +172,69 @@ Generated output
 [removes authoring annotations](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES),
 and refuses to overwrite docs evidence-bearing sources by accident.
 
+@implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.TRACE
+@applies DOCS.COMMAND_REFERENCE_ENTRY
+## `special trace`
+
+Use [`special trace`](documents://spec/SPECIAL.TRACE_COMMAND) when a review
+needs the explicit relationship packet, not an aggregate metric or a truth
+judgment.
+
+```sh
+special trace specs --id EXPORT.CSV.HEADERS
+special trace docs --target docs/src/public/commands.md
+special trace arch --id APP.EXPORT
+special trace patterns --id EXPORT.LABEL_VALUE_COLUMNS
+special trace docs --json --output /tmp/docs-trace.json
+```
+
+Use the surface that owns the relationship you are reviewing:
+
+| Surface | Packet focus |
+| --- | --- |
+| `trace specs` | current specs plus verifier and attestation evidence bodies |
+| `trace docs` | docs relationships, surrounding prose, target declaration, and target evidence |
+| `trace arch` | modules or areas with implementation attachments and pattern applications |
+| `trace patterns` | pattern definitions with applications and module joins |
+
+Representative output:
+
+```text
+special trace specs
+packets: 1
+
+spec EXPORT.CSV.HEADERS @ specs/export.md:7
+  text: CSV exports include a header row with selected column names.
+  evidence:
+    @verifies @ tests/export.test.ts:12
+      body @ tests/export.test.ts:13
+```
+
+Decision supported: which exact source text, target declaration, and attached
+evidence a human or agent should review for a docs, spec, architecture, or
+pattern alignment audit.
+
+For docs audits, `trace docs` follows the same documentation relationship graph
+as [`special docs`](documents://spec/SPECIAL.DOCS_COMMAND): markdown
+[`documents://`](documents://spec/SPECIAL.DOCS.LINKS.POLYMORPHIC) links,
+[`@documents`](documents://spec/SPECIAL.DOCS.DOCUMENTS_LINES), and
+[`@filedocuments`](documents://spec/SPECIAL.DOCS.DOCUMENTS_LINES).
+That makes it useful for checking whether surrounding prose matches the linked
+spec, module, area, group, or pattern. It does not run tests, prove claims, or
+label evidence quality. It only gathers the current source packet so a reviewer
+can make that judgment.
+
+Contract details: `special trace` can packetize
+[spec proof attachments](documents://spec/SPECIAL.TRACE_COMMAND.SPECS),
+[docs relationships](documents://spec/SPECIAL.TRACE_COMMAND.DOCS),
+[architecture ownership](documents://spec/SPECIAL.TRACE_COMMAND.ARCH), and
+[pattern applications](documents://spec/SPECIAL.TRACE_COMMAND.PATTERNS).
+Use [id and target filters](documents://spec/SPECIAL.TRACE_COMMAND.FILTERS) for
+focused reviews: `--id` accepts an exact id or dotted subtree, and repeated
+`--target PATH` scopes packets to source files or subtrees. Use `--json` for
+machine-readable audit bundles and `--output PATH` to save packets without
+mixing them into terminal output.
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DIFF
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special diff`
@@ -237,7 +300,7 @@ summary
   duplicate source shapes: 7
   possible pattern clusters: 2
   possible missing pattern applications: 1
-  long prose outside docs: 3
+  uncaptured prose outside docs: 3
   long prose test literals: 0
 duplicate source shapes by file
   src/billing/export.ts: 4
@@ -259,7 +322,7 @@ Contract details: `special health` supports
 [untraced implementation](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
 [missing pattern applications](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS),
 [pattern clusters](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION),
-[long prose outside docs](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS),
+[uncaptured prose outside docs](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.LONG_PROSE_OUTSIDE_DOCS),
 and [long prose test literals](documents://spec/SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_PROSE_TEST_LITERALS).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.MCP
