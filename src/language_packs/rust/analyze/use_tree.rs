@@ -1,107 +1,173 @@
 /**
 @module SPECIAL.LANGUAGE_PACKS.RUST.ANALYZE.USE_TREE
-Shared Rust `use`-tree flattening helpers for dependency and traceability analysis.
+Shared Rust `use`-tree helpers over tree-sitter use-clause nodes for dependency and traceability analysis.
 */
 // @fileimplements SPECIAL.LANGUAGE_PACKS.RUST.ANALYZE.USE_TREE
 use std::collections::BTreeMap;
 
-use syn::UseTree;
+use tree_sitter::Node;
 
-pub(super) fn flatten_use_tree(tree: &UseTree) -> Vec<String> {
+pub(super) fn collect_use_paths(node: Node<'_>, source: &[u8]) -> Vec<String> {
     let mut paths = Vec::new();
-    flatten_use_tree_with_prefix(tree, Vec::new(), &mut paths);
+    collect_use_paths_with_prefix(node, source, None, &mut paths);
     paths
 }
 
-pub(super) fn collect_use_aliases(tree: &UseTree) -> BTreeMap<String, Vec<String>> {
+pub(super) fn collect_use_aliases(
+    node: Node<'_>,
+    source: &[u8],
+) -> BTreeMap<String, Vec<String>> {
     let mut aliases = BTreeMap::new();
-    collect_use_aliases_with_prefix(tree, Vec::new(), &mut aliases);
+    collect_use_aliases_with_prefix(node, source, None, &mut aliases);
     aliases
 }
 
-fn flatten_use_tree_with_prefix(tree: &UseTree, prefix: Vec<String>, paths: &mut Vec<String>) {
-    match tree {
-        UseTree::Path(path) => {
-            let mut next_prefix = prefix;
-            next_prefix.push(path.ident.to_string());
-            flatten_use_tree_with_prefix(&path.tree, next_prefix, paths);
-        }
-        UseTree::Name(name) => {
-            let mut full_path = prefix;
-            full_path.push(name.ident.to_string());
-            paths.push(full_path.join("::"));
-        }
-        UseTree::Rename(rename) => {
-            let mut full_path = prefix;
-            full_path.push(rename.ident.to_string());
-            paths.push(full_path.join("::"));
-        }
-        UseTree::Glob(_) => {}
-        UseTree::Group(group) => {
-            for item in &group.items {
-                flatten_use_tree_with_prefix(item, prefix.clone(), paths);
+fn collect_use_paths_with_prefix(
+    node: Node<'_>,
+    source: &[u8],
+    prefix: Option<&str>,
+    paths: &mut Vec<String>,
+) {
+    match node.kind() {
+        "identifier" | "scoped_identifier" => {
+            if let Some(path) = use_path_text(node, source, prefix) {
+                paths.push(path);
             }
         }
+        "use_as_clause" => {
+            if let Some(path) = node
+                .child_by_field_name("path")
+                .and_then(|path| use_path_text(path, source, prefix))
+            {
+                paths.push(path);
+            }
+        }
+        "scoped_use_list" => {
+            let Some(path) = node
+                .child_by_field_name("path")
+                .and_then(|path| use_path_text(path, source, prefix))
+            else {
+                return;
+            };
+            if let Some(list) = node.child_by_field_name("list") {
+                collect_use_paths_with_prefix(list, source, Some(&path), paths);
+            }
+        }
+        "use_list" => {
+            let mut cursor = node.walk();
+            for child in node.named_children(&mut cursor) {
+                collect_use_paths_with_prefix(child, source, prefix, paths);
+            }
+        }
+        "use_wildcard" => {}
+        _ => {}
     }
 }
 
 fn collect_use_aliases_with_prefix(
-    tree: &UseTree,
-    prefix: Vec<String>,
+    node: Node<'_>,
+    source: &[u8],
+    prefix: Option<&str>,
     aliases: &mut BTreeMap<String, Vec<String>>,
 ) {
-    match tree {
-        UseTree::Path(path) => {
-            let mut next_prefix = prefix;
-            next_prefix.push(path.ident.to_string());
-            collect_use_aliases_with_prefix(&path.tree, next_prefix, aliases);
-        }
-        UseTree::Name(name) => {
-            let mut full_path = prefix;
-            let alias = name.ident.to_string();
-            full_path.push(alias.clone());
-            aliases.entry(alias).or_default().push(full_path.join("::"));
-        }
-        UseTree::Rename(rename) => {
-            let mut full_path = prefix;
-            full_path.push(rename.ident.to_string());
-            aliases
-                .entry(rename.rename.to_string())
-                .or_default()
-                .push(full_path.join("::"));
-        }
-        UseTree::Glob(_) => {}
-        UseTree::Group(group) => {
-            for item in &group.items {
-                collect_use_aliases_with_prefix(item, prefix.clone(), aliases);
+    match node.kind() {
+        "identifier" | "scoped_identifier" => {
+            if let Some(path) = use_path_text(node, source, prefix)
+                && let Some(alias) = path.rsplit("::").next()
+            {
+                aliases.entry(alias.to_string()).or_default().push(path);
             }
         }
+        "use_as_clause" => {
+            let Some(path) = node
+                .child_by_field_name("path")
+                .and_then(|path| use_path_text(path, source, prefix))
+            else {
+                return;
+            };
+            let Some(alias) = node
+                .child_by_field_name("alias")
+                .and_then(|alias| alias.utf8_text(source).ok())
+                .map(str::to_string)
+            else {
+                return;
+            };
+            aliases.entry(alias).or_default().push(path);
+        }
+        "scoped_use_list" => {
+            let Some(path) = node
+                .child_by_field_name("path")
+                .and_then(|path| use_path_text(path, source, prefix))
+            else {
+                return;
+            };
+            if let Some(list) = node.child_by_field_name("list") {
+                collect_use_aliases_with_prefix(list, source, Some(&path), aliases);
+            }
+        }
+        "use_list" => {
+            let mut cursor = node.walk();
+            for child in node.named_children(&mut cursor) {
+                collect_use_aliases_with_prefix(child, source, prefix, aliases);
+            }
+        }
+        "use_wildcard" => {}
+        _ => {}
     }
+}
+
+fn use_path_text(node: Node<'_>, source: &[u8], prefix: Option<&str>) -> Option<String> {
+    let raw = node.utf8_text(source).ok()?;
+    let normalized = raw
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<String>();
+    if normalized.is_empty() {
+        return None;
+    }
+    Some(match prefix {
+        Some(prefix) => format!("{prefix}::{normalized}"),
+        None => normalized,
+    })
 }
 
 #[cfg(test)]
 mod tests {
+    use tree_sitter::Parser;
+
     use super::*;
 
-    fn parse_use_tree(source: &str) -> UseTree {
-        let item = syn::parse_str::<syn::ItemUse>(source).expect("use item should parse");
-        item.tree
+    fn with_first_use_argument(source: &str, check: impl FnOnce(Node<'_>)) {
+        let mut parser = Parser::new();
+        parser
+            .set_language(&tree_sitter_rust::LANGUAGE.into())
+            .expect("rust grammar should load");
+        let tree = parser.parse(source, None).expect("source should parse");
+        let root = tree.root_node();
+        let mut cursor = root.walk();
+        let argument = root
+            .named_children(&mut cursor)
+            .find(|node| node.kind() == "use_declaration")
+            .and_then(|node| node.child_by_field_name("argument"))
+            .expect("use declaration should have an argument");
+        check(argument);
     }
 
     #[test]
     fn provider_use_tree_helpers_flatten_groups_and_renames() {
-        let tree = parse_use_tree("use crate::{api::Client, io::Reader as R, prelude::*};");
-        let mut prefixed = Vec::new();
-
-        flatten_use_tree_with_prefix(&tree, vec!["root".to_string()], &mut prefixed);
-
-        assert_eq!(
-            flatten_use_tree(&tree),
-            vec!["crate::api::Client", "crate::io::Reader"]
-        );
-        assert_eq!(
-            prefixed,
-            vec!["root::crate::api::Client", "root::crate::io::Reader"]
-        );
+        let source = "use crate::{api::Client, io::Reader as R, prelude::*};";
+        with_first_use_argument(source, |argument| {
+            assert_eq!(
+                collect_use_paths(argument, source.as_bytes()),
+                vec!["crate::api::Client", "crate::io::Reader"]
+            );
+            assert_eq!(
+                collect_use_aliases(argument, source.as_bytes()),
+                BTreeMap::from([
+                    ("Client".to_string(), vec!["crate::api::Client".to_string()]),
+                    ("R".to_string(), vec!["crate::io::Reader".to_string()]),
+                ])
+            );
+        });
     }
 }

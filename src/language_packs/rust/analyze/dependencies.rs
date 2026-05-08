@@ -6,12 +6,13 @@ Extracts Rust-specific `use`-path dependency evidence from owned Rust implementa
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use syn::{Item, ItemUse};
+use tree_sitter::{Node, Parser};
 
 use crate::model::ModuleDependencySummary;
-use crate::modules::analyze::ModuleCouplingInput;
 use crate::modules::analyze::build_dependency_summary;
-use super::use_tree::flatten_use_tree;
+use crate::modules::analyze::ModuleCouplingInput;
+
+use super::use_tree::collect_use_paths;
 
 #[derive(Debug, Default)]
 pub(super) struct RustDependencySummary {
@@ -22,14 +23,17 @@ pub(super) struct RustDependencySummary {
 
 impl RustDependencySummary {
     pub(super) fn observe(&mut self, root: &Path, source_path: &Path, text: &str) {
-        if let Ok(file) = syn::parse_file(text) {
-            self.observe_items(root, source_path, &file.items);
+        let mut parser = Parser::new();
+        if parser.set_language(&tree_sitter_rust::LANGUAGE.into()).is_err() {
             return;
         }
-
-        if let Ok(item) = syn::parse_str::<Item>(text) {
-            self.observe_item(root, source_path, &item);
+        let Some(tree) = parser.parse(text, None) else {
+            return;
+        };
+        if tree.root_node().has_error() {
+            return;
         }
+        self.observe_tree(root, source_path, tree.root_node(), text.as_bytes());
     }
 
     pub(super) fn summary(&self) -> ModuleDependencySummary {
@@ -43,26 +47,21 @@ impl RustDependencySummary {
         }
     }
 
-    fn observe_items(&mut self, root: &Path, source_path: &Path, items: &[Item]) {
-        for item in items {
-            self.observe_item(root, source_path, item);
+    fn observe_tree(&mut self, root: &Path, source_path: &Path, node: Node<'_>, source: &[u8]) {
+        if node.kind() == "use_declaration"
+            && let Some(argument) = node.child_by_field_name("argument")
+        {
+            self.observe_use_paths(root, source_path, collect_use_paths(argument, source));
+        }
+
+        let mut cursor = node.walk();
+        for child in node.named_children(&mut cursor) {
+            self.observe_tree(root, source_path, child, source);
         }
     }
 
-    fn observe_item(&mut self, root: &Path, source_path: &Path, item: &Item) {
-        match item {
-            Item::Use(item_use) => self.observe_use(root, source_path, item_use),
-            Item::Mod(item_mod) => {
-                if let Some((_, nested)) = &item_mod.content {
-                    self.observe_items(root, source_path, nested);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    fn observe_use(&mut self, root: &Path, source_path: &Path, node: &ItemUse) {
-        for path in flatten_use_tree(&node.tree) {
+    fn observe_use_paths(&mut self, root: &Path, source_path: &Path, paths: Vec<String>) {
+        for path in paths {
             *self.targets.entry(path.clone()).or_default() += 1;
             if let Some(file) = resolve_internal_file(root, source_path, &path) {
                 self.internal_files.insert(file);
@@ -164,6 +163,39 @@ mod tests {
             resolve_internal_segments(&root, root.join("nested"), &["sibling", "Item"]),
             Some(root.join("nested").join("sibling.rs"))
         );
+
+        fs::remove_dir_all(root).expect("temp root should be removed");
+    }
+
+    #[test]
+    fn provider_dependency_summary_reads_use_trees_from_tree_sitter() {
+        let root = temp_root("special-rust-dependency-use-tree");
+        fs::write(root.join("api.rs"), "").expect("api module should exist");
+        fs::create_dir_all(root.join("io")).expect("io dir should exist");
+        fs::write(root.join("io").join("mod.rs"), "").expect("io module should exist");
+        let source = r#"
+use crate::{api::Client, io::Reader as R, prelude::*};
+use serde::Serialize;
+"#;
+        let mut summary = RustDependencySummary::default();
+
+        summary.observe(&root, Path::new("lib.rs"), source);
+
+        let dependencies = summary.summary();
+        assert_eq!(dependencies.reference_count, 3);
+        assert!(dependencies.targets.iter().any(|target| {
+            target.path == "crate::api::Client" && target.count == 1
+        }));
+        assert!(dependencies.targets.iter().any(|target| {
+            target.path == "crate::io::Reader" && target.count == 1
+        }));
+        assert!(dependencies.targets.iter().any(|target| {
+            target.path == "serde::Serialize" && target.count == 1
+        }));
+        let coupling = summary.coupling_input();
+        assert!(coupling.internal_files.contains(&root.join("api.rs")));
+        assert!(coupling.internal_files.contains(&root.join("io").join("mod.rs")));
+        assert!(coupling.external_targets.contains("serde::Serialize"));
 
         fs::remove_dir_all(root).expect("temp root should be removed");
     }

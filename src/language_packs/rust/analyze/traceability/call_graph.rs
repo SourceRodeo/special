@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use syn::{Expr, ExprStruct, Item, ItemConst};
+use tree_sitter::Parser;
 
 use crate::syntax::{CallSyntaxKind, ParsedSourceGraph, SourceCall, SourceInvocation, SourceSpan};
 
@@ -781,24 +782,43 @@ fn collect_imported_call_aliases(
         let Ok(text) = crate::modules::analyze::read_owned_file_text(root, path) else {
             continue;
         };
-        let Ok(file) = syn::parse_file(&text) else {
+        let mut parser = Parser::new();
+        if parser.set_language(&tree_sitter_rust::LANGUAGE.into()).is_err() {
             continue;
         };
-        let mut aliases = BTreeMap::<String, Vec<String>>::new();
-        for item in &file.items {
-            let syn::Item::Use(item_use) = item else {
-                continue;
-            };
-            for (alias, targets) in collect_use_aliases(&item_use.tree) {
-                aliases.entry(alias).or_default().extend(targets);
-            }
+        let Some(tree) = parser.parse(&text, None) else {
+            continue;
+        };
+        if tree.root_node().has_error() {
+            continue;
         }
+        let mut aliases = BTreeMap::<String, Vec<String>>::new();
+        collect_imported_call_aliases_in_tree(tree.root_node(), text.as_bytes(), &mut aliases);
         if !aliases.is_empty() {
             aliases_by_file.insert(path.clone(), aliases);
         }
     }
 
     aliases_by_file
+}
+
+fn collect_imported_call_aliases_in_tree(
+    node: tree_sitter::Node<'_>,
+    source: &[u8],
+    aliases: &mut BTreeMap<String, Vec<String>>,
+) {
+    if node.kind() == "use_declaration"
+        && let Some(argument) = node.child_by_field_name("argument")
+    {
+        for (alias, targets) in collect_use_aliases(argument, source) {
+            aliases.entry(alias).or_default().extend(targets);
+        }
+    }
+
+    let mut cursor = node.walk();
+    for child in node.named_children(&mut cursor) {
+        collect_imported_call_aliases_in_tree(child, source, aliases);
+    }
 }
 
 fn qualified_name_candidates(

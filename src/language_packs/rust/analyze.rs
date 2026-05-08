@@ -12,21 +12,14 @@ use crate::model::{
     ArchitectureTraceabilitySummary, ImplementRef, ModuleMetricsSummary, ParsedRepo,
 };
 
-use self::item_metrics::observe_rust_text;
 use crate::modules::analyze::traceability_core::{TraceabilityAnalysis, TraceabilityLanguagePack};
+use crate::modules::analyze::source_item_signals::summarize_source_item_signals_with_metrics;
 use crate::modules::analyze::{
-    FileOwnership, ProviderModuleAnalysis, emit_analysis_status, read_owned_file_text,
-    visit_owned_texts,
+    FileOwnership, ProviderModuleAnalysis, emit_analysis_status, visit_owned_texts,
 };
 
-#[path = "analyze/complexity.rs"]
-mod complexity;
 #[path = "analyze/dependencies.rs"]
 mod dependencies;
-#[path = "analyze/item_metrics.rs"]
-mod item_metrics;
-#[path = "analyze/item_signals.rs"]
-pub(super) mod item_signals;
 #[path = "analyze/quality.rs"]
 mod quality;
 #[path = "analyze/rust_analyzer.rs"]
@@ -153,9 +146,9 @@ pub(crate) fn analyze_module(
     include_traceability: bool,
 ) -> Result<ProviderModuleAnalysis> {
     let mut surface_summary = surface::RustSurfaceSummary::default();
-    let mut complexity_summary = complexity::RustComplexitySummary::default();
     let mut quality_summary = quality::RustQualitySummary::default();
     let mut dependency_summary = dependencies::RustDependencySummary::default();
+    let mut owned_items = Vec::new();
     let traceability_summary = include_traceability
         .then_some(context.traceability.as_ref())
         .flatten()
@@ -175,25 +168,19 @@ pub(crate) fn analyze_module(
         if path.extension().and_then(|ext| ext.to_str()) != Some("rs") {
             return Ok(());
         }
-        surface_summary.observe(text);
-        observe_rust_text(&mut complexity_summary, text);
-        observe_rust_text(&mut quality_summary, text);
+        if let Some(graph) = crate::syntax::parse_source_graph(path, text) {
+            surface_summary.observe(&graph);
+            quality_summary.observe(path, text, &graph);
+            owned_items.extend(graph.items);
+        }
         dependency_summary.observe(root, path, text);
         Ok(())
     })?;
 
-    let mut item_signals_summary = item_signals::RustItemSignalsSummary::default();
-    for implementation in implementations {
-        let path = &implementation.location.path;
-        if path.extension().and_then(|ext| ext.to_str()) != Some("rs") {
-            continue;
-        }
-        match (&implementation.body_location, &implementation.body) {
-            (Some(_), Some(body)) => item_signals_summary.observe(path, body),
-            (None, _) => item_signals_summary.observe(path, &read_owned_file_text(root, path)?),
-            _ => {}
-        }
-    }
+    let complexity = quality_summary.finish_complexity();
+    let item_signals =
+        summarize_source_item_signals_with_metrics(&owned_items, quality_summary.item_metrics());
+    let quality = quality_summary.finish();
 
     Ok(ProviderModuleAnalysis {
         metrics: ModuleMetricsSummary {
@@ -201,9 +188,9 @@ pub(crate) fn analyze_module(
             internal_items: surface_summary.internal_items,
             ..ModuleMetricsSummary::default()
         },
-        complexity: Some(complexity_summary.finish()),
-        quality: Some(quality_summary.finish()),
-        item_signals: Some(item_signals_summary.finish()),
+        complexity: Some(complexity),
+        quality: Some(quality),
+        item_signals: Some(item_signals),
         traceability: traceability_summary,
         traceability_unavailable_reason: include_traceability
             .then(|| context.traceability_unavailable_reason.clone())
