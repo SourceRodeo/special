@@ -97,6 +97,8 @@ installed bundled skills include trigger-eval fixtures where the bundled skill s
 mod support;
 
 use std::fs;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
 
 use support::{
     bundled_skill_ids, bundled_skill_markdown, install_skills, installed_skill_ids,
@@ -105,10 +107,34 @@ use support::{
     temp_repo_dir, write_invalid_skills_root_fixture, write_skills_fixture,
 };
 
+struct TempSkillsRepo {
+    path: PathBuf,
+}
+
+impl Deref for TempSkillsRepo {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        &self.path
+    }
+}
+
+impl Drop for TempSkillsRepo {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
+}
+
+fn temp_skills_repo(prefix: &str) -> TempSkillsRepo {
+    TempSkillsRepo {
+        path: temp_repo_dir(prefix),
+    }
+}
+
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.HELP
 fn skills_prints_help_and_explanatory_text() {
-    let root = temp_repo_dir("special-cli-skills-dir");
+    let root = temp_skills_repo("special-cli-skills-dir");
     write_skills_fixture(&root);
 
     let output = run_special(&root, &["skills"]);
@@ -135,28 +161,24 @@ fn skills_prints_help_and_explanatory_text() {
     );
     assert!(!root.join(".agents/skills").exists());
     assert!(!stderr.contains("warning:"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.HELP.NO_ROOT_WARNING
 fn skills_overview_does_not_emit_root_warning_without_config() {
-    let root = temp_repo_dir("special-cli-skills-no-warning");
+    let root = temp_skills_repo("special-cli-skills-no-warning");
 
     let output = run_special(&root, &["skills"]);
     assert!(output.status.success());
 
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
     assert!(!stderr.contains("warning:"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.HELP.INSTALL_DESTINATION_GUIDANCE
 fn skills_overview_describes_install_destinations_without_probing_environment() {
-    let root = temp_repo_dir("special-cli-skills-invalid-project");
+    let root = temp_skills_repo("special-cli-skills-invalid-project");
     write_invalid_skills_root_fixture(&root);
 
     let output = run_special(&root, &["skills"]);
@@ -189,14 +211,12 @@ fn skills_overview_describes_install_destinations_without_probing_environment() 
     let install_stderr = String::from_utf8(install_output.stderr).expect("stderr should be utf-8");
     assert!(install_stderr.contains("project install destination unavailable"));
     assert!(install_stderr.contains("points to a root that does not exist"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.HELP.SKILLS_COMMAND_SHAPES
 fn skills_help_flag_describes_skills_command_shapes() {
-    let root = temp_repo_dir("special-cli-skills-help");
+    let root = temp_skills_repo("special-cli-skills-help");
     let output = run_special(&root, &["skills", "--help"]);
     assert!(output.status.success());
 
@@ -211,14 +231,12 @@ fn skills_help_flag_describes_skills_command_shapes() {
             "special skills install [SKILL_ID] --destination DESTINATION --force".to_string(),
         ]
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.EMITS_SKILL_TO_STDOUT
 fn skills_prints_one_skill_to_stdout() {
-    let root = temp_repo_dir("special-cli-skills-print");
+    let root = temp_skills_repo("special-cli-skills-print");
     write_skills_fixture(&root);
 
     let output = run_special(&root, &["skills", "ship-product-change"]);
@@ -230,14 +248,12 @@ fn skills_prints_one_skill_to_stdout() {
         bundled_skill_markdown("ship-product-change").trim_end_matches('\n')
     );
     assert!(!root.join(".agents/skills").exists());
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.ALL_SKILLS_DEFAULT
 fn skills_install_without_skill_id_installs_all_bundled_skills() {
-    let root = temp_repo_dir("special-cli-skills-install-all");
+    let root = temp_skills_repo("special-cli-skills-install-all");
 
     let output = install_skills(&root);
     assert!(output.status.success());
@@ -247,14 +263,12 @@ fn skills_install_without_skill_id_installs_all_bundled_skills() {
         installed_skill_ids(&root.join(".agents/skills")),
         expected.into_iter().map(str::to_string).collect::<Vec<_>>()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND
 fn skills_install_is_the_install_entrypoint() {
-    let root = temp_repo_dir("special-cli-skills-install-entry");
+    let root = temp_skills_repo("special-cli-skills-install-entry");
     write_skills_fixture(&root);
 
     let output = run_special_with_input(&root, &["skills", "install"], "project\n");
@@ -267,14 +281,12 @@ fn skills_install_is_the_install_entrypoint() {
             .map(str::to_string)
             .collect::<Vec<_>>()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.PROMPTS_FOR_DESTINATION
 fn skills_install_prompts_for_available_destinations() {
-    let root = temp_repo_dir("special-cli-skills-prompt-destination");
+    let root = temp_skills_repo("special-cli-skills-prompt-destination");
     write_skills_fixture(&root);
 
     let output = run_special_with_input(
@@ -290,14 +302,12 @@ fn skills_install_prompts_for_available_destinations() {
     assert!(stdout.contains("project"));
     assert!(stdout.contains("global"));
     assert!(stdout.contains("custom"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.REJECTS_UNKNOWN_PROMPT_CHOICES
 fn skills_install_reprompts_on_unknown_destination_choice() {
-    let root = temp_repo_dir("special-cli-skills-invalid-destination-choice");
+    let root = temp_skills_repo("special-cli-skills-invalid-destination-choice");
     write_skills_fixture(&root);
 
     let output = run_special_with_input(
@@ -313,14 +323,12 @@ fn skills_install_reprompts_on_unknown_destination_choice() {
         root.join(".agents/skills/ship-product-change/SKILL.md")
             .is_file()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.NON_INTERACTIVE_DESTINATION
 fn skills_install_supports_non_interactive_destination_flag() {
-    let root = temp_repo_dir("special-cli-skills-non-interactive-destination");
+    let root = temp_skills_repo("special-cli-skills-non-interactive-destination");
     let codex_home = root.join("codex-home");
     let custom = root.join("custom-skills");
     write_skills_fixture(&root);
@@ -374,13 +382,11 @@ fn skills_install_supports_non_interactive_destination_flag() {
     );
     assert!(custom_output.status.success());
     assert!(custom.join("validate-product-contract/SKILL.md").is_file());
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 fn global_destination_requires_global_env() {
-    let root = temp_repo_dir("special-cli-skills-global-env");
+    let root = temp_skills_repo("special-cli-skills-global-env");
     write_skills_fixture(&root);
 
     let overview = run_special_with_env_removed(&root, &["skills"], &["CODEX_HOME", "HOME"]);
@@ -402,14 +408,12 @@ fn global_destination_requires_global_env() {
     assert!(!install.status.success());
     let install_stderr = String::from_utf8(install.stderr).expect("stderr should be utf-8");
     assert!(install_stderr.contains("global install destination unavailable"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.FORCE_OVERWRITE
 fn skills_install_supports_force_overwrite_without_prompt() {
-    let root = temp_repo_dir("special-cli-skills-force-overwrite");
+    let root = temp_skills_repo("special-cli-skills-force-overwrite");
     write_skills_fixture(&root);
     let existing = root.join(".agents/skills/ship-product-change");
     fs::create_dir_all(&existing).expect("existing skill dir should be created");
@@ -435,14 +439,12 @@ fn skills_install_supports_force_overwrite_without_prompt() {
         fs::read_to_string(existing.join("SKILL.md")).expect("installed skill should exist"),
         "existing"
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.VALIDATES_SKILL_ID_BEFORE_PROMPT
 fn skills_install_rejects_unknown_skill_before_prompting() {
-    let root = temp_repo_dir("special-cli-skills-invalid-id");
+    let root = temp_skills_repo("special-cli-skills-invalid-id");
     write_skills_fixture(&root);
 
     let output = run_special(&root, &["skills", "install", "nope"]);
@@ -451,14 +453,12 @@ fn skills_install_rejects_unknown_skill_before_prompting() {
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
     assert!(stderr.contains("unknown skill id `nope`"));
     assert!(!stderr.contains("interactive input required"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.PROJECT_DESTINATION
 fn skills_install_project_destination_writes_into_repo_skills_dir() {
-    let root = temp_repo_dir("special-cli-skills-project-destination");
+    let root = temp_skills_repo("special-cli-skills-project-destination");
     write_skills_fixture(&root);
 
     let output = run_special_with_input(
@@ -472,14 +472,12 @@ fn skills_install_project_destination_writes_into_repo_skills_dir() {
         root.join(".agents/skills/ship-product-change/SKILL.md")
             .is_file()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.WRITES_PROJECT_SKILLS_DIRECTORY
 fn skills_writes_project_local_skills_directory() {
-    let root = temp_repo_dir("special-cli-skills-project");
+    let root = temp_skills_repo("special-cli-skills-project");
 
     let output = install_skills(&root);
     assert!(output.status.success());
@@ -491,14 +489,12 @@ fn skills_writes_project_local_skills_directory() {
             .map(str::to_string)
             .collect::<Vec<_>>()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.ONE_SKILL
 fn skills_install_one_skill_only_installs_the_selected_skill() {
-    let root = temp_repo_dir("special-cli-skills-install-one");
+    let root = temp_skills_repo("special-cli-skills-install-one");
     write_skills_fixture(&root);
 
     let output = run_special_with_input(
@@ -517,14 +513,12 @@ fn skills_install_one_skill_only_installs_the_selected_skill() {
             .join(".agents/skills/ship-product-change/SKILL.md")
             .exists()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.GLOBAL_DESTINATION
 fn skills_install_supports_global_destination() {
-    let root = temp_repo_dir("special-cli-skills-global");
+    let root = temp_skills_repo("special-cli-skills-global");
     let codex_home = root.join("codex-home");
     write_skills_fixture(&root);
 
@@ -541,14 +535,12 @@ fn skills_install_supports_global_destination() {
             .join("skills/ship-product-change/SKILL.md")
             .is_file()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.CUSTOM_DESTINATION
 fn skills_install_supports_custom_destination() {
-    let root = temp_repo_dir("special-cli-skills-custom");
+    let root = temp_skills_repo("special-cli-skills-custom");
     let custom = root.join("custom-skills");
     write_skills_fixture(&root);
 
@@ -558,14 +550,12 @@ fn skills_install_supports_custom_destination() {
     assert!(output.status.success());
 
     assert!(custom.join("ship-product-change/SKILL.md").is_file());
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND.OVERWRITE_PROMPT
 fn skills_install_prompts_before_overwriting_existing_skill() {
-    let root = temp_repo_dir("special-cli-skills-overwrite");
+    let root = temp_skills_repo("special-cli-skills-overwrite");
     write_skills_fixture(&root);
     let existing = root.join(".agents/skills/ship-product-change");
     fs::create_dir_all(&existing).expect("existing skill dir should be created");
@@ -585,14 +575,12 @@ fn skills_install_prompts_before_overwriting_existing_skill() {
         fs::read_to_string(existing.join("SKILL.md")).expect("existing skill should remain"),
         "existing"
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.USES_AGENT_SKILLS_LAYOUT
 fn skills_use_standard_skill_directories_with_support_files() {
-    let root = temp_repo_dir("special-cli-skills-layout");
+    let root = temp_skills_repo("special-cli-skills-layout");
 
     let output = install_skills(&root);
     assert!(output.status.success());
@@ -609,56 +597,48 @@ fn skills_use_standard_skill_directories_with_support_files() {
             .join("define-product-specs/references/spec-writing.md")
             .is_file()
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_SHIP_CHANGE_SKILL
 fn skills_install_ship_change_skill() {
-    let root = temp_repo_dir("special-cli-skills-ship");
+    let root = temp_skills_repo("special-cli-skills-ship");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/ship-product-change/SKILL.md"))
         .expect("ship skill should exist");
     assert_eq!(skill, bundled_skill_markdown("ship-product-change"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_DEFINE_PRODUCT_SPECS_SKILL
 fn skills_install_define_product_specs_skill() {
-    let root = temp_repo_dir("special-cli-skills-define");
+    let root = temp_skills_repo("special-cli-skills-define");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/define-product-specs/SKILL.md"))
         .expect("define skill should exist");
     assert_eq!(skill, bundled_skill_markdown("define-product-specs"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_VALIDATE_PRODUCT_CONTRACT_SKILL
 fn skills_install_validate_product_contract_skill() {
-    let root = temp_repo_dir("special-cli-skills-validate");
+    let root = temp_skills_repo("special-cli-skills-validate");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/validate-product-contract/SKILL.md"))
         .expect("validate skill should exist");
     assert_eq!(skill, bundled_skill_markdown("validate-product-contract"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_VALIDATE_ARCHITECTURE_IMPLEMENTATION_SKILL
 fn skills_install_validate_architecture_implementation_skill() {
-    let root = temp_repo_dir("special-cli-skills-validate-architecture");
+    let root = temp_skills_repo("special-cli-skills-validate-architecture");
     let output = install_skills(&root);
     assert!(output.status.success());
 
@@ -670,84 +650,72 @@ fn skills_install_validate_architecture_implementation_skill() {
         skill,
         bundled_skill_markdown("validate-architecture-implementation")
     );
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_USE_PROJECT_PATTERNS_SKILL
 fn skills_install_use_project_patterns_skill() {
-    let root = temp_repo_dir("special-cli-skills-use-patterns");
+    let root = temp_skills_repo("special-cli-skills-use-patterns");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/use-project-patterns/SKILL.md"))
         .expect("use-project-patterns skill should exist");
     assert_eq!(skill, bundled_skill_markdown("use-project-patterns"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_EVOLVE_MODULE_ARCHITECTURE_SKILL
 fn skills_install_evolve_module_architecture_skill() {
-    let root = temp_repo_dir("special-cli-skills-evolve-architecture");
+    let root = temp_skills_repo("special-cli-skills-evolve-architecture");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/evolve-module-architecture/SKILL.md"))
         .expect("evolve architecture skill should exist");
     assert_eq!(skill, bundled_skill_markdown("evolve-module-architecture"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_INSPECT_CURRENT_SPEC_STATE_SKILL
 fn skills_install_inspect_current_spec_state_skill() {
-    let root = temp_repo_dir("special-cli-skills-current");
+    let root = temp_skills_repo("special-cli-skills-current");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/inspect-current-spec-state/SKILL.md"))
         .expect("inspect-current-spec-state skill should exist");
     assert_eq!(skill, bundled_skill_markdown("inspect-current-spec-state"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_FIND_PLANNED_WORK_SKILL
 fn skills_install_find_planned_work_skill() {
-    let root = temp_repo_dir("special-cli-skills-planned");
+    let root = temp_skills_repo("special-cli-skills-planned");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/find-planned-work/SKILL.md"))
         .expect("find-planned-work skill should exist");
     assert_eq!(skill, bundled_skill_markdown("find-planned-work"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_SETUP_SPECIAL_PROJECT_SKILL
 fn skills_install_setup_special_project_skill() {
-    let root = temp_repo_dir("special-cli-skills-setup-special");
+    let root = temp_skills_repo("special-cli-skills-setup-special");
     let output = install_skills(&root);
     assert!(output.status.success());
 
     let skill = fs::read_to_string(root.join(".agents/skills/setup-special-project/SKILL.md"))
         .expect("setup-special-project skill should exist");
     assert_eq!(skill, bundled_skill_markdown("setup-special-project"));
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.BUNDLES_REFERENCES_FOR_PROGRESSIVE_DISCLOSURE
 fn skills_bundle_reference_docs_for_progressive_disclosure() {
-    let root = temp_repo_dir("special-cli-skills-references");
+    let root = temp_skills_repo("special-cli-skills-references");
     let output = install_skills(&root);
     assert!(output.status.success());
 
@@ -776,14 +744,12 @@ fn skills_bundle_reference_docs_for_progressive_disclosure() {
             "expected bundled reference file {relative_path}"
         );
     }
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 #[test]
 // @verifies SPECIAL.SKILLS.COMMAND.INCLUDES_TRIGGER_EVAL_FIXTURES
 fn skills_include_trigger_eval_fixtures() {
-    let root = temp_repo_dir("special-cli-skills-trigger-evals");
+    let root = temp_skills_repo("special-cli-skills-trigger-evals");
     let output = install_skills(&root);
     assert!(output.status.success());
 
@@ -805,6 +771,4 @@ fn skills_include_trigger_eval_fixtures() {
         assert!(contents.contains("## Should Trigger"));
         assert!(contents.contains("## Should Not Trigger"));
     }
-
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
