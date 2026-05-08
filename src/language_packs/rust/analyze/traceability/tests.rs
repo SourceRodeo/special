@@ -15,10 +15,10 @@ use crate::modules::analyze::traceability_core::{
 };
 use crate::modules::parse_architecture;
 use crate::parser::{ParseDialect, parse_repo};
+use crate::test_support::TempProjectDir;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 fn owned_item(stable_id: &str, path: &str, module_ids: &[&str]) -> TraceabilityOwnedItem {
     TraceabilityOwnedItem {
@@ -632,7 +632,7 @@ fn assert_direct_scoped_rust_structure_matches_full_then_filtered(
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
 ) {
-    let (full, scoped, root) =
+    let (full, scoped, _root) =
         build_direct_scoped_rust_analysis_pair_raw(fixture_name, fixture_writer, scoped_path);
 
     assert_eq!(
@@ -651,7 +651,6 @@ fn assert_direct_scoped_rust_structure_matches_full_then_filtered(
         projected_module_connectivity(&full, scoped_path),
         projected_module_connectivity(&scoped, scoped_path)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_support_roots_match_full_then_filtered(
@@ -659,13 +658,12 @@ fn assert_direct_scoped_rust_support_roots_match_full_then_filtered(
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
 ) {
-    let (full, scoped, root) =
+    let (full, scoped, _root) =
         build_direct_scoped_rust_inputs_pair(fixture_name, fixture_writer, scoped_path);
     assert_eq!(
         projected_support_root_ids(&full, scoped_path),
         projected_support_root_ids(&scoped, scoped_path)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_context_support_roots_match_full(
@@ -673,7 +671,7 @@ fn assert_direct_scoped_rust_context_support_roots_match_full(
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
 ) {
-    let (full, scoped, root) =
+    let (full, scoped, _root) =
         build_direct_scoped_rust_inputs_pair(fixture_name, fixture_writer, scoped_path);
     assert_eq!(
         effective_context_support_root_ids(&full),
@@ -683,7 +681,6 @@ fn assert_direct_scoped_rust_context_support_roots_match_full(
         effective_context_support_root_ids_for_item_ids(&full, effective_context_item_ids(&scoped)),
         effective_context_support_root_ids(&scoped)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_projected_reverse_closure_matches_full(
@@ -691,13 +688,12 @@ fn assert_direct_scoped_rust_projected_reverse_closure_matches_full(
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
 ) {
-    let (full, scoped, root) =
+    let (full, scoped, _root) =
         build_direct_scoped_rust_inputs_pair(fixture_name, fixture_writer, scoped_path);
     assert_eq!(
         projected_reverse_reachable_ids(&full, scoped_path),
         projected_reverse_reachable_ids(&scoped, scoped_path)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_projected_reverse_subgraph_matches_full(
@@ -705,13 +701,12 @@ fn assert_direct_scoped_rust_projected_reverse_subgraph_matches_full(
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
 ) {
-    let (full, scoped, root) =
+    let (full, scoped, _root) =
         build_direct_scoped_rust_inputs_pair(fixture_name, fixture_writer, scoped_path);
     assert_eq!(
         projected_reverse_subgraphs(&full, scoped_path),
         projected_reverse_subgraphs(&scoped, scoped_path)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_reference_contract_matches_scoped_inputs(
@@ -753,7 +748,6 @@ fn assert_direct_scoped_rust_reference_contract_matches_scoped_inputs(
             .preserved_reverse_closure_target_ids
             .is_subset(&scoped_context_ids)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_exact_item_kernel_matches_reference(
@@ -784,7 +778,6 @@ fn assert_direct_scoped_rust_exact_item_kernel_matches_reference(
         effective_context_item_ids_for_inputs(&scoped),
         preserved_item_ids
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_exact_contract_targets_match_supported_projected_items(
@@ -806,7 +799,6 @@ fn assert_direct_scoped_rust_exact_contract_targets_match_supported_projected_it
             .filter_map(|(item_id, roots)| (!roots.is_empty()).then_some(item_id))
             .collect()
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_context_reverse_closure_matches_full(
@@ -814,14 +806,13 @@ fn assert_direct_scoped_rust_context_reverse_closure_matches_full(
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
 ) {
-    let (full, scoped, root) =
+    let (full, scoped, _root) =
         build_direct_scoped_rust_inputs_pair(fixture_name, fixture_writer, scoped_path);
     let scoped_context_ids = effective_context_item_ids(&scoped);
     assert_eq!(
         reverse_reachable_ids_for_item_ids(&full, scoped_context_ids.clone()),
         reverse_reachable_ids_for_item_ids(&scoped, scoped_context_ids)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn assert_direct_scoped_rust_context_reverse_subgraph_matches_full(
@@ -829,14 +820,13 @@ fn assert_direct_scoped_rust_context_reverse_subgraph_matches_full(
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
 ) {
-    let (full, scoped, root) =
+    let (full, scoped, _root) =
         build_direct_scoped_rust_inputs_pair(fixture_name, fixture_writer, scoped_path);
     let scoped_context_ids = effective_context_item_ids(&scoped);
     assert_eq!(
         reverse_subgraphs_for_item_ids(&full, scoped_context_ids.clone()),
         reverse_subgraphs_for_item_ids(&scoped, scoped_context_ids)
     );
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
 fn build_direct_scoped_rust_analysis_pair(
@@ -851,7 +841,6 @@ fn build_direct_scoped_rust_analysis_pair(
         build_direct_scoped_rust_analysis_pair_raw(fixture_name, fixture_writer, scoped_path);
     let full_summary = super::summarize_repo_traceability(&root, &full);
     let scoped_summary = super::summarize_repo_traceability(&root, &scoped);
-    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
     (full_summary, scoped_summary)
 }
 
@@ -862,7 +851,7 @@ fn build_direct_scoped_rust_analysis_pair_raw(
 ) -> (
     crate::modules::analyze::traceability_core::TraceabilityAnalysis,
     crate::modules::analyze::traceability_core::TraceabilityAnalysis,
-    PathBuf,
+    TempProjectDir,
 ) {
     let root = temp_repo_dir(fixture_name);
     fixture_writer(&root);
@@ -909,7 +898,7 @@ fn build_direct_scoped_rust_inputs_pair(
     fixture_name: &str,
     fixture_writer: fn(&std::path::Path),
     scoped_path: &str,
-) -> (TraceabilityInputs, TraceabilityInputs, PathBuf) {
+) -> (TraceabilityInputs, TraceabilityInputs, TempProjectDir) {
     let root = temp_repo_dir(fixture_name);
     fixture_writer(&root);
 
@@ -1201,17 +1190,8 @@ fn index_file_ownership_for_test(
     files
 }
 
-fn temp_repo_dir(prefix: &str) -> PathBuf {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("time should move forward")
-        .as_nanos();
-    let path = std::env::temp_dir().join(format!(
-        "{prefix}-{}-{timestamp}",
-        std::process::id()
-    ));
-    fs::create_dir_all(&path).expect("temp repo dir should be created");
-    path
+fn temp_repo_dir(prefix: &str) -> TempProjectDir {
+    TempProjectDir::new(prefix)
 }
 
 // @applies TEST_FIXTURE.REPRESENTATIVE_PROJECT
