@@ -110,12 +110,7 @@ pub(crate) fn build_repo_analysis_context(
             file_ownership,
         ) {
             Ok(analysis) => (Some(analysis), None),
-            Err(error) => (
-                None,
-                Some(format!(
-                    "Python backward trace is unavailable because parser-backed graph construction failed: {error}"
-                )),
-            ),
+            Err(error) => (None, Some(python_traceability_unavailable_reason(&error))),
         }
     } else {
         (None, None)
@@ -125,6 +120,17 @@ pub(crate) fn build_repo_analysis_context(
         traceability,
         traceability_unavailable_reason,
     }
+}
+
+fn python_traceability_unavailable_reason(error: &anyhow::Error) -> String {
+    let error = error.to_string();
+    if error.contains("Lean traceability kernel") {
+        return format!("Python backward trace is unavailable because {error}");
+    }
+
+    format!(
+        "Python backward trace is unavailable because parser-backed graph construction failed: {error}"
+    )
 }
 
 pub(crate) fn summarize_repo_traceability(

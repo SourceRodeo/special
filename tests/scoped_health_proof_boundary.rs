@@ -751,6 +751,45 @@ fn scoped_health_without_embedded_lean_reports_unavailable_traceability_without_
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }
 
+// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.LEAN_KERNEL
+#[cfg(not(special_embedded_lean_kernel))]
+#[test]
+fn scoped_python_health_without_embedded_lean_reports_kernel_requirement() {
+    let root = temp_repo_dir("special-scoped-python-missing-lean-kernel");
+    write_python_traceability_fixture(&root);
+
+    let output = run_special_with_env_removed(
+        &root,
+        &["health", "--target", "src/app.py", "--json", "--verbose"],
+        &[
+            "SPECIAL_TRACEABILITY_KERNEL",
+            "SPECIAL_TRACEABILITY_KERNEL_EXE",
+            "SPECIAL_SCOPED_TRACEABILITY_MODE",
+        ],
+    );
+
+    assert!(
+        output.status.success(),
+        "missing Lean kernel should make Python traceability unavailable, not crash: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("health output should be JSON");
+    let reason = json["analysis"]["traceability_unavailable_reason"]
+        .as_str()
+        .expect("missing Lean kernel should be reported as traceability unavailable");
+    assert!(reason.contains("Python backward trace is unavailable"));
+    assert!(
+        reason.contains("Lean traceability kernel was requested"),
+        "unexpected unavailable reason: {reason}"
+    );
+    assert!(
+        !reason.contains("parser-backed graph construction failed"),
+        "kernel failures should not be reported as parser graph construction failures: {reason}"
+    );
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
 #[test]
 fn exact_kept_closure_preserves_projected_traceability_summary() {
     let graph = fixture_graph();
