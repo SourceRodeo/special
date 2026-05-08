@@ -63,19 +63,38 @@ pub(super) fn acquire_cache_fill_lock_with_hooks(
                     ));
                     waited = true;
                 }
-                if cache_lock_is_stale_at(&lock_path, now()) {
-                    stats::record_stale_lock_recover();
-                    stats::emit_cache_status(&format!(
-                        "recovered an abandoned cache lock for {}; rebuilding it now",
-                        cache_entry_label(cache_path)
-                    ));
-                    let _ = fs::remove_file(&lock_path);
+                if recover_stale_cache_lock_at(&lock_path, cache_path, now())? {
                     continue;
                 }
                 sleep(super::CACHE_LOCK_POLL_INTERVAL);
             }
             Err(error) => return Err(error.into()),
         }
+    }
+}
+
+pub(super) fn recover_stale_cache_lock_at(
+    lock_path: &Path,
+    cache_path: &Path,
+    now: SystemTime,
+) -> Result<bool> {
+    if !cache_lock_is_stale_at(lock_path, now) {
+        return Ok(false);
+    }
+
+    let stale_path = stale_cache_lock_recovery_path(lock_path);
+    match fs::rename(lock_path, &stale_path) {
+        Ok(()) => {
+            stats::record_stale_lock_recover();
+            stats::emit_cache_status(&format!(
+                "recovered an abandoned cache lock for {}; rebuilding it now",
+                cache_entry_label(cache_path)
+            ));
+            let _ = fs::remove_file(stale_path);
+            Ok(true)
+        }
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error.into()),
     }
 }
 
@@ -90,6 +109,16 @@ fn cache_lock_is_stale_at(lock_path: &Path, now: SystemTime) -> bool {
         return false;
     };
     elapsed > super::CACHE_LOCK_STALE_AFTER
+}
+
+fn stale_cache_lock_recovery_path(lock_path: &Path) -> PathBuf {
+    let mut file_name = lock_path
+        .file_name()
+        .map(|name| name.to_os_string())
+        .unwrap_or_else(|| "cache.lock".into());
+    file_name.push(".stale.");
+    file_name.push(next_cache_lock_owner());
+    lock_path.with_file_name(file_name)
 }
 
 pub(super) struct CacheFillGuard {

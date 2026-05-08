@@ -10,7 +10,7 @@ use crate::config::SpecialVersion;
 
 use super::super::lock::{
     CacheFillGuard, acquire_cache_fill_lock, acquire_cache_fill_lock_with_hooks, cache_lock_owner,
-    cache_lock_path, start_cache_lock_heartbeat,
+    cache_lock_path, recover_stale_cache_lock_at, start_cache_lock_heartbeat,
 };
 use super::super::storage::cache_file_path;
 use super::super::{
@@ -118,6 +118,40 @@ fn stale_lock_is_recovered_before_filling_cache() {
     assert!(
         !lock_path.exists(),
         "lock should be removed after guard drops"
+    );
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
+fn stale_lock_recovery_counts_only_successful_recovery() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-stale-recovery-count");
+    let cache_path = cache_file_path(&root, &format!("parsed-repo-v{CACHE_SCHEMA_VERSION}.json"));
+    if let Some(parent) = cache_path.parent() {
+        std::fs::create_dir_all(parent).expect("cache dir should exist");
+    }
+    let lock_path = cache_lock_path(&cache_path);
+    std::fs::write(&lock_path, b"stale").expect("lock file should be written");
+
+    reset_cache_stats();
+    let future_now = SystemTime::now() + CACHE_LOCK_STALE_AFTER + std::time::Duration::from_secs(1);
+    assert!(
+        recover_stale_cache_lock_at(&lock_path, &cache_path, future_now)
+            .expect("stale lock recovery should succeed"),
+        "first recovery attempt should move the stale lock aside"
+    );
+    assert!(
+        !recover_stale_cache_lock_at(&lock_path, &cache_path, future_now)
+            .expect("missing lock should be treated as a lost recovery race"),
+        "second recovery attempt should not count a lock another worker already moved"
+    );
+
+    let stats = snapshot_cache_stats();
+    assert_eq!(stats.stale_lock_recovers, 1);
+    assert!(
+        !lock_path.exists(),
+        "recovering a stale lock should leave the active lock path free"
     );
 
     std::fs::remove_dir_all(&root).expect("temp root should be removed");
