@@ -8,6 +8,9 @@ special publishes the package as `special-cli`.
 @spec SPECIAL.DISTRIBUTION.CRATES_IO.BINARY_NAME
 special installs the `special` binary from the `special-cli` package.
 
+@spec SPECIAL.DISTRIBUTION.CRATES_IO.RUST_VERSION
+special's Cargo package declares the minimum supported Rust version required by its Rust edition and source syntax.
+
 @group SPECIAL.DISTRIBUTION.GITHUB_RELEASES
 special GitHub release distribution.
 
@@ -464,6 +467,17 @@ fn cargo_package_installs_special_binary() {
         has_special_bin,
         "cargo metadata should expose a `special` binary target"
     );
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.CRATES_IO.RUST_VERSION
+fn cargo_package_declares_minimum_rust_version() {
+    let package = package_metadata();
+    let rust_version = package["rust_version"]
+        .as_str()
+        .expect("package metadata should include rust_version");
+
+    assert_eq!(rust_version, "1.85");
 }
 
 #[test]

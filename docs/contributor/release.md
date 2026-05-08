@@ -14,6 +14,12 @@ local development and release builds.
 Release builds must not resolve it through a
 local checkout.
 
+The Cargo package declares its
+minimum supported Rust version
+in `Cargo.toml`. Keep that value aligned with the Rust edition and source syntax
+used by the release. The repo-local `mise.toml` can use a newer stable Rust for
+development; it is not the MSRV contract.
+
 ## Release Workflow
 
 The local release script has explicit phases:
