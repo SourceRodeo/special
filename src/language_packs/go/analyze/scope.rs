@@ -11,7 +11,7 @@ use anyhow::{Result, anyhow};
 use crate::model::ParsedRepo;
 use crate::modules::analyze::traceability_core::{
     TraceGraph, TraceabilityAnalysis, TraceabilityInputs, build_root_supports,
-    merge_trace_graph_edges,
+    merge_trace_graph_edges, TraceabilityOwnedItem,
 };
 use crate::modules::analyze::{FileOwnership, emit_analysis_status};
 use crate::syntax::{ParsedSourceGraph, parse_source_graph};
@@ -268,16 +268,18 @@ fn narrow_scoped_traceability_inputs_for_go(
         crate::modules::analyze::traceability_core::preserved_graph_item_ids_for_reference(
             &reference,
         );
-    let repo_items = inputs
+    let mut repo_items = inputs
         .repo_items
         .into_iter()
         .filter(|item| projected_item_ids.contains(&item.stable_id))
         .collect::<Vec<_>>();
-    let context_items = inputs
+    let mut context_items = inputs
         .context_items
         .into_iter()
         .filter(|item| preserved_item_ids.contains(&item.stable_id))
         .collect::<Vec<_>>();
+    sort_traceability_items_by_stable_id(&mut repo_items);
+    sort_traceability_items_by_stable_id(&mut context_items);
     let graph = TraceGraph {
         edges: inputs
             .graph
@@ -307,6 +309,16 @@ fn narrow_scoped_traceability_inputs_for_go(
         context_items,
         graph,
     })
+}
+
+fn sort_traceability_items_by_stable_id(items: &mut [TraceabilityOwnedItem]) {
+    items.sort_by(|left, right| {
+        left.stable_id
+            .cmp(&right.stable_id)
+            .then_with(|| left.path.cmp(&right.path))
+            .then_with(|| left.name.cmp(&right.name))
+            .then_with(|| left.kind.cmp(&right.kind))
+    });
 }
 
 fn collect_item_paths_by_stable_id(
@@ -383,4 +395,87 @@ fn expand_execution_file_closure(
         }
     }
     closure
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::{BTreeMap, BTreeSet};
+    use std::path::PathBuf;
+
+    use crate::model::ModuleItemKind;
+    use crate::modules::analyze::traceability_core::{
+        TraceGraph, TraceabilityInputs, TraceabilityItemSupport, TraceabilityOwnedItem,
+    };
+
+    use super::narrow_scoped_traceability_inputs_for_go;
+    use super::super::boundary::ScopedTraceabilityBoundary;
+
+    fn owned_item(stable_id: &str) -> TraceabilityOwnedItem {
+        TraceabilityOwnedItem {
+            stable_id: stable_id.to_string(),
+            name: stable_id.to_string(),
+            kind: ModuleItemKind::Function,
+            path: PathBuf::from("pkg/main.go"),
+            public: true,
+            review_surface: true,
+            test_file: false,
+            module_ids: vec!["APP".to_string()],
+            mediated_reason: None,
+        }
+    }
+
+    fn stable_ids(items: &[TraceabilityOwnedItem]) -> Vec<String> {
+        items.iter().map(|item| item.stable_id.clone()).collect()
+    }
+
+    #[test]
+    fn scoped_input_narrowing_sorts_owned_items_by_stable_id() {
+        let unsorted_items = vec![
+            owned_item("pkg::zeta:30"),
+            owned_item("pkg::alpha:10"),
+            owned_item("pkg::middle:20"),
+        ];
+        let projected_item_ids = unsorted_items
+            .iter()
+            .map(|item| item.stable_id.clone())
+            .collect::<BTreeSet<_>>();
+        let boundary = ScopedTraceabilityBoundary {
+            projected_item_ids: projected_item_ids.clone(),
+            context_items: unsorted_items.clone(),
+            seed_ids: projected_item_ids.clone(),
+        };
+        let inputs = TraceabilityInputs {
+            repo_items: unsorted_items.clone(),
+            context_items: unsorted_items,
+            graph: TraceGraph {
+                edges: [("pkg::verifies:1".to_string(), projected_item_ids)]
+                    .into_iter()
+                    .collect(),
+                root_supports: [(
+                    "pkg::verifies:1".to_string(),
+                    TraceabilityItemSupport {
+                        name: "TestApp".to_string(),
+                        has_item_scoped_support: true,
+                        has_file_scoped_support: false,
+                        current_specs: ["APP.LIVE".to_string()].into_iter().collect(),
+                        planned_specs: BTreeSet::new(),
+                        deprecated_specs: BTreeSet::new(),
+                    },
+                )]
+                .into_iter()
+                .collect::<BTreeMap<_, _>>(),
+            },
+        };
+
+        let narrowed = narrow_scoped_traceability_inputs_for_go(boundary, inputs)
+            .expect("scoped inputs should narrow");
+
+        let expected = vec![
+            "pkg::alpha:10".to_string(),
+            "pkg::middle:20".to_string(),
+            "pkg::zeta:30".to_string(),
+        ];
+        assert_eq!(stable_ids(&narrowed.repo_items), expected);
+        assert_eq!(stable_ids(&narrowed.context_items), expected);
+    }
 }
