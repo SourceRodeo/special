@@ -82,6 +82,8 @@ pub(super) fn recover_stale_cache_lock_at(
         return Ok(false);
     }
 
+    // Move the stale lock out of the active path before counting recovery. Only
+    // the process that wins this rename has actually recovered the lock.
     let stale_path = stale_cache_lock_recovery_path(lock_path);
     match fs::rename(lock_path, &stale_path) {
         Ok(()) => {

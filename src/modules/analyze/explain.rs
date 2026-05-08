@@ -41,6 +41,8 @@ pub(crate) struct MetricExplanation {
 }
 
 pub(crate) fn metric_explanation(key: MetricExplanationKey) -> MetricExplanation {
+    // Keep this exhaustive instead of indexing a parallel table: metric labels
+    // are user-facing enough that enum reordering must not remap explanations.
     match key {
         MetricExplanationKey::CyclomaticTotal => explanation(
             "this is the combined branchiness across owned functions and methods.",
