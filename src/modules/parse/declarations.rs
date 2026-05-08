@@ -14,8 +14,8 @@ use crate::model::{
     PlannedRelease,
 };
 use crate::planned_syntax::{
-    DeclHeaderError, PlannedAnnotationContext, PlannedAnnotationError, PlannedSyntax,
-    parse_decl_header, parse_planned_annotation,
+    DeclHeaderError, PlannedAnnotationError, PlannedSyntax, parse_decl_header,
+    parse_planned_annotation,
 };
 pub(crate) use crate::text_lines::skip_blank_lines as skip_blank_doc_lines;
 
@@ -238,7 +238,7 @@ pub(crate) fn maybe_consume_standalone_planned(
     path: &Path,
     line: usize,
 ) -> StandalonePlanned {
-    let Some(result) = parse_planned_annotation(text, PlannedAnnotationContext::Standalone) else {
+    let Some(result) = parse_planned_annotation(text) else {
         return StandalonePlanned::Absent;
     };
 

@@ -6,9 +6,8 @@ Raw spec lifecycle marker syntax parsing in `src/parser/planned.rs`.
 use crate::model::{DeprecatedRelease, PlannedRelease};
 pub(super) use crate::planned_syntax::DeclHeaderError;
 use crate::planned_syntax::{
-    ParsedDeclHeader, ParsedDeprecatedAnnotation, ParsedPlannedAnnotation,
-    PlannedAnnotationContext, PlannedAnnotationError, PlannedSyntax, parse_decl_header,
-    parse_deprecated_annotation, parse_planned_annotation,
+    ParsedDeclHeader, ParsedDeprecatedAnnotation, ParsedPlannedAnnotation, PlannedAnnotationError,
+    PlannedSyntax, parse_decl_header, parse_deprecated_annotation, parse_planned_annotation,
 };
 
 pub(super) type DeclHeader<'a> = ParsedDeclHeader<'a>;
@@ -25,7 +24,7 @@ impl<'a> DeclHeader<'a> {
 pub(super) fn parse_standalone_planned(
     text: &str,
 ) -> Option<Result<Option<PlannedRelease>, PlannedAnnotationError>> {
-    parse_planned_annotation(text, PlannedAnnotationContext::Standalone).map(
+    parse_planned_annotation(text).map(
         |result: Result<ParsedPlannedAnnotation, PlannedAnnotationError>| {
             result.map(|annotation| annotation.release)
         },
@@ -35,7 +34,7 @@ pub(super) fn parse_standalone_planned(
 pub(super) fn parse_standalone_deprecated(
     text: &str,
 ) -> Option<Result<Option<DeprecatedRelease>, PlannedAnnotationError>> {
-    parse_deprecated_annotation(text, PlannedAnnotationContext::Standalone).map(
+    parse_deprecated_annotation(text).map(
         |result: Result<ParsedDeprecatedAnnotation, PlannedAnnotationError>| {
             result.map(|annotation| annotation.release)
         },
