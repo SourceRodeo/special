@@ -134,9 +134,8 @@ fn collect_findings(
     source: &str,
     findings: &mut Vec<ArchitectureLongExactProseAssertion>,
 ) {
-    match language {
-        TestLanguage::Rust => collect_rust_node(root, path, node, source, findings),
-        _ => {}
+    if let TestLanguage::Rust = language {
+        collect_rust_node(root, path, node, source, findings);
     }
 
     if let Some(literal) = string_literal(node, source) {

@@ -24,6 +24,12 @@ all targets,
 all features, and
 deny warnings.
 
+`python3 scripts/tag-release.py X.Y.Z --validate` records deterministic
+release validation evidence
+for the release script's core command set. That evidence is narrower than the
+broader readiness pass above; run the broader pass before using `--validate`
+as the release artifact.
+
 ## Release Review
 
 The release-review wrapper is manual, local, and

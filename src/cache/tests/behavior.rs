@@ -257,7 +257,7 @@ fn language_pack_scope_facts_fingerprint_reports_unreadable_sources() {
     let mut permissions = std::fs::metadata(&source_file)
         .expect("source metadata should be readable")
         .permissions();
-    permissions.set_mode(0);
+    permissions.set_mode(0o0);
     std::fs::set_permissions(&source_file, permissions).expect("source should be made unreadable");
 
     let error = language_pack_scope_facts_fingerprint(

@@ -1,3 +1,8 @@
+/**
+@module SPECIAL.TESTS.SUPPORT.TEMP_PROJECT
+Shared RAII temporary project directory support for unit tests that need disposable repo roots without leaking filesystem state after panics.
+*/
+// @fileimplements SPECIAL.TESTS.SUPPORT.TEMP_PROJECT
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};

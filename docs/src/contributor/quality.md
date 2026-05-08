@@ -26,6 +26,12 @@ Clippy is pinned through the quality test surface:
 [all features](documents://spec/SPECIAL.QUALITY.RUST.CLIPPY.PINNED_FLAGS.ALL_FEATURES), and
 [deny warnings](documents://spec/SPECIAL.QUALITY.RUST.CLIPPY.PINNED_FLAGS.DENY_WARNINGS).
 
+`python3 scripts/tag-release.py X.Y.Z --validate` records deterministic
+[release validation evidence](documents://spec/SPECIAL.DISTRIBUTION.RELEASE_FLOW.VALIDATION_EVIDENCE)
+for the release script's core command set. That evidence is narrower than the
+broader readiness pass above; run the broader pass before using `--validate`
+as the release artifact.
+
 ## Release Review
 
 The release-review wrapper is manual, local, and

@@ -11,8 +11,6 @@ use crate::modules::analyze::traceability_core::{
     TraceabilityOwnedItem, build_projected_traceability_contract,
     build_projected_traceability_reference_from_projected_items,
 };
-#[cfg(test)]
-use crate::modules::analyze::traceability_core::use_rust_reference_traceability_kernel_for_tests;
 
 /// Current Go scoped traceability separates projected output items from the
 /// broader working context still used to collect raw reverse-call information.
@@ -65,17 +63,11 @@ impl ScopedTraceabilityBoundary {
         &self,
         graph: &TraceGraph,
     ) -> Result<ScopedTraceabilityContract, String> {
-        #[cfg(test)]
-        use_rust_reference_traceability_kernel_for_tests();
-
         build_projected_traceability_contract(self.projected_item_ids.clone(), graph)
     }
 
     // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn reference(&self, graph: &TraceGraph) -> Result<ScopedTraceabilityReference, String> {
-        #[cfg(test)]
-        use_rust_reference_traceability_kernel_for_tests();
-
         build_projected_traceability_reference_from_projected_items(
             self.projected_item_ids.clone(),
             graph,

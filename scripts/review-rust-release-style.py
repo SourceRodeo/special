@@ -267,6 +267,12 @@ def main() -> int:
                 + ", ".join(sorted(forbidden_mock_envs))
             )
 
+    if running_in_ci() and not args.dry_run and not args.allow_mock:
+        raise SystemExit(
+            "rust release review is local-only and must not invoke Codex from CI; "
+            "use --dry-run for wrapper verification"
+        )
+
     if has_jj_root(root):
         backend = "jj"
     elif has_git_root(root):
@@ -319,11 +325,6 @@ def main() -> int:
                 )
             )
             return 0
-        if running_in_ci():
-            raise SystemExit(
-                "rust release review is local-only and must not invoke model runners from CI; "
-                "use --dry-run for wrapper verification"
-            )
         status(
             f"planned {swarm_count_value} DeepSeek swarm review agent(s) across {len(review_files)} repo text file(s)"
         )
@@ -416,12 +417,6 @@ def main() -> int:
         )
         print(json.dumps(preview, indent=2))
         return 0
-
-    if running_in_ci():
-        raise SystemExit(
-            "rust release review is local-only and must not invoke Codex from CI; "
-            "use --dry-run for wrapper verification"
-        )
 
     if not chunk_records:
         payload = write_merged_review(output_path, base, full_scan, [], runner_warnings, 0, 0, True)

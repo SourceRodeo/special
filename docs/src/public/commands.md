@@ -77,6 +77,8 @@ Contract details: `special arch` supports
 [coupling](documents://spec/SPECIAL.MODULE_COMMAND.METRICS.COUPLING),
 [quality](documents://spec/SPECIAL.MODULE_COMMAND.METRICS.QUALITY), and
 [item-signal explanations](documents://spec/SPECIAL.MODULE_COMMAND.METRICS.ITEM_SIGNALS.EXPLANATIONS).
+Verbose JSON metrics also include dependency targets for language packs that
+can report them.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.PATTERNS
 @applies DOCS.COMMAND_REFERENCE_ENTRY
@@ -89,6 +91,7 @@ declared repeated implementation structures and their known applications.
 special patterns
 special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
 special patterns --metrics
+special patterns --json
 ```
 
 Representative output:
@@ -121,6 +124,7 @@ relationships and build generated docs output.
 ```sh
 special docs
 special docs --metrics
+special docs --json
 special docs --target docs/src
 special docs build
 special docs build docs/src/public docs

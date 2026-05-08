@@ -63,6 +63,9 @@ The audit reports
 [planned specs and unsupported current specs](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.TARGET_AUDIT)
 directly in the docs metrics output.
 
+Use `--json` when another tool needs the same docs relationship view in a
+structured form.
+
 Use [target coverage](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE)
 when the question is which specs, modules, areas, and patterns are documented
 by generated docs, internal docs, or not at all.

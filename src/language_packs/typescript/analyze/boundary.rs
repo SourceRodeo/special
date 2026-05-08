@@ -7,12 +7,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use crate::modules::analyze::traceability_core::{
-    ProjectedProofProtocol, ProjectedTraceabilityContract,
-    ProjectedTraceabilityReference, ReverseClosureReference, TraceabilityInputs,
-    build_projected_traceability_reference_from_projected_items, normalize_path_for_known_sources,
+    ProjectedProofProtocol, ProjectedTraceabilityContract, ProjectedTraceabilityReference,
+    ReverseClosureReference, TraceabilityInputs, build_projected_traceability_reference_from_projected_items,
+    normalize_path_for_known_sources,
 };
-#[cfg(test)]
-use crate::modules::analyze::traceability_core::use_rust_reference_traceability_kernel_for_tests;
 
 /// TypeScript scoped traceability currently uses a broad file-level working
 /// closure.
@@ -108,9 +106,6 @@ impl ScopedTraceabilityBoundary {
         candidate_files: &[PathBuf],
         full_inputs: &TraceabilityInputs,
     ) -> Result<ScopedTraceabilityReference, String> {
-        #[cfg(test)]
-        use_rust_reference_traceability_kernel_for_tests();
-
         let projected_item_ids = projected_item_ids(self, candidate_files, full_inputs);
         let projected_item_ids = projected_item_ids.into_iter().collect::<BTreeSet<_>>();
         let projected_reference = build_projected_traceability_reference_from_projected_items(

@@ -15,8 +15,6 @@ use crate::modules::analyze::{
         build_projected_traceability_reference_from_projected_items, owned_module_ids_for_path,
     },
 };
-#[cfg(test)]
-use crate::modules::analyze::traceability_core::use_rust_reference_traceability_kernel_for_tests;
 use crate::syntax::ParsedSourceGraph;
 
 use super::RustMediatedReason;
@@ -89,17 +87,11 @@ impl ScopedTraceabilityBoundary {
         &self,
         graph: &TraceGraph,
     ) -> Result<ScopedTraceabilityContract, String> {
-        #[cfg(test)]
-        use_rust_reference_traceability_kernel_for_tests();
-
         build_projected_traceability_contract(self.projected_item_ids.clone(), graph)
     }
 
     // @applies TRACEABILITY.SCOPED_PROJECTED_KERNEL
     pub(super) fn reference(&self, graph: &TraceGraph) -> Result<ScopedTraceabilityReference, String> {
-        #[cfg(test)]
-        use_rust_reference_traceability_kernel_for_tests();
-
         build_projected_traceability_reference_from_projected_items(
             self.projected_item_ids.clone(),
             graph,

@@ -365,14 +365,14 @@ fn exact_copy_assertion() {
         .as_array()
         .expect("long prose details should be present");
     assert!(details.iter().any(|detail| {
-        detail["path"] == Value::from("tests/exact_prose.rs")
-            && detail["language"] == Value::from("rust")
-            && detail["callee"] == Value::from("contains")
+        detail["path"] == "tests/exact_prose.rs"
+            && detail["language"] == "rust"
+            && detail["callee"] == "contains"
     }));
     assert!(details.iter().any(|detail| {
-        detail["path"] == Value::from("test_helper_prose.py")
-            && detail["language"] == Value::from("python")
-            && detail["callee"] == Value::from("contains")
+        detail["path"] == "test_helper_prose.py"
+            && detail["language"] == "python"
+            && detail["callee"] == "contains"
     }));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
