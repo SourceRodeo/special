@@ -39,6 +39,11 @@ repo has repeated billing/export shapes, a few pattern candidates, prose worth
 reviewing deliberately, and implementation paths Special cannot yet connect to
 current proof.
 
+When `--metrics` has enough detail to make the next review step concrete, it
+also prints cleanup targets:
+top files, representative item names, and the structural move to consider for
+each signal.
+
 ## Source Outside Architecture
 
 `source outside architecture`

@@ -145,6 +145,9 @@ special health reports uncaptured natural-language prose outside configured docs
 @spec SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_PROSE_TEST_LITERALS
 special health reports long human-prose string literals embedded in recognized test and fixture source files, including language-specific test filename conventions, as non-blocking repo-wide quality data.
 
+@spec SPECIAL.HEALTH_COMMAND.METRICS.CLEANUP_TARGETS
+special health --metrics prints compact human cleanup targets with representative item names and suggested structural next moves for raw health signals.
+
 */
 // @fileimplements SPECIAL.TESTS.CLI_REPO
 #[path = "support/cli.rs"]
@@ -423,6 +426,25 @@ fn repo_metrics_text_surfaces_repo_health_counts() {
     assert!(stdout.contains("alpha.rs: 1"));
     assert!(stdout.contains("beta.rs: 1"));
     assert!(!stdout.contains("source outside architecture meaning:"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.METRICS.CLEANUP_TARGETS
+fn repo_metrics_text_surfaces_cleanup_targets_with_representative_items() {
+    let root = temp_repo_dir("special-cli-repo-metrics-cleanup-targets");
+    write_duplicate_item_signals_module_analysis_fixture(&root);
+
+    let output = run_special(&root, &["health", "--metrics"]);
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("cleanup targets"));
+    assert!(stdout.contains("duplicate source shapes"));
+    assert!(stdout.contains("next: decide whether each cluster wants a helper extraction"));
+    assert!(stdout.contains("alpha.rs: first_duplicate (DEMO)"));
+    assert!(stdout.contains("beta.rs: second_duplicate (DEMO)"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

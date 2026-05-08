@@ -321,6 +321,7 @@ Contract details: `special health` supports
 [HTML](documents://spec/SPECIAL.HEALTH_COMMAND.HTML). Metrics cover
 [source outside architecture](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS),
 [duplicate source shapes](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION),
+[cleanup targets](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.CLEANUP_TARGETS),
 [untraced implementation](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
 [missing pattern applications](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS),
 [pattern clusters](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION),

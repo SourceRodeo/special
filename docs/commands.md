@@ -306,6 +306,7 @@ JSON, and
 HTML. Metrics cover
 source outside architecture,
 duplicate source shapes,
+cleanup targets,
 untraced implementation,
 missing pattern applications,
 pattern clusters,
