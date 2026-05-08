@@ -220,6 +220,20 @@ pub struct OverviewDocument {
     pub traceability: Option<OverviewTraceabilitySummary>,
 }
 
+// Keep the curated root-overview recommendations in one place. The CLI parse
+// tests prove each listed command still belongs to the current command surface.
+pub const OVERVIEW_LOOK_NEXT_COMMANDS: &[&str] = &[
+    "special lint",
+    "special specs",
+    "special specs --metrics",
+    "special specs --unverified",
+    "special arch",
+    "special arch --metrics",
+    "special arch --unimplemented",
+    "special health",
+    "special health --metrics",
+];
+
 #[derive(Debug, Clone, Serialize)]
 pub struct OverviewLintSummary {
     pub errors: usize,

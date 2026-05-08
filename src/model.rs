@@ -32,8 +32,8 @@ pub use core::{
 };
 pub use overview::{
     ArchitectureMetricsSummary, DocumentationCoverageSummary, DocumentationTargetCoverage,
-    GroupedCount, LintReport, ModuleDocument, OverviewArchSummary, OverviewDocument,
-    OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary,
+    GroupedCount, LintReport, ModuleDocument, OVERVIEW_LOOK_NEXT_COMMANDS, OverviewArchSummary,
+    OverviewDocument, OverviewHealthSummary, OverviewLintSummary, OverviewSpecsSummary,
     RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument, RepoMetricsSummary,
     RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
     RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary, grouped_count_map, grouped_counts,

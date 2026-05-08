@@ -3,7 +3,7 @@
 Renders the repo overview summary into human-readable text output.
 */
 // @fileimplements SPECIAL.RENDER.TEXT.OVERVIEW
-use crate::model::OverviewDocument;
+use crate::model::{OVERVIEW_LOOK_NEXT_COMMANDS, OverviewDocument};
 
 pub(in crate::render) fn render_overview_text(document: &OverviewDocument) -> String {
     let mut output = String::from("special\n");
@@ -45,15 +45,11 @@ pub(in crate::render) fn render_overview_text(document: &OverviewDocument) -> St
     ));
 
     output.push_str("  look next\n");
-    output.push_str("    special lint\n");
-    output.push_str("    special specs\n");
-    output.push_str("    special specs --metrics\n");
-    output.push_str("    special specs --unverified\n");
-    output.push_str("    special arch\n");
-    output.push_str("    special arch --metrics\n");
-    output.push_str("    special arch --unimplemented\n");
-    output.push_str("    special health\n");
-    output.push_str("    special health --metrics\n");
+    for command in OVERVIEW_LOOK_NEXT_COMMANDS {
+        output.push_str("    ");
+        output.push_str(command);
+        output.push('\n');
+    }
 
     output
 }

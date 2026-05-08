@@ -141,6 +141,23 @@ enum Command {
     Skills(SkillsArgs),
 }
 
+#[cfg(test)]
+mod tests {
+    use super::Cli;
+    use crate::model::OVERVIEW_LOOK_NEXT_COMMANDS;
+    use clap::Parser;
+
+    #[test]
+    fn overview_recommendations_parse_as_current_cli_commands() {
+        for command in OVERVIEW_LOOK_NEXT_COMMANDS {
+            let argv: Vec<&str> = command.split_whitespace().collect();
+            Cli::try_parse_from(argv).unwrap_or_else(|err| {
+                panic!("overview recommendation `{command}` should parse: {err}")
+            });
+        }
+    }
+}
+
 pub fn run_from_env() -> ExitCode {
     let args: Vec<_> = env::args_os().collect();
 
