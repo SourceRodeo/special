@@ -65,6 +65,7 @@ pub(super) struct CountsSectionHtmlTemplate<'a> {
 pub(super) struct MetricsSectionHtmlTemplate {
     pub(super) title: String,
     pub(super) counts_html: String,
+    pub(super) explanations_html: String,
 }
 
 #[derive(Template)]
@@ -212,6 +213,7 @@ pub(super) fn render_metrics_section_html(title: &str, counts: &[HtmlCount]) -> 
     render_template(&MetricsSectionHtmlTemplate {
         title: title.to_string(),
         counts_html,
+        explanations_html: String::new(),
     })
 }
 

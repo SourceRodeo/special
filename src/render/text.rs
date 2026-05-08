@@ -7,6 +7,7 @@ use crate::model::{
     ArchitectureMetricsSummary, GroupedCount, PatternDocument, PatternNode, RepoMetricsSummary,
     SpecMetricsSummary,
 };
+use crate::render::projection::ProjectedExplanation;
 
 mod analysis;
 mod attachments;
@@ -190,16 +191,35 @@ pub(super) fn render_spec_metrics_text(metrics: &SpecMetricsSummary) -> String {
     output
 }
 
-pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary) -> String {
+pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary, verbose: bool) -> String {
     let mut output = String::new();
-    for section in crate::render::projection::project_repo_health_metric_sections(metrics) {
+    for section in crate::render::projection::project_repo_health_metric_sections(metrics, verbose)
+    {
         output.push_str(section.title);
         output.push('\n');
         for count in section.counts {
             output.push_str(&format!("  {}: {}\n", count.label, count.value));
         }
+        append_metric_explanations_text(&mut output, "  ", &section.explanations);
     }
     output
+}
+
+fn append_metric_explanations_text(
+    output: &mut String,
+    indent: &str,
+    explanations: &[ProjectedExplanation],
+) {
+    for explanation in explanations {
+        output.push_str(&format!(
+            "{indent}{} meaning: {}\n",
+            explanation.label, explanation.plain
+        ));
+        output.push_str(&format!(
+            "{indent}{} exact: {}\n",
+            explanation.label, explanation.precise
+        ));
+    }
 }
 
 pub(super) fn render_arch_metrics_text(metrics: &ArchitectureMetricsSummary) -> String {

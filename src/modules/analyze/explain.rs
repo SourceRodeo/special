@@ -21,6 +21,9 @@ pub(crate) enum MetricExplanationKey {
     UnreachedItem,
     UnreachedItems,
     DuplicateItems,
+    UntracedImplementation,
+    PossiblePatternClusters,
+    PossibleMissingPatternApplications,
     LongProseOutsideDocs,
     LongExactProseAssertions,
     HighestComplexityItem,
@@ -107,6 +110,18 @@ pub(crate) fn metric_explanation(key: MetricExplanationKey) -> MetricExplanation
         MetricExplanationKey::DuplicateItems => explanation(
             "this counts owned items whose parser-normalized structure and substantive operation profile match another owned item, so they may indicate repeated implementation logic worth consolidating or reviewing.",
             "count of analyzed owned items whose structural fingerprint and substantive call/control-flow profile match at least one other analyzed owned item.",
+        ),
+        MetricExplanationKey::UntracedImplementation => explanation(
+            "this counts implementation Special can see but cannot connect to a current spec, static mediation, or test-backed support path.",
+            "count of analyzed implementation items in the unexplained traceability bucket.",
+        ),
+        MetricExplanationKey::PossiblePatternClusters => explanation(
+            "this counts repeated structural groups that may deserve a named pattern or an intentional no-pattern decision.",
+            "count of statistically similar source-shape clusters surfaced by pattern analysis.",
+        ),
+        MetricExplanationKey::PossibleMissingPatternApplications => explanation(
+            "this counts places whose structure resembles a defined pattern but lacks an explicit pattern application.",
+            "count of source or docs bodies above the configured pattern-similarity threshold without a matching applied pattern.",
         ),
         MetricExplanationKey::LongProseOutsideDocs => explanation(
             "this highlights substantial prose outside configured docs sources and without docs evidence, so explanatory text can be promoted, linked, or removed deliberately.",

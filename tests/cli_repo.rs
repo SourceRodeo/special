@@ -402,6 +402,25 @@ fn repo_metrics_text_surfaces_repo_health_counts() {
     assert!(stdout.contains("duplicate source shapes by file"));
     assert!(stdout.contains("alpha.rs: 1"));
     assert!(stdout.contains("beta.rs: 1"));
+    assert!(!stdout.contains("source outside architecture meaning:"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.METRICS
+fn repo_metrics_verbose_text_surfaces_metric_explanations() {
+    let root = temp_repo_dir("special-cli-repo-metrics-explanations");
+    write_duplicate_item_signals_module_analysis_fixture(&root);
+
+    let output = run_special(&root, &["health", "--metrics", "--verbose"]);
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("source outside architecture meaning:"));
+    assert!(stdout.contains("untraced implementation exact:"));
+    assert!(stdout.contains("possible pattern clusters meaning:"));
+    assert!(stdout.contains("exact long-prose test assertions exact:"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

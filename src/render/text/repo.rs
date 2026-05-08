@@ -15,7 +15,7 @@ pub(in crate::render) fn render_repo_text(document: &RepoDocument, verbose: bool
     let document = project_repo_document(document, verbose);
     let mut output = String::from("special health\n");
     if let Some(metrics) = &document.metrics {
-        output.push_str(&render_repo_metrics_text(metrics));
+        output.push_str(&render_repo_metrics_text(metrics, verbose));
     }
     if let Some(repo_signals) = document
         .analysis

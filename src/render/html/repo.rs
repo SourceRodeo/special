@@ -12,8 +12,8 @@ use crate::render::projection::{
 
 use super::super::templates::render_template;
 use super::{
-    HtmlCount, RepoPageHtmlTemplate, format_repo_signals_html, format_repo_traceability_html,
-    render_metrics_section_html,
+    ExplanationsHtmlTemplate, HtmlCount, RepoPageHtmlTemplate, format_repo_signals_html,
+    format_repo_traceability_html, projected_explanation, render_metrics_section_html,
 };
 
 pub(in crate::render) fn render_repo_html(document: &RepoDocument, verbose: bool) -> String {
@@ -21,7 +21,7 @@ pub(in crate::render) fn render_repo_html(document: &RepoDocument, verbose: bool
     let metrics_html = document
         .metrics
         .as_ref()
-        .map(format_repo_metrics_html)
+        .map(|metrics| format_repo_metrics_html(metrics, verbose))
         .unwrap_or_default();
     let repo_signals_html = document
         .analysis
@@ -45,8 +45,8 @@ pub(in crate::render) fn render_repo_html(document: &RepoDocument, verbose: bool
     })
 }
 
-fn format_repo_metrics_html(metrics: &RepoMetricsSummary) -> String {
-    project_repo_health_metric_sections(metrics)
+fn format_repo_metrics_html(metrics: &RepoMetricsSummary, verbose: bool) -> String {
+    project_repo_health_metric_sections(metrics, verbose)
         .into_iter()
         .map(render_projected_metric_section_html)
         .collect()
@@ -61,5 +61,20 @@ fn render_projected_metric_section_html(section: ProjectedRepoMetricSection) -> 
             value: count.value,
         })
         .collect::<Vec<_>>();
-    render_metrics_section_html(section.title, &counts)
+    if section.explanations.is_empty() {
+        return render_metrics_section_html(section.title, &counts);
+    }
+    let counts_html = render_template(&super::CountsSectionHtmlTemplate { counts: &counts });
+    let explanations = section
+        .explanations
+        .iter()
+        .map(projected_explanation)
+        .collect::<Vec<_>>();
+    render_template(&super::MetricsSectionHtmlTemplate {
+        title: section.title.to_string(),
+        counts_html,
+        explanations_html: render_template(&ExplanationsHtmlTemplate {
+            explanations: &explanations,
+        }),
+    })
 }

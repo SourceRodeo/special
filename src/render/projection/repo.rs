@@ -7,11 +7,15 @@ use crate::model::{
     ArchitectureRepoSignalsSummary, GroupedCount, RepoDocument, RepoMetricsSummary,
     RepoTraceabilityMetrics,
 };
+use crate::modules::analyze::explain::{MetricExplanationKey, metric_explanation};
+
+use super::ProjectedExplanation;
 
 #[derive(Debug, Clone)]
 pub(in crate::render) struct ProjectedRepoMetricSection {
     pub(in crate::render) title: &'static str,
     pub(in crate::render) counts: Vec<ProjectedRepoMetricCount>,
+    pub(in crate::render) explanations: Vec<ProjectedExplanation>,
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +40,7 @@ pub(in crate::render) fn project_repo_document_json(
 
 pub(in crate::render) fn project_repo_health_metric_sections(
     metrics: &RepoMetricsSummary,
+    verbose: bool,
 ) -> Vec<ProjectedRepoMetricSection> {
     let mut sections = vec![ProjectedRepoMetricSection {
         title: "summary",
@@ -69,6 +74,9 @@ pub(in crate::render) fn project_repo_health_metric_sections(
                 metrics.tests.exact_long_prose_assertions,
             ),
         ],
+        explanations: verbose
+            .then(repo_health_summary_explanations)
+            .unwrap_or_default(),
     }];
 
     push_grouped_metric_section(
@@ -130,6 +138,7 @@ fn push_grouped_metric_section(
                 value: count.count.to_string(),
             })
             .collect(),
+        explanations: Vec::new(),
     });
 }
 
@@ -178,6 +187,7 @@ fn project_repo_traceability_metric_section(
                 metrics.unexplained_module_isolated_items,
             ),
         ],
+        explanations: Vec::new(),
     }
 }
 
@@ -185,6 +195,48 @@ fn metric_count(label: impl Into<String>, value: usize) -> ProjectedRepoMetricCo
     ProjectedRepoMetricCount {
         label: label.into(),
         value: value.to_string(),
+    }
+}
+
+fn repo_health_summary_explanations() -> Vec<ProjectedExplanation> {
+    vec![
+        repo_health_explanation(
+            "source outside architecture",
+            MetricExplanationKey::UnownedItems,
+        ),
+        repo_health_explanation(
+            "untraced implementation",
+            MetricExplanationKey::UntracedImplementation,
+        ),
+        repo_health_explanation(
+            "duplicate source shapes",
+            MetricExplanationKey::DuplicateItems,
+        ),
+        repo_health_explanation(
+            "possible pattern clusters",
+            MetricExplanationKey::PossiblePatternClusters,
+        ),
+        repo_health_explanation(
+            "possible missing pattern applications",
+            MetricExplanationKey::PossibleMissingPatternApplications,
+        ),
+        repo_health_explanation(
+            "long prose outside docs",
+            MetricExplanationKey::LongProseOutsideDocs,
+        ),
+        repo_health_explanation(
+            "exact long-prose test assertions",
+            MetricExplanationKey::LongExactProseAssertions,
+        ),
+    ]
+}
+
+fn repo_health_explanation(label: &'static str, key: MetricExplanationKey) -> ProjectedExplanation {
+    let explanation = metric_explanation(key);
+    ProjectedExplanation {
+        label,
+        plain: explanation.plain,
+        precise: explanation.precise,
     }
 }
 
