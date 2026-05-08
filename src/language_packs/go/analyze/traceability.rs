@@ -34,6 +34,8 @@ use crate::modules::analyze::{
     FileOwnership, ProgressHeartbeat, emit_analysis_status, read_owned_file_text,
 };
 
+const GOPLS_REFERENCE_ATTEMPTS: usize = 10;
+
 #[derive(Debug, Clone, Copy)]
 pub(super) struct GoTraceabilityPack;
 
@@ -658,7 +660,7 @@ impl GoLspClient {
             .map_err(|_| anyhow!("failed to build gopls uri for {}", absolute.display()))?;
         let character = query_item_character(&absolute, item)?;
         let mut callers = BTreeSet::new();
-        for attempt in 0..10 {
+        for attempt in 0..GOPLS_REFERENCE_ATTEMPTS {
             let response = self.request(
                 "textDocument/references",
                 json!({
@@ -674,8 +676,11 @@ impl GoLspClient {
             );
             let response = match response {
                 Ok(response) => response,
-                Err(error) if is_retryable_gopls_error(&error) && attempt < 9 => {
-                    std::thread::sleep(Duration::from_millis(200));
+                Err(error)
+                    if is_retryable_gopls_error(&error)
+                        && attempt + 1 < GOPLS_REFERENCE_ATTEMPTS =>
+                {
+                    std::thread::sleep(gopls_reference_retry_delay(attempt));
                     continue;
                 }
                 Err(error) => return Err(error),
@@ -819,9 +824,8 @@ fn start_gopls_client_for_items(
         "gopls started in {:.1}s",
         started_at.elapsed().as_secs_f32()
     ));
-    std::thread::sleep(Duration::from_millis(500));
     emit_analysis_status(&format!(
-        "gopls initialized workspace for {} indexed file(s) in {:.1}s",
+        "gopls handshake completed for {} indexed file(s) in {:.1}s",
         items.iter().map(|item| &item.path).collect::<BTreeSet<_>>().len(),
         started_at.elapsed().as_secs_f32()
     ));
@@ -872,7 +876,18 @@ fn query_item_character(path: &Path, item: &SourceCallableItem) -> Result<usize>
 }
 
 fn is_retryable_gopls_error(error: &anyhow::Error) -> bool {
-    error.to_string().contains("content modified")
+    let message = error.to_string().to_ascii_lowercase();
+    message.contains("content modified")
+        || message.contains("not ready")
+        || message.contains("not yet initialized")
+        || message.contains("not initialized")
+        || message.contains("initializing")
+        || message.contains("loading workspace")
+}
+
+fn gopls_reference_retry_delay(attempt: usize) -> Duration {
+    let multiplier = 1u64 << attempt.min(4);
+    Duration::from_millis(100 * multiplier)
 }
 
 fn build_callable_indexes(items: &[SourceCallableItem]) -> CallableIndexes {
@@ -1277,8 +1292,28 @@ mod tests {
 
     use crate::syntax::parse_source_graph;
 
-    use super::{build_tool_call_edges, collect_callable_items, collect_go_import_aliases};
+    use super::{
+        build_tool_call_edges, collect_callable_items, collect_go_import_aliases,
+        is_retryable_gopls_error,
+    };
     use crate::language_packs::go::analyze::toolchain::go_list_packages;
+
+    #[test]
+    fn retryable_gopls_errors_include_indexing_readiness_failures() {
+        assert!(is_retryable_gopls_error(&anyhow::anyhow!("content modified")));
+        assert!(is_retryable_gopls_error(&anyhow::anyhow!(
+            "gopls request textDocument/references failed: server not ready"
+        )));
+        assert!(is_retryable_gopls_error(&anyhow::anyhow!(
+            "gopls request textDocument/references failed: not yet initialized"
+        )));
+        assert!(is_retryable_gopls_error(&anyhow::anyhow!(
+            "gopls request textDocument/references failed: loading workspace"
+        )));
+        assert!(!is_retryable_gopls_error(&anyhow::anyhow!(
+            "gopls request textDocument/references failed: permission denied"
+        )));
+    }
 
     #[test]
     fn build_tool_call_edges_resolves_go_import_alias_targets() {
