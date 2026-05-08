@@ -113,7 +113,20 @@ impl TempDirGuard {
 
 impl Drop for TempDirGuard {
     fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.path);
+        if let Err(error) = remove_temp_dir(&self.path) {
+            eprintln!(
+                "special go analyzer: failed to remove temporary directory {}: {error}",
+                self.path.display()
+            );
+        }
+    }
+}
+
+fn remove_temp_dir(path: &Path) -> std::io::Result<()> {
+    match fs::remove_dir_all(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
     }
 }
 
@@ -144,7 +157,9 @@ mod tests {
 
     use crate::config::ProjectToolchain;
 
-    use super::{analysis_environment_fingerprint, create_temp_dir, tool_version_fingerprint};
+    use super::{
+        analysis_environment_fingerprint, create_temp_dir, remove_temp_dir, tool_version_fingerprint,
+    };
 
     #[test]
     fn create_temp_dir_uses_unique_paths_and_cleans_up_on_drop() {
@@ -164,6 +179,19 @@ mod tests {
 
         drop(second);
         assert!(!second_path.exists());
+    }
+
+    #[test]
+    fn remove_temp_dir_reports_real_cleanup_errors() {
+        let root = temp_root("special-go-temp-cleanup-error");
+        let file_path = root.join("not-a-directory");
+        fs::write(&file_path, "cache placeholder").expect("file fixture should be written");
+
+        let error = remove_temp_dir(&file_path).expect_err("file path should not clean as directory");
+        assert_ne!(error.kind(), std::io::ErrorKind::NotFound);
+        fs::remove_file(&file_path).expect("file fixture should be removed");
+        remove_temp_dir(&root).expect("temp root should be removed");
+        assert!(!root.exists());
     }
 
     #[test]
