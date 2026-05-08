@@ -1952,10 +1952,10 @@ fn validate_output_plan(files: &[(PathBuf, PathBuf)]) -> Result<()> {
             "docs output path must not equal an input path",
         )?;
         let normalized_output = normalize_existing_path(output);
-        if !outputs.insert(normalized_output) {
+        if !outputs.insert(normalized_output.clone()) {
             bail!("docs output maps multiple inputs to {}", output.display());
         }
-        if output.exists() && existing_file_contains_docs_evidence(output)? {
+        if normalized_output.exists() && existing_file_contains_docs_evidence(&normalized_output)? {
             bail!(
                 "refusing to overwrite docs evidence in {}; choose a separate output path",
                 output.display()

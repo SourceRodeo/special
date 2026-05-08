@@ -723,6 +723,32 @@ fn docs_output_refuses_to_overwrite_docs_evidence() {
     assert!(stderr.contains("refusing to overwrite docs evidence"));
 }
 
+#[cfg(unix)]
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
+fn docs_output_refuses_to_overwrite_symlinked_docs_evidence() {
+    let root = temp_repo_dir("special-cli-docs-overwrite-symlinked-evidence");
+    write_docs_fixture(&root);
+    fs::write(
+        root.join("source.md"),
+        "[CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("source docs markdown should be written");
+    fs::write(
+        root.join("canonical.md"),
+        "[Authored evidence](documents://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("existing evidence-bearing target should be written");
+    std::os::unix::fs::symlink(root.join("canonical.md"), root.join("public.md"))
+        .expect("output symlink should be created");
+
+    let output = run_special(&root, &["docs", "build", "source.md", "public.md"]);
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("refusing to overwrite docs evidence"));
+}
+
 #[test]
 // @verifies SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY
 fn docs_output_refuses_to_overwrite_markdown_authoring_lines() {
