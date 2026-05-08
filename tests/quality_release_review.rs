@@ -27,7 +27,7 @@ the swarm release-review mode divides repo text across review agents instead of 
 the swarm release-review mode preserves raw OpenCode agent findings as markdown instead of requiring model-authored JSON.
 
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT
-the release-review wrapper validates structured warning output against the review contract.
+the release-review wrapper validates structured warning output against the review contract, including the allowed warning category vocabulary.
 
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.CODE_ONLY_SURFACE
 release review operates only on the repo’s code/tooling surface, not general product/spec/architecture prose.
@@ -98,13 +98,13 @@ use std::{
 
 use support::{
     latest_reachable_semver_tag, latest_reachable_semver_tag_for_repo,
-    python_entrypoint_runtime_flag, python3_command, release_review_changed_line_ranges,
-    release_review_chunk_helper, release_review_chunks_for_files_and_contexts,
-    release_review_dry_run, release_review_extract_context_ranges,
-    release_review_extract_full_scan_context_ranges, release_review_merge_responses,
-    release_review_passes_for, release_review_python_helper, release_review_schema,
-    release_review_validate_response_shape_err, release_review_validate_response_shape_ok,
-    workflow_files,
+    python_entrypoint_runtime_flag, python3_command, release_review_allowed_warning_categories,
+    release_review_changed_line_ranges, release_review_chunk_helper,
+    release_review_chunks_for_files_and_contexts, release_review_dry_run,
+    release_review_extract_context_ranges, release_review_extract_full_scan_context_ranges,
+    release_review_merge_responses, release_review_passes_for, release_review_python_helper,
+    release_review_schema, release_review_validate_response_shape_err,
+    release_review_validate_response_shape_ok, workflow_files,
 };
 
 static TEMP_REVIEW_REPO_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -337,6 +337,77 @@ fn release_review_validator_rejects_non_string_warning_category_cleanly() {
         "stderr:\n{}",
         stderr
     );
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT
+fn release_review_warning_categories_match_schema_and_contract() {
+    let contract_categories = release_review_allowed_warning_categories()
+        .as_array()
+        .expect("contract categories should be an array")
+        .iter()
+        .map(|category| {
+            category
+                .as_str()
+                .expect("contract category should be text")
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+    let mut schema_categories = release_review_schema()["properties"]["warnings"]["items"]
+        ["properties"]["category"]["enum"]
+        .as_array()
+        .expect("schema category enum should be present")
+        .iter()
+        .map(|category| {
+            category
+                .as_str()
+                .expect("schema category should be text")
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+    schema_categories.sort();
+
+    assert_eq!(contract_categories, schema_categories);
+
+    for category in &contract_categories {
+        let payload = json!({
+            "baseline": null,
+            "full_scan": true,
+            "summary": "warn",
+            "warnings": [{
+                "id": "warn-1",
+                "category": category,
+                "severity": "warn",
+                "title": "Example warning",
+                "why_it_matters": "Warnings need stable categories.",
+                "evidence": [{"path": "src/lib.rs", "line": 1, "detail": "anchor"}],
+                "recommendation": "Use a supported category."
+            }]
+        });
+        release_review_validate_response_shape_ok(&payload.to_string());
+    }
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.STRUCTURED_OUTPUT
+fn release_review_validator_rejects_unlisted_warning_category() {
+    let payload = json!({
+        "baseline": null,
+        "full_scan": true,
+        "summary": "warn",
+        "warnings": [{
+            "id": "warn-1",
+            "category": "behavioral-regression",
+            "severity": "warn",
+            "title": "Example warning",
+            "why_it_matters": "Warnings need stable categories.",
+            "evidence": [{"path": "src/lib.rs", "line": 1, "detail": "anchor"}],
+            "recommendation": "Use a supported category."
+        }]
+    });
+    let stderr = release_review_validate_response_shape_err(&payload.to_string());
+
+    assert!(stderr.contains("allowed categories"), "stderr:\n{}", stderr);
 }
 
 #[test]

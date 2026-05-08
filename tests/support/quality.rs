@@ -63,6 +63,25 @@ pub fn release_review_schema() -> Value {
     .expect("release review schema should be valid json")
 }
 
+pub fn release_review_allowed_warning_categories() -> Value {
+    let script = r#"
+import importlib.util
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location(
+    "release_review_contract", root / "scripts" / "release_review_contract.py"
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(json.dumps(sorted(module.ALLOWED_WARNING_CATEGORIES)))
+"#;
+
+    release_review_python_helper(script, &[])
+}
+
 pub fn release_review_dry_run(args: &[&str]) -> Value {
     let output = python3_command()
         .arg("scripts/review-rust-release-style.py")
