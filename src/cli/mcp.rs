@@ -5,6 +5,9 @@ MCP server boundary for agent-facing access to Special's existing command projec
 @spec SPECIAL.MCP_COMMAND
 special mcp runs a stdio MCP server that speaks newline-delimited JSON-RPC and keeps stdout reserved for protocol messages.
 
+@spec SPECIAL.MCP_COMMAND.INITIALIZE_SEQUENCE
+special mcp rejects ordinary requests until the client sends `initialize` followed by `notifications/initialized`.
+
 @spec SPECIAL.MCP_COMMAND.TOOLS
 special mcp exposes controlled tools for root discovery plus existing Special inspection and validation surfaces.
 
@@ -57,6 +60,12 @@ struct McpStartup<'a> {
     plugin_special_version: Option<&'a str>,
 }
 
+#[derive(Default)]
+struct McpSession {
+    initialize_received: bool,
+    initialized_notification_received: bool,
+}
+
 pub(super) fn execute_mcp(args: McpArgs, current_dir: &Path) -> Result<ExitCode> {
     let stdin = io::stdin();
     let stdout = io::stdout();
@@ -81,6 +90,7 @@ where
     R: BufRead,
     W: Write,
 {
+    let mut session = McpSession::default();
     for line in reader.lines() {
         let line = line?;
         let trimmed = line.trim();
@@ -88,7 +98,7 @@ where
             continue;
         }
         let response = match serde_json::from_str::<Value>(trimmed) {
-            Ok(message) => handle_message(current_dir, message, startup),
+            Ok(message) => handle_message(current_dir, message, startup, &mut session),
             Err(error) => Some(error_response(
                 Value::Null,
                 -32700,
@@ -104,17 +114,37 @@ where
     Ok(())
 }
 
-fn handle_message(current_dir: &Path, message: Value, startup: &McpStartup<'_>) -> Option<Value> {
-    let id = message.get("id").cloned();
+fn handle_message(
+    current_dir: &Path,
+    message: Value,
+    startup: &McpStartup<'_>,
+    session: &mut McpSession,
+) -> Option<Value> {
     let method = message.get("method").and_then(Value::as_str);
 
+    if method == Some("notifications/initialized") {
+        if session.initialize_received {
+            session.initialized_notification_received = true;
+        }
+        return None;
+    }
+
+    let id = message.get("id").cloned();
     let id = id?;
     let Some(method) = method else {
         return Some(error_response(id, -32600, "request is missing method"));
     };
 
+    if method != "initialize" && !session.initialized_notification_received {
+        return Some(error_response(id, -32002, "MCP session is not initialized"));
+    }
+
     match method {
-        "initialize" => Some(success_response(id, initialize_result(startup))),
+        "initialize" => {
+            session.initialize_received = true;
+            session.initialized_notification_received = false;
+            Some(success_response(id, initialize_result(startup)))
+        }
         "ping" => Some(success_response(id, json!({}))),
         "tools/list" => Some(success_response(id, json!({ "tools": tool_definitions() }))),
         "tools/call" => Some(success_response(

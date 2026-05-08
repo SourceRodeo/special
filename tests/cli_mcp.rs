@@ -85,28 +85,54 @@ fn mcp_specs_tool_returns_special_projection_content() {
     let output = run_special_with_input(
         &root,
         &["mcp"],
+        &mcp_handshake_then(json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "special_specs",
+                "arguments": {
+                    "id": "EXPORT.CSV.HEADERS",
+                    "verbose": true
+                }
+            }
+        })),
+    );
+
+    assert!(output.status.success());
+    let responses = jsonrpc_responses(output.stdout);
+    let text = tool_text(&responses[1]);
+    assert!(text.contains("EXPORT.CSV.HEADERS"));
+    assert_eq!(responses[1]["result"]["isError"], false);
+}
+
+#[test]
+// @verifies SPECIAL.MCP_COMMAND.INITIALIZE_SEQUENCE
+fn mcp_rejects_tool_calls_before_initialized_notification() {
+    let root = temp_repo_dir("special-cli-mcp-rejects-uninitialized-tools");
+    write_mcp_fixture(&root);
+
+    let output = run_special_with_input(
+        &root,
+        &["mcp"],
         &format!(
             "{}\n",
             json!({
                 "jsonrpc": "2.0",
                 "id": 1,
-                "method": "tools/call",
-                "params": {
-                    "name": "special_specs",
-                    "arguments": {
-                        "id": "EXPORT.CSV.HEADERS",
-                        "verbose": true
-                    }
-                }
+                "method": "tools/list",
+                "params": {}
             })
         ),
     );
 
     assert!(output.status.success());
     let responses = jsonrpc_responses(output.stdout);
-    let text = tool_text(&responses[0]);
-    assert!(text.contains("EXPORT.CSV.HEADERS"));
-    assert_eq!(responses[0]["result"]["isError"], false);
+    assert_eq!(responses[0]["error"]["code"], -32002);
+    assert_eq!(
+        responses[0]["error"]["message"],
+        "MCP session is not initialized"
+    );
 }
 
 #[test]
@@ -144,21 +170,18 @@ fn mcp_docs_tool_returns_docs_metrics() {
     let output = run_special_with_input(
         &root,
         &["mcp"],
-        &format!(
-            "{}\n",
-            json!({
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "tools/call",
-                "params": {
-                    "name": "special_docs",
-                    "arguments": {
-                        "metrics": true,
-                        "format": "json"
-                    }
+        &mcp_handshake_then(json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "special_docs",
+                "arguments": {
+                    "metrics": true,
+                    "format": "json"
                 }
-            })
-        ),
+            }
+        })),
     );
 
     assert!(
@@ -167,8 +190,8 @@ fn mcp_docs_tool_returns_docs_metrics() {
         String::from_utf8_lossy(&output.stderr)
     );
     let responses = jsonrpc_responses(output.stdout);
-    assert_eq!(responses[0]["result"]["isError"], false);
-    let metrics: Value = serde_json::from_str(tool_text(&responses[0]))
+    assert_eq!(responses[1]["result"]["isError"], false);
+    let metrics: Value = serde_json::from_str(tool_text(&responses[1]))
         .expect("mcp docs metrics text should be json");
     assert_eq!(metrics["metrics"]["generated_pages"], 2);
     assert_eq!(metrics["metrics"]["local_doc_links"], 1);
@@ -189,21 +212,18 @@ fn mcp_docs_output_tool_scrubs_docs_output() {
     let output = run_special_with_input(
         &root,
         &["mcp"],
-        &format!(
-            "{}\n",
-            json!({
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "tools/call",
-                "params": {
-                    "name": "special_docs_output",
-                    "arguments": {
-                        "target": "docs/src",
-                        "output": "docs/dist"
-                    }
+        &mcp_handshake_then(json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "special_docs_output",
+                "arguments": {
+                    "target": "docs/src",
+                    "output": "docs/dist"
                 }
-            })
-        ),
+            }
+        })),
     );
 
     assert!(
@@ -212,7 +232,7 @@ fn mcp_docs_output_tool_scrubs_docs_output() {
         String::from_utf8_lossy(&output.stderr)
     );
     let responses = jsonrpc_responses(output.stdout);
-    assert_eq!(responses[0]["result"]["isError"], false);
+    assert_eq!(responses[1]["result"]["isError"], false);
     let rendered =
         fs::read_to_string(root.join("docs/dist/README.md")).expect("rendered docs should exist");
     assert!(rendered.contains("CSV exports include headers."));
@@ -246,6 +266,23 @@ fn jsonrpc_responses(stdout: Vec<u8>) -> Vec<Value> {
         .lines()
         .map(|line| serde_json::from_str(line).expect("stdout line should be json"))
         .collect()
+}
+
+fn mcp_handshake_then(request: Value) -> String {
+    format!(
+        "{}\n{}\n{}\n",
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {}
+        }),
+        json!({
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized"
+        }),
+        request
+    )
 }
 
 fn tool_text(response: &Value) -> &str {
