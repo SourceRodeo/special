@@ -37,8 +37,8 @@ fn parsed_repo_cache_single_flights_under_contention() {
         })
     };
 
-    let first = worker(Arc::clone(&barrier), root.clone());
-    let second = worker(Arc::clone(&barrier), root.clone());
+    let first = worker(Arc::clone(&barrier), root.to_path_buf());
+    let second = worker(Arc::clone(&barrier), root.to_path_buf());
     barrier.wait();
     std::thread::sleep(std::time::Duration::from_millis(25));
     drop(blocker);

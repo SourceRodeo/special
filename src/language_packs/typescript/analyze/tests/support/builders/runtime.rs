@@ -4,11 +4,12 @@ Shared TypeScript scoped traceability runtime pair builders.
 */
 // @fileimplements SPECIAL.LANGUAGE_PACKS.TYPESCRIPT.ANALYZE.TESTS.SUPPORT.BUILDERS.RUNTIME
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::language_packs::typescript::analyze as analyze;
 use crate::language_packs::typescript::analyze::boundary::derive_scoped_traceability_boundary;
 use crate::model::ArchitectureTraceabilitySummary;
+use crate::test_support::TempProjectDir;
 
 use super::super::helpers::{
     build_typescript_fixture_context, filter_summary_to_display_path,
@@ -22,7 +23,7 @@ pub(crate) fn build_direct_scoped_typescript_analysis_pair(
 ) -> Option<(
     ArchitectureTraceabilitySummary,
     ArchitectureTraceabilitySummary,
-    PathBuf,
+    TempProjectDir,
 )> {
     let (full, scoped, root) =
         build_direct_scoped_typescript_analysis_pair_raw(fixture_name, fixture_writer, scoped_path)?;
@@ -40,7 +41,7 @@ pub(crate) fn build_direct_scoped_typescript_analysis_pair_raw(
 ) -> Option<(
     ArchitectureTraceabilitySummary,
     ArchitectureTraceabilitySummary,
-    PathBuf,
+    TempProjectDir,
 )> {
     let (root, parsed_repo, parsed_architecture, source_files, file_ownership) =
         build_typescript_fixture_context(fixture_name, fixture_writer)?;

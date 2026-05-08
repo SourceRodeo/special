@@ -120,7 +120,7 @@ mod tests {
 
         let resolved = resolve_project_root(&nested).expect("root should resolve");
 
-        assert_eq!(resolved.root, root);
+        assert_eq!(resolved.root, root.to_path_buf());
         assert_eq!(resolved.source, RootSource::SpecialToml);
 
         fs::remove_dir_all(&resolved.root).expect("temp dir should be cleaned up");
@@ -213,7 +213,7 @@ mod tests {
 
         let resolved = resolve_project_root(&nested).expect("root should resolve");
 
-        assert_eq!(resolved.root, root);
+        assert_eq!(resolved.root, root.to_path_buf());
         assert_eq!(resolved.source, RootSource::Vcs);
         assert!(resolved.warning().is_some());
 

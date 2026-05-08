@@ -156,6 +156,7 @@ mod tests {
     use std::fs;
 
     use crate::config::ProjectToolchain;
+    use crate::test_support::TempProjectDir;
 
     use super::{
         analysis_environment_fingerprint, create_temp_dir, remove_temp_dir, tool_version_fingerprint,
@@ -223,13 +224,7 @@ mod tests {
         fs::remove_dir_all(root).expect("temp root should be removed");
     }
 
-    fn temp_root(prefix: &str) -> std::path::PathBuf {
-        let unique = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("system clock should be valid")
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!("{prefix}-{}-{unique}", std::process::id()));
-        fs::create_dir_all(&path).expect("temp root should exist");
-        path
+    fn temp_root(prefix: &str) -> TempProjectDir {
+        TempProjectDir::new(prefix)
     }
 }

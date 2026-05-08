@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use crate::model::ArchitectureTraceabilitySummary;
 use crate::modules::analyze::FileOwnership;
 use crate::modules::analyze::traceability_core::TraceabilityInputs;
+use crate::test_support::TempProjectDir;
 
 use crate::language_packs::typescript::analyze::boundary::{
     ScopedTraceabilityContract, ScopedTraceabilityReference,
@@ -24,7 +25,7 @@ mod runtime;
 pub(crate) type TypeScriptContractTestContext = (
     ArchitectureTraceabilitySummary,
     ScopedTraceabilityContract,
-    PathBuf,
+    TempProjectDir,
     crate::model::ParsedRepo,
     crate::model::ParsedArchitecture,
     std::collections::BTreeMap<PathBuf, FileOwnership<'static>>,
@@ -33,20 +34,20 @@ pub(crate) type TypeScriptContractTestContext = (
 pub(crate) type TypeScriptContractComparisonContext = (
     ScopedTraceabilityContract,
     ScopedTraceabilityContract,
-    PathBuf,
+    TempProjectDir,
 );
 
 pub(crate) type TypeScriptExactTargetContext = (
     ScopedTraceabilityContract,
     TraceabilityInputs,
-    PathBuf,
+    TempProjectDir,
 );
 
 pub(crate) type TypeScriptInputComparisonContext = (
     TraceabilityInputs,
     TraceabilityInputs,
     BTreeSet<String>,
-    PathBuf,
+    TempProjectDir,
 );
 
 pub(crate) type TypeScriptReferenceComparisonContext = (
@@ -54,7 +55,7 @@ pub(crate) type TypeScriptReferenceComparisonContext = (
     ScopedTraceabilityReference,
     TraceabilityInputs,
     TraceabilityInputs,
-    PathBuf,
+    TempProjectDir,
 );
 
 pub(crate) use comparisons::*;

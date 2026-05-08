@@ -24,6 +24,8 @@ mod render;
 mod skills;
 mod source_paths;
 mod syntax;
+#[cfg(test)]
+mod test_support;
 mod text_lines;
 mod tree_sitter_utils;
 

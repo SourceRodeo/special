@@ -346,7 +346,7 @@ mod tests {
             Some(ToolchainManager::Mise)
         );
         assert_eq!(command.get_program(), std::ffi::OsStr::new("mise"));
-        assert_eq!(command.get_current_dir(), Some(root.as_path()));
+        assert_eq!(command.get_current_dir(), Some(root.path()));
 
         fs::remove_dir_all(&root).expect("temp dir should be cleaned up");
     }

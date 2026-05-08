@@ -3,9 +3,10 @@
 Shared cache test helpers and repository fixtures in `src/cache/tests/support.rs`.
 */
 // @fileimplements SPECIAL.TESTS.CACHE.SUPPORT
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{Mutex, OnceLock};
-use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::test_support::TempProjectDir;
 
 pub(super) fn cache_test_lock() -> std::sync::MutexGuard<'static, ()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -14,14 +15,8 @@ pub(super) fn cache_test_lock() -> std::sync::MutexGuard<'static, ()> {
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-pub(super) fn temp_root(prefix: &str) -> PathBuf {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("time should move forward")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("{prefix}-{unique}"));
-    std::fs::create_dir_all(&root).expect("temp root should be created");
-    root
+pub(super) fn temp_root(prefix: &str) -> TempProjectDir {
+    TempProjectDir::new(prefix)
 }
 
 pub(super) fn write_repo_fixture(root: &Path) {

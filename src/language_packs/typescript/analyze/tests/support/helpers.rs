@@ -6,7 +6,6 @@ Shared TypeScript scoped traceability test fixtures, identity helpers, and closu
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::language_packs::typescript::analyze as analyze;
@@ -14,9 +13,10 @@ use crate::model::{ArchitectureTraceabilityItem, ArchitectureTraceabilitySummary
 use crate::modules::analyze::FileOwnership;
 use crate::modules::parse_architecture;
 use crate::parser::{ParseDialect, parse_repo};
+use crate::test_support::TempProjectDir;
 
 pub(crate) type TypeScriptFixtureContext = (
-    PathBuf,
+    TempProjectDir,
     crate::model::ParsedRepo,
     crate::model::ParsedArchitecture,
     Vec<PathBuf>,
@@ -143,14 +143,8 @@ pub(crate) fn index_file_ownership_for_test_owned(
     files
 }
 
-pub(crate) fn temp_repo_dir(prefix: &str) -> PathBuf {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("time should move forward")
-        .as_nanos();
-    let path = std::env::temp_dir().join(format!("{prefix}-{}-{timestamp}", std::process::id()));
-    fs::create_dir_all(&path).expect("temp repo dir should be created");
-    path
+pub(crate) fn temp_repo_dir(prefix: &str) -> TempProjectDir {
+    TempProjectDir::new(prefix)
 }
 
 pub(crate) fn resolve_scoped_source_file(
