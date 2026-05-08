@@ -59,10 +59,15 @@ pub(super) fn build_traceability_graph_facts(
     root: &Path,
     source_files: &[PathBuf],
 ) -> Result<Vec<u8>> {
-    let source_graphs = parse_go_source_graphs(root, source_files)?;
-    let static_edges = build_static_call_edges(root, &source_graphs);
+    let parsed_sources = parse_go_source_graph_inputs(root, source_files)?;
+    let static_edges = build_static_call_edges_with_import_aliases(
+        root,
+        &parsed_sources.source_graphs,
+        &parsed_sources.import_aliases,
+    );
     let facts = GoTraceabilityGraphFacts {
-        source_graphs: source_graphs
+        source_graphs: parsed_sources
+            .source_graphs
             .iter()
             .map(|(path, graph)| (path.clone(), CachedParsedSourceGraph::from_parsed(graph)))
             .collect(),
@@ -132,7 +137,20 @@ pub(super) fn parse_go_source_graphs(
     root: &Path,
     source_files: &[PathBuf],
 ) -> Result<BTreeMap<PathBuf, ParsedSourceGraph>> {
+    Ok(parse_go_source_graph_inputs(root, source_files)?.source_graphs)
+}
+
+pub(super) struct ParsedGoSourceGraphInputs {
+    pub(super) source_graphs: BTreeMap<PathBuf, ParsedSourceGraph>,
+    pub(super) import_aliases: BTreeMap<PathBuf, BTreeMap<String, String>>,
+}
+
+pub(super) fn parse_go_source_graph_inputs(
+    root: &Path,
+    source_files: &[PathBuf],
+) -> Result<ParsedGoSourceGraphInputs> {
     let mut graphs = BTreeMap::new();
+    let mut import_aliases = BTreeMap::new();
     for path in source_files.iter().filter(|path| is_go_path(path)) {
         let repo_path = path.strip_prefix(root).unwrap_or(path).to_path_buf();
         let text = read_owned_file_text(root, &repo_path)?;
@@ -142,9 +160,13 @@ pub(super) fn parse_go_source_graphs(
                 repo_path.display()
             )
         })?;
+        import_aliases.insert(repo_path.clone(), collect_go_import_aliases(&text));
         graphs.insert(repo_path, graph);
     }
-    Ok(graphs)
+    Ok(ParsedGoSourceGraphInputs {
+        source_graphs: graphs,
+        import_aliases,
+    })
 }
 
 // @applies ADAPTER.FACTS_TO_MODEL.TRACEABILITY_ITEMS
@@ -272,6 +294,21 @@ pub(super) fn build_static_call_edges(
     root: &Path,
     source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
 ) -> BTreeMap<String, BTreeSet<String>> {
+    let mut import_aliases = BTreeMap::<PathBuf, BTreeMap<String, String>>::new();
+    for path in source_graphs.keys() {
+        let Ok(text) = read_owned_file_text(root, path) else {
+            continue;
+        };
+        import_aliases.insert(path.clone(), collect_go_import_aliases(&text));
+    }
+    build_static_call_edges_with_import_aliases(root, source_graphs, &import_aliases)
+}
+
+pub(super) fn build_static_call_edges_with_import_aliases(
+    root: &Path,
+    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
+    import_aliases: &BTreeMap<PathBuf, BTreeMap<String, String>>,
+) -> BTreeMap<String, BTreeSet<String>> {
     let callable_items = collect_callable_items(source_graphs);
     let mut edges = build_parser_call_edges(source_graphs);
     if callable_items.is_empty() {
@@ -279,14 +316,14 @@ pub(super) fn build_static_call_edges(
     }
     merge_trace_graph_edges(
         &mut edges,
-        build_go_list_package_edges(root, source_graphs, &callable_items),
+        build_go_list_package_edges(root, import_aliases, &callable_items),
     );
     edges
 }
 
 fn build_go_list_package_edges(
     root: &Path,
-    source_graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
+    import_aliases: &BTreeMap<PathBuf, BTreeMap<String, String>>,
     callable_items: &[SourceCallableItem],
 ) -> BTreeMap<String, BTreeSet<String>> {
     let Some(packages) = go_list_packages(root) else {
@@ -318,14 +355,6 @@ fn build_go_list_package_edges(
             .entry((import_path.clone(), item.name.clone()))
             .or_default()
             .push(item.stable_id.clone());
-    }
-
-    let mut import_aliases = BTreeMap::<PathBuf, BTreeMap<String, String>>::new();
-    for path in source_graphs.keys() {
-        let Ok(text) = read_owned_file_text(root, path) else {
-            continue;
-        };
-        import_aliases.insert(path.clone(), collect_go_import_aliases(&text));
     }
 
     let mut edges = BTreeMap::<String, BTreeSet<String>>::new();

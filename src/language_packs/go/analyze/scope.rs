@@ -17,11 +17,12 @@ use crate::modules::analyze::{FileOwnership, emit_analysis_status};
 use crate::syntax::{ParsedSourceGraph, parse_source_graph};
 
 use super::boundary::derive_scoped_traceability_boundary;
-use super::dependencies::{collect_go_import_aliases, resolve_internal_imports};
+use super::dependencies::resolve_internal_imports;
 use super::traceability::{
     CachedParsedSourceGraph, CachedTraceabilityItemSupport, GoTraceabilityScopeFacts,
-    build_reverse_reachable_reference_edges, build_static_call_edges, collect_callable_items,
-    collect_repo_items, decode_traceability_graph_facts, parse_go_source_graphs,
+    build_reverse_reachable_reference_edges, build_static_call_edges,
+    build_static_call_edges_with_import_aliases, collect_callable_items, collect_repo_items,
+    decode_traceability_graph_facts, parse_go_source_graph_inputs, parse_go_source_graphs,
 };
 
 pub(super) fn build_traceability_scope_facts(
@@ -31,8 +32,10 @@ pub(super) fn build_traceability_scope_facts(
     parsed_repo: &ParsedRepo,
     file_ownership: &BTreeMap<PathBuf, FileOwnership>,
 ) -> Result<Vec<u8>> {
-    let source_graphs = parse_go_source_graphs(root, source_files)?;
-    let static_edges = build_static_call_edges(root, &source_graphs);
+    let parsed_sources = parse_go_source_graph_inputs(root, source_files)?;
+    let source_graphs = parsed_sources.source_graphs;
+    let static_edges =
+        build_static_call_edges_with_import_aliases(root, &source_graphs, &parsed_sources.import_aliases);
     let repo_items = collect_repo_items(&source_graphs, file_ownership);
     let known_source_paths = source_graphs.keys().cloned().collect::<Vec<_>>();
     let normalized_scoped_source_files = scoped_source_files
@@ -56,7 +59,7 @@ pub(super) fn build_traceability_scope_facts(
             .iter()
             .map(|(path, graph)| (path.clone(), CachedParsedSourceGraph::from_parsed(graph)))
             .collect(),
-        file_adjacency: build_internal_import_adjacency(root, source_graphs.keys().cloned()),
+        file_adjacency: build_internal_import_adjacency(root, &parsed_sources.import_aliases),
         static_edges,
         tool_reference_edges,
         root_supports: root_supports
@@ -344,16 +347,13 @@ fn collect_execution_closure_files(
 
 fn build_internal_import_adjacency(
     root: &Path,
-    source_files: impl IntoIterator<Item = PathBuf>,
+    import_aliases: &BTreeMap<PathBuf, BTreeMap<String, String>>,
 ) -> BTreeMap<PathBuf, BTreeSet<PathBuf>> {
     let mut adjacency = BTreeMap::new();
-    for path in source_files {
-        let Ok(text) = crate::modules::analyze::read_owned_file_text(root, &path) else {
-            continue;
-        };
-        let imported_files = collect_go_import_aliases(&text)
-            .into_values()
-            .flat_map(|import_path| resolve_internal_imports(root, &import_path))
+    for (path, aliases) in import_aliases {
+        let imported_files = aliases
+            .values()
+            .flat_map(|import_path| resolve_internal_imports(root, import_path))
             .map(|resolved| {
                 resolved
                     .strip_prefix(root)
@@ -361,7 +361,7 @@ fn build_internal_import_adjacency(
                     .to_path_buf()
             })
             .collect::<BTreeSet<_>>();
-        adjacency.insert(path, imported_files);
+        adjacency.insert(path.clone(), imported_files);
     }
     adjacency
 }
