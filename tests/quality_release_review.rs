@@ -77,6 +77,9 @@ release review does not leave Python bytecode artifacts in the repo.
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.MANUAL_ONLY
 release review runs only when invoked manually.
 
+@spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.QUOTA_GUIDANCE
+release review turns recognized model quota failures into rerun guidance for alternate review modes.
+
 @module SPECIAL.TESTS.QUALITY_RELEASE_REVIEW
 Release-review wrapper tests in `tests/quality_release_review.rs`.
 */
@@ -99,8 +102,9 @@ use support::{
     release_review_chunk_helper, release_review_chunks_for_files_and_contexts,
     release_review_dry_run, release_review_extract_context_ranges,
     release_review_extract_full_scan_context_ranges, release_review_merge_responses,
-    release_review_passes_for, release_review_schema, release_review_validate_response_shape_err,
-    release_review_validate_response_shape_ok, workflow_files,
+    release_review_passes_for, release_review_python_helper, release_review_schema,
+    release_review_validate_response_shape_err, release_review_validate_response_shape_ok,
+    workflow_files,
 };
 
 static TEMP_REVIEW_REPO_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -1264,6 +1268,39 @@ fn release_review_refuses_live_codex_invocation_in_ci() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("local-only"));
     assert!(stderr.contains("must not invoke Codex"));
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.QUOTA_GUIDANCE
+fn release_review_quota_guidance_recognizes_common_provider_markers() {
+    let result = release_review_python_helper(
+        r#"
+import importlib.util
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location(
+    "release_review_invoke", root / "scripts" / "release_review_invoke.py"
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+markers = ["rate_limit_exceeded", "usage limit", "too many requests", "HTTP 429"]
+print(json.dumps([
+    module.quota_guidance_for_error(marker, "fast") for marker in markers
+]))
+"#,
+        &[],
+    );
+
+    let guidance = result.as_array().expect("guidance should be an array");
+    assert_eq!(guidance.len(), 4);
+    assert!(guidance.iter().all(|value| {
+        value
+            .as_str()
+            .is_some_and(|text| text.contains("Rerun without --fast"))
+    }));
 }
 
 #[test]

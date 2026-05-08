@@ -34,6 +34,20 @@ OPENCODE_SWARM_PERMISSION = {
 PERMISSIONS_PROFILE = "release_review"
 MOCK_ALLOW_ENV = "SPECIAL_RUST_RELEASE_REVIEW_ALLOW_MOCK"
 MOCK_OUTPUT_ENV = "SPECIAL_RUST_RELEASE_REVIEW_MOCK_OUTPUT"
+QUOTA_ERROR_MARKERS = (
+    "quota",
+    "rate limit",
+    "rate_limit",
+    "rate-limit",
+    "usage limit",
+    "usage_limit",
+    "insufficient_quota",
+    "quota_exceeded",
+    "too many requests",
+    "429",
+    "5hr",
+    "7day",
+)
 
 
 class CodexInvocationError(RuntimeError):
@@ -52,6 +66,13 @@ def quota_guidance(model_mode: str) -> str | None:
             f"{DEFAULT_MODEL} review, or use --fast if Spark quota is available."
         )
     return None
+
+
+def quota_guidance_for_error(stderr: str, model_mode: str) -> str | None:
+    lower = stderr.lower()
+    if not any(marker in lower for marker in QUOTA_ERROR_MARKERS):
+        return None
+    return quota_guidance(model_mode)
 
 
 def codex_invocation_config(model: str) -> dict[str, object]:
@@ -266,12 +287,7 @@ def invoke_codex(
     )
     if result.returncode != 0:
         stderr = result.stderr.strip()
-        lower = stderr.lower()
-        guidance = (
-            quota_guidance(model_mode)
-            if any(token in lower for token in ("quota", "rate limit", "usage limit", "5hr", "7day"))
-            else None
-        )
+        guidance = quota_guidance_for_error(stderr, model_mode)
         if guidance:
             raise CodexInvocationError(f"{stderr}\n{guidance}")
         raise CodexInvocationError(stderr or f"codex exited with status {result.returncode}")
