@@ -44,8 +44,8 @@ impl TypeScriptQualitySummary {
             return;
         };
 
-    let source = text.as_bytes();
-    let mut metrics_by_item = BTreeMap::new();
+        let source = text.as_bytes();
+        let mut metrics_by_item = BTreeMap::new();
         collect_callable_metrics(tree.root_node(), source, &mut metrics_by_item);
 
         for item in &graph.items {
