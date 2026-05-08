@@ -270,6 +270,8 @@ fn is_language_pack_context_dispatch_call(call: &SourceCall) -> bool {
     if call.syntax != CallSyntaxKind::Field {
         return false;
     }
+    // This is a narrow bridge for the registry shapes Special uses today. The
+    // durable fix is receiver/binding-aware dispatch facts, not more spellings.
     matches!(
         call.qualifier.as_deref(),
         Some("context") | Some("self.inner")
