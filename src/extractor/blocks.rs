@@ -4,6 +4,7 @@ Collects contiguous supported comment blocks from source files, normalizes comme
 */
 // @fileimplements SPECIAL.EXTRACTOR.BLOCKS
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::annotation_syntax::is_reserved_special_annotation;
 use crate::model::{BlockLine, CommentBlock};
@@ -20,6 +21,7 @@ enum LineCommentStyle {
 pub(crate) fn extract_blocks_from_text(path: PathBuf, content: &str) -> Vec<CommentBlock> {
     let mut blocks = Vec::new();
     let lines: Vec<&str> = content.lines().collect();
+    let source_body = Arc::<str>::from(content);
     let mut index = 0;
     let line_comment_style = line_comment_style_for_path(&path);
 
@@ -41,7 +43,14 @@ pub(crate) fn extract_blocks_from_text(path: PathBuf, content: &str) -> Vec<Comm
                 index += 1;
             }
 
-            maybe_push_comment_block(&mut blocks, &path, &lines, index, block_lines);
+            maybe_push_comment_block(
+                &mut blocks,
+                &path,
+                source_body.clone(),
+                &lines,
+                index,
+                block_lines,
+            );
             continue;
         }
 
@@ -77,7 +86,14 @@ pub(crate) fn extract_blocks_from_text(path: PathBuf, content: &str) -> Vec<Comm
                 current = lines[index];
             }
 
-            maybe_push_comment_block(&mut blocks, &path, &lines, index, block_lines);
+            maybe_push_comment_block(
+                &mut blocks,
+                &path,
+                source_body.clone(),
+                &lines,
+                index,
+                block_lines,
+            );
             continue;
         }
 
@@ -90,6 +106,7 @@ pub(crate) fn extract_blocks_from_text(path: PathBuf, content: &str) -> Vec<Comm
 fn maybe_push_comment_block(
     blocks: &mut Vec<CommentBlock>,
     path: &Path,
+    source_body: Arc<str>,
     lines: &[&str],
     index: usize,
     block_lines: Vec<BlockLine>,
@@ -102,6 +119,7 @@ fn maybe_push_comment_block(
             path: path.to_path_buf(),
             lines: block_lines,
             owned_item: extract_owned_item(path, lines, index),
+            source_body: Some(source_body),
         });
     }
 }

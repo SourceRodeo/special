@@ -5,6 +5,7 @@ Shared parser test helpers and temporary fixtures in `src/parser/tests/support.r
 // @fileimplements SPECIAL.TESTS.PARSER.SUPPORT
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::config::SpecialVersion;
@@ -43,6 +44,16 @@ pub(super) fn block_with_path(path: impl Into<PathBuf>, lines: &[&str]) -> Comme
     comment_block(path.into(), lines, None)
 }
 
+pub(super) fn block_with_source_body(
+    path: impl Into<PathBuf>,
+    lines: &[&str],
+    source_body: &str,
+) -> CommentBlock {
+    let mut block = comment_block(path.into(), lines, None);
+    block.source_body = Some(Arc::from(source_body));
+    block
+}
+
 pub(super) fn block_with_owned_item(
     path: impl Into<PathBuf>,
     lines: &[&str],
@@ -75,6 +86,7 @@ fn comment_block(path: PathBuf, lines: &[&str], owned_item: Option<OwnedItem>) -
             })
             .collect(),
         owned_item,
+        source_body: None,
     }
 }
 

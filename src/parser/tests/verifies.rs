@@ -3,7 +3,9 @@
 Parser verify-reference tests in `src/parser/tests/verifies.rs`.
 */
 // @fileimplements SPECIAL.TESTS.PARSER.VERIFIES
-use super::support::{TempFile, block_with_path, parse_current, source_block_with_owned_item};
+use super::support::{
+    TempFile, block_with_path, block_with_source_body, parse_current, source_block_with_owned_item,
+};
 
 #[test]
 // @verifies SPECIAL.PARSE.VERIFIES
@@ -40,6 +42,22 @@ fn parses_file_verify_reference() {
     assert_eq!(parsed.verifies.len(), 1);
     assert_eq!(parsed.verifies[0].spec_id, "EXPORT.DOESNTCRASH");
     assert!(parsed.verifies[0].body_location.is_none());
+    assert_eq!(parsed.verifies[0].body.as_deref(), Some(content.trim_end()));
+    assert!(parsed.diagnostics.is_empty());
+}
+
+#[test]
+fn file_verify_uses_extracted_source_body_without_rereading_path() {
+    let content = "// @fileverifies EXPORT.DOESNTCRASH\nfn verifies_export_doesnt_crash() {}\n";
+    let block = block_with_source_body(
+        "src/missing.rs",
+        &["@fileverifies EXPORT.DOESNTCRASH"],
+        content,
+    );
+
+    let parsed = parse_current(&block);
+
+    assert_eq!(parsed.verifies.len(), 1);
     assert_eq!(parsed.verifies[0].body.as_deref(), Some(content.trim_end()));
     assert!(parsed.diagnostics.is_empty());
 }

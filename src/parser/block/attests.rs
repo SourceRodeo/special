@@ -86,9 +86,16 @@ fn handle_file_attest(
 
     let (attestation, cursor) = parse_attestation_metadata(parsed, block, line, index + 1);
     if let Some(attestation) = attestation {
-        let body = fs::read_to_string(&block.path)
-            .ok()
-            .map(|body| body.trim_end().to_string());
+        let body = block
+            .source_body
+            .as_deref()
+            .map(str::trim_end)
+            .map(str::to_string)
+            .or_else(|| {
+                fs::read_to_string(&block.path)
+                    .ok()
+                    .map(|body| body.trim_end().to_string())
+            });
         parsed.attests.push(AttestRef {
             spec_id: id,
             artifact: attestation.artifact,

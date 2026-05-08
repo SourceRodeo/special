@@ -5,7 +5,9 @@ Parser attestation tests in `src/parser/tests/attestation.rs`.
 // @fileimplements SPECIAL.TESTS.PARSER.ATTESTATION
 use crate::model::AttestScope;
 
-use super::support::{TempFile, block_with_path, parse_current, source_block};
+use super::support::{
+    TempFile, block_with_path, block_with_source_body, parse_current, source_block,
+};
 
 #[test]
 // @verifies SPECIAL.PARSE.ATTESTS
@@ -85,6 +87,33 @@ fn parses_file_scoped_attestation_blocks() {
 
     assert_eq!(parsed.attests.len(), 1);
     assert_eq!(parsed.attests[0].scope, AttestScope::File);
+    assert!(
+        parsed.attests[0]
+            .body
+            .as_deref()
+            .expect("attest body should be present")
+            .contains("fn helper() {}")
+    );
+    assert!(parsed.diagnostics.is_empty());
+}
+
+#[test]
+fn file_attestation_uses_extracted_source_body_without_rereading_path() {
+    let content = "// @fileattests AUTH\n// artifact: docs/auth-review.md\n// owner: security\n// last_reviewed: 2026-04-16\nfn helper() {}\n";
+    let block = block_with_source_body(
+        "src/missing.rs",
+        &[
+            "@fileattests AUTH",
+            "artifact: docs/auth-review.md",
+            "owner: security",
+            "last_reviewed: 2026-04-16",
+        ],
+        content,
+    );
+
+    let parsed = parse_current(&block);
+
+    assert_eq!(parsed.attests.len(), 1);
     assert!(
         parsed.attests[0]
             .body

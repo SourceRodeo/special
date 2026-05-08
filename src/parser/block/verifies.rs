@@ -97,9 +97,16 @@ fn handle_file_verify(
     let Some(id) = parse_supported_spec_id(rest, parsed, block, line, "@fileverifies") else {
         return;
     };
-    let body = fs::read_to_string(&block.path)
-        .ok()
-        .map(|body| body.trim_end().to_string());
+    let body = block
+        .source_body
+        .as_deref()
+        .map(str::trim_end)
+        .map(str::to_string)
+        .or_else(|| {
+            fs::read_to_string(&block.path)
+                .ok()
+                .map(|body| body.trim_end().to_string())
+        });
     parsed.verifies.push(VerifyRef {
         spec_id: id,
         location: SourceLocation {

@@ -5,6 +5,7 @@ Shared core domain primitives for spec, architecture, and report modeling.
 // @fileimplements SPECIAL.MODEL.CORE
 use std::fmt;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
@@ -64,6 +65,7 @@ pub struct CommentBlock {
     pub path: PathBuf,
     pub lines: Vec<BlockLine>,
     pub owned_item: Option<OwnedItem>,
+    pub source_body: Option<Arc<str>>,
 }
 
 #[derive(Debug, Clone)]
