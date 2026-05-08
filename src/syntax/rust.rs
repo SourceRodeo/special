@@ -116,51 +116,21 @@ fn has_cfg_test_module_ancestor(node: Node<'_>, source: &[u8]) -> bool {
 }
 
 fn has_preceding_attribute(node: Node<'_>, source: &[u8], predicate: fn(&str) -> bool) -> bool {
-    let Ok(text) = std::str::from_utf8(source) else {
-        return false;
-    };
-    let lines = text.lines().collect::<Vec<_>>();
-    let mut line_index = node.start_position().row;
-    while line_index > 0 {
-        line_index -= 1;
-        let trimmed = lines
-            .get(line_index)
-            .map(|line| line.trim())
-            .unwrap_or_default();
-        if trimmed.is_empty()
-            || trimmed.starts_with("//")
-            || trimmed.starts_with("/*")
-            || trimmed.starts_with('*')
-            || trimmed.starts_with("*/")
-        {
-            continue;
-        }
-        if trimmed.starts_with("#[") || trimmed.ends_with(']') {
-            let (attribute_start, attribute) = collect_attribute_text(&lines, line_index);
-            if predicate(&attribute) {
-                return true;
-            }
-            line_index = attribute_start;
-            continue;
-        }
-        break;
-    }
-    false
-}
-
-fn collect_attribute_text(lines: &[&str], end_index: usize) -> (usize, String) {
-    let mut start_index = end_index;
-    while start_index > 0 {
-        let trimmed = lines[start_index].trim();
-        if trimmed.starts_with("#[") {
+    let mut sibling = node.prev_named_sibling();
+    while let Some(previous) = sibling {
+        if previous.kind() != "attribute_item" {
             break;
         }
-        start_index -= 1;
+        if previous
+            .utf8_text(source)
+            .ok()
+            .is_some_and(|attribute| predicate(attribute.trim()))
+        {
+            return true;
+        }
+        sibling = previous.prev_named_sibling();
     }
-    (
-        start_index,
-        lines[start_index..=end_index].join("\n").trim().to_string(),
-    )
+    false
 }
 
 fn attribute_marks_test(attribute_text: &str) -> bool {
@@ -530,6 +500,37 @@ async fn helper() {}
         assert!(test_item.is_test);
         let helper = item_named(&graph, "helper");
         assert!(!helper.is_test);
+    }
+
+    #[test]
+    // @verifies SPECIAL.SYNTAX.PROVIDERS.RUST_TEST_DETECTION
+    fn provider_facade_uses_ast_attribute_siblings_for_test_detection() {
+        let graph = parse_source_graph(
+            Path::new("src/lib.rs"),
+            r#"
+macro_rules! bracketed {
+    () => {
+        [
+            "]"
+        ]
+    };
+}
+
+bracketed!();
+
+fn helper() {}
+
+#[ignore]
+#[test]
+fn verifies_behavior() {}
+"#,
+        )
+        .expect("rust graph should parse");
+
+        let helper = item_named(&graph, "helper");
+        assert!(!helper.is_test);
+        let verifies_behavior = item_named(&graph, "verifies_behavior");
+        assert!(verifies_behavior.is_test);
     }
 
     #[test]
