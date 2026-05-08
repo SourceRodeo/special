@@ -103,7 +103,7 @@ def tag_points_at_head(root: Path, backend: str, tag: str, head: str) -> bool:
     if backend == "jj":
         if jj_revset_has_match(root, f"({tag}) & ({head})"):
             return True
-        if jj_revision_is_empty(root, head):
+        if head == "@" and jj_revision_is_empty(root, head):
             return jj_revset_has_match(root, f"({tag}) & parents({head})")
         return False
 

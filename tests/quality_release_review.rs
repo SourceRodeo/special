@@ -45,7 +45,7 @@ release review grants read access only to the project root.
 without `--full`, release review is diff-scoped against the baseline tag.
 
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.JJ_LATEST_TAG_BASELINE
-release review uses the latest reachable semver tag before the review head as the default baseline, excluding the current release tag when jj is on an empty child of that release.
+release review uses the latest reachable semver tag before the review head as the default baseline. When the default JJ head is the empty working copy child of a release tag, that parent release tag is treated as current release context and excluded from the baseline.
 
 @spec SPECIAL.QUALITY.RUST.RELEASE_REVIEW.SYNTAX_AWARE_CHANGED_CONTEXT
 release review extracts syntax-aware changed context for supported languages.
@@ -479,6 +479,22 @@ fn run_jj(temp_root: &Path, args: &[&str]) {
     );
 }
 
+fn run_jj_stdout(temp_root: &Path, args: &[&str]) -> String {
+    let output = Command::new("jj")
+        .args(args)
+        .current_dir(temp_root)
+        .output()
+        .expect("jj command should run");
+    assert!(
+        output.status.success(),
+        "jj {:?} failed\nstdout:\n{}\n\nstderr:\n{}",
+        args,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).expect("jj stdout should be utf-8")
+}
+
 #[test]
 fn release_review_uses_latest_reachable_semver_tag_not_global_max_in_jj_repo() {
     let root = unique_review_temp_repo("jj-baseline");
@@ -593,6 +609,58 @@ fn release_review_excludes_current_release_tag_from_jj_baseline() {
     assert_eq!(
         latest_reachable_semver_tag_for_repo(&root, "jj", "@"),
         "v0.1.0".to_string()
+    );
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.QUALITY.RUST.RELEASE_REVIEW.JJ_LATEST_TAG_BASELINE
+fn release_review_explicit_empty_jj_head_keeps_parent_tag_as_baseline() {
+    let root = unique_review_temp_repo("jj-explicit-empty-head-baseline");
+    if root.exists() {
+        fs::remove_dir_all(&root).expect("existing temp repo should be removable");
+    }
+    fs::create_dir_all(&root).expect("temp repo should be created");
+
+    run_jj(&root, &["git", "init", "."]);
+
+    fs::write(root.join("a.txt"), "one\n").expect("first fixture should be written");
+    run_jj(
+        &root,
+        &[
+            "--config=user.name=Test User",
+            "--config=user.email=test@example.com",
+            "commit",
+            "-m",
+            "first",
+        ],
+    );
+    run_jj(&root, &["tag", "set", "-r", "@-", "v0.1.0"]);
+
+    fs::write(root.join("b.txt"), "two\n").expect("second fixture should be written");
+    run_jj(
+        &root,
+        &[
+            "--config=user.name=Test User",
+            "--config=user.email=test@example.com",
+            "commit",
+            "-m",
+            "second",
+        ],
+    );
+    run_jj(&root, &["tag", "set", "-r", "@-", "v0.2.0"]);
+    run_jj(&root, &["describe", "-m", "explicit-empty-head"]);
+    let explicit_head = run_jj_stdout(&root, &["log", "-r", "@", "--no-graph", "-T", "commit_id"]);
+    let explicit_head = explicit_head.trim();
+
+    assert_eq!(
+        latest_reachable_semver_tag_for_repo(&root, "jj", "@"),
+        "v0.1.0".to_string()
+    );
+    assert_eq!(
+        latest_reachable_semver_tag_for_repo(&root, "jj", explicit_head),
+        "v0.2.0".to_string()
     );
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
