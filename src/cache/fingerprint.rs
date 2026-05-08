@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use crate::config::SpecialVersion;
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
@@ -92,7 +92,7 @@ pub(super) fn language_pack_scope_facts_fingerprint(
                 duration.subsec_nanos().hash(&mut hasher);
             }
         }
-        hash_file_contents(path, &mut hasher);
+        hash_file_contents(path, &mut hasher)?;
     }
     for path in language_pack_manifest_inputs(root, language_id) {
         path.hash(&mut hasher);
@@ -105,7 +105,7 @@ pub(super) fn language_pack_scope_facts_fingerprint(
                 duration.subsec_nanos().hash(&mut hasher);
             }
         }
-        hash_file_contents(&path, &mut hasher);
+        hash_file_contents(&path, &mut hasher)?;
     }
     Ok(hasher.finish())
 }
@@ -173,17 +173,17 @@ fn fingerprint_for_discovered_files(
                 duration.subsec_nanos().hash(&mut hasher);
             }
         }
-        hash_file_contents(path, &mut hasher);
+        hash_file_contents(path, &mut hasher)?;
     }
 
     Ok(hasher.finish())
 }
 
-fn hash_file_contents(path: &Path, hasher: &mut DefaultHasher) {
-    let Ok(contents) = fs::read(path) else {
-        return;
-    };
+fn hash_file_contents(path: &Path, hasher: &mut DefaultHasher) -> Result<()> {
+    let contents = fs::read(path)
+        .with_context(|| format!("reading cache fingerprint input {}", path.display()))?;
     contents.hash(hasher);
+    Ok(())
 }
 
 fn language_pack_manifest_inputs(root: &Path, language_id: &str) -> Vec<std::path::PathBuf> {

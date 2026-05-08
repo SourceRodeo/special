@@ -245,6 +245,43 @@ fn language_pack_scope_facts_fingerprint_invalidates_on_manifest_change() {
     std::fs::remove_dir_all(&root).expect("temp root should be removed");
 }
 
+#[cfg(unix)]
+#[test]
+fn language_pack_scope_facts_fingerprint_reports_unreadable_sources() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-language-pack-unreadable-source");
+    write_repo_fixture(&root);
+    let source_file = root.join("app.rs");
+    let mut permissions = std::fs::metadata(&source_file)
+        .expect("source metadata should be readable")
+        .permissions();
+    permissions.set_mode(0);
+    std::fs::set_permissions(&source_file, permissions).expect("source should be made unreadable");
+
+    let error = language_pack_scope_facts_fingerprint(
+        &root,
+        "rust",
+        std::slice::from_ref(&source_file),
+        "tool=v1",
+    )
+    .expect_err("unreadable source should fail fingerprinting");
+
+    let mut restored = std::fs::metadata(&source_file)
+        .expect("source metadata should still be readable")
+        .permissions();
+    restored.set_mode(0o644);
+    std::fs::set_permissions(&source_file, restored).expect("source permissions should restore");
+    assert!(
+        error
+            .to_string()
+            .contains("reading cache fingerprint input")
+    );
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
 #[test]
 fn parsed_repo_contract_fingerprint_invalidates_on_spec_change() {
     let _guard = cache_test_lock();
