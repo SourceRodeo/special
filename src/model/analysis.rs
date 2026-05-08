@@ -247,6 +247,7 @@ impl ArchitectureTraceabilitySummary {
         self.statically_mediated_items
             .extend(delta.statically_mediated_items);
         self.unexplained_items.extend(delta.unexplained_items);
+        self.sort_items();
     }
 
     pub fn sort_items(&mut self) {
@@ -590,6 +591,51 @@ mod tests {
                 ("src/a.rs".to_string(), "alpha".to_string(), 1),
                 ("src/a.rs".to_string(), "zeta".to_string(), 4),
                 ("src/z.rs".to_string(), "same".to_string(), 2),
+            ]
+        );
+    }
+
+    #[test]
+    // @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.DETERMINISTIC_ORDERING
+    fn architecture_traceability_summary_extend_preserves_sorted_items() {
+        let mut summary = ArchitectureTraceabilitySummary {
+            analyzed_items: 1,
+            current_spec_items: vec![architecture_item(
+                "src/z.rs",
+                "zeta",
+                3,
+                ModuleItemKind::Function,
+            )],
+            ..ArchitectureTraceabilitySummary::default()
+        };
+        let delta = ArchitectureTraceabilitySummary {
+            analyzed_items: 2,
+            current_spec_items: vec![
+                architecture_item("src/a.rs", "zeta", 4, ModuleItemKind::Function),
+                architecture_item("src/a.rs", "alpha", 1, ModuleItemKind::Method),
+            ],
+            ..ArchitectureTraceabilitySummary::default()
+        };
+
+        summary.extend_from(delta);
+
+        assert_eq!(summary.analyzed_items, 3);
+        assert_eq!(
+            summary
+                .current_spec_items
+                .iter()
+                .map(|item| {
+                    (
+                        item.path.to_string_lossy().to_string(),
+                        item.name.clone(),
+                        item.line,
+                    )
+                })
+                .collect::<Vec<_>>(),
+            vec![
+                ("src/a.rs".to_string(), "alpha".to_string(), 1),
+                ("src/a.rs".to_string(), "zeta".to_string(), 4),
+                ("src/z.rs".to_string(), "zeta".to_string(), 3),
             ]
         );
     }
