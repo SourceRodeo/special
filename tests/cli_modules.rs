@@ -87,7 +87,7 @@ special arch can surface item-level evidence within owned implementation.
 special arch --metrics --verbose explains item-level evidence categories in plain language and in precise structural terms from a shared analysis registry.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.COUPLING
-special arch --metrics surfaces module-to-module coupling evidence when built-in analyzers can resolve owned dependency targets to concrete modules.
+special arch --metrics surfaces module-to-module coupling evidence when built-in analyzers can resolve owned dependency targets to concrete modules, and reports zero instability rather than `NaN` for modules with no concrete inbound or outbound coupling.
 
 @spec SPECIAL.MODULE_COMMAND.METRICS.COUPLING.EXPLANATIONS
 special arch --metrics --verbose explains coupling metrics in plain language and in precise structural terms from a shared analysis registry.
