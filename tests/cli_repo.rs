@@ -1048,12 +1048,36 @@ fn repo_surfaces_python_traceability() {
         .iter()
         .filter_map(|item| item["name"].as_str())
         .collect::<Vec<_>>();
+    let current_items = json["analysis"]["traceability"]["current_spec_items"]
+        .as_array()
+        .expect("current items should be an array");
     assert!(current_names.contains(&"live_impl"));
     assert!(current_names.contains(&"helper"));
     assert!(current_names.contains(&"shared_value"));
     assert!(current_names.contains(&"run"));
     assert!(current_names.contains(&"offset"));
     assert!(current_names.contains(&"nested_value"));
+    assert!(current_names.contains(&"live_result"));
+
+    for name in [
+        "live_impl",
+        "helper",
+        "shared_value",
+        "run",
+        "offset",
+        "nested_value",
+        "live_result",
+    ] {
+        let item = current_items
+            .iter()
+            .find(|item| item["name"] == name)
+            .unwrap_or_else(|| panic!("python traceability should include `{name}`"));
+        assert_eq!(item["current_specs"], serde_json::json!(["APP.LIVE"]));
+        assert_eq!(
+            item["verifying_tests"],
+            serde_json::json!(["test_live_impl"])
+        );
+    }
 
     let unexplained_names = json["analysis"]["traceability"]["unexplained_items"]
         .as_array()

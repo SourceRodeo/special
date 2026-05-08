@@ -40,7 +40,7 @@ special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
 special patterns --metrics
 ```
 
-Representative output:
+Representative output shape for a small repo:
 
 ```text
 EXPORT.LABEL_VALUE_COLUMNS

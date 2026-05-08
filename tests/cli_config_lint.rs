@@ -295,6 +295,28 @@ fn lint_reports_annotation_errors() {
 }
 
 #[test]
+// @verifies SPECIAL.LINT_COMMAND
+fn lint_reports_reference_and_parser_diagnostics_together() {
+    let root = temp_repo_dir("special-cli-lint-mixed-errors");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("specs.rs"),
+        "// @group DEMO\n// Demo root.\n\n// @planned\n\n// @verifies UNKNOWN\nfn verifies_unknown() {}\n",
+    )
+    .expect("mixed lint fixture should be written");
+
+    let output = run_special(&root, &["lint"]);
+    assert!(!output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("unknown spec id `UNKNOWN` referenced by @verifies"));
+    assert!(stdout.contains("@planned must be adjacent to exactly one owning @spec"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.LINT_COMMAND.PLANNED_SCOPE
 fn lint_rejects_non_adjacent_planned_in_version_1() {
     let root = temp_repo_dir("special-cli-planned-v1");

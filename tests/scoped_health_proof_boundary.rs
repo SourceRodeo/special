@@ -10,6 +10,9 @@ The production Lean traceability executable must delegate parsed-`KernelInput` s
 */
 // @fileimplements SPECIAL.TESTS.SCOPED_HEALTH_PROOF_BOUNDARY
 // @fileverifies SPECIAL.HEALTH_COMMAND.TARGET.TRACEABILITY.LANGUAGE_PARITY
+/**
+@fileverifies SPECIAL.LANGUAGE_PACKS.ADMISSION.TRACEABILITY
+*/
 #[allow(dead_code)]
 #[path = "../src/language_packs/go/test_fixtures.rs"]
 mod go_test_fixtures;

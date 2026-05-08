@@ -18,7 +18,7 @@ special specs EXPORT.CSV.HEADERS --verbose
 special specs --metrics
 ```
 
-Representative output:
+Representative output shape for a small repo:
 
 ```text
 EXPORT.CSV.HEADERS
@@ -170,7 +170,9 @@ Contract details: `special docs` supports
 Generated output
 [rewrites document links](documents://spec/SPECIAL.DOCS.LINKS.OUTPUT),
 [removes authoring annotations](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.AUTHORING_LINES),
-and refuses to overwrite docs evidence-bearing sources by accident.
+and
+[refuses to overwrite docs evidence-bearing sources](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.SAFETY)
+by accident.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.TRACE
 @applies DOCS.COMMAND_REFERENCE_ENTRY
@@ -197,7 +199,7 @@ Use the surface that owns the relationship you are reviewing:
 | `trace arch` | modules or areas with implementation attachments and pattern applications |
 | `trace patterns` | pattern definitions with applications and module joins |
 
-Representative output:
+Representative output shape for a small repo:
 
 ```text
 special trace specs
@@ -250,7 +252,7 @@ special diff --target src/export.ts --verbose
 special diff --id APP.EXPORT
 ```
 
-Representative output:
+Representative output shape for a changed repo:
 
 ```text
 relationship diff
@@ -290,7 +292,7 @@ special health --json
 special health --html
 ```
 
-Representative output:
+Representative output shape for an existing repo:
 
 ```text
 special health
@@ -367,7 +369,7 @@ Contract details: lint catches
 [orphan verifies](documents://spec/SPECIAL.LINT_COMMAND.ORPHAN_VERIFIES),
 [intermediate specs](documents://spec/SPECIAL.LINT_COMMAND.INTERMEDIATE_SPECS),
 [intermediate modules](documents://spec/SPECIAL.LINT_COMMAND.INTERMEDIATE_MODULES),
-and invalid planned-scope usage.
+and [invalid planned-scope usage](documents://spec/SPECIAL.LINT_COMMAND.PLANNED_SCOPE).
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.INIT
 @applies DOCS.COMMAND_REFERENCE_ENTRY
@@ -400,7 +402,8 @@ install bundled workflow skills when a plugin path is not available.
 ```sh
 special skills
 special skills install
-special skills install ship-product-change --destination project
+special skills install ship-product-change
+special skills install --destination project
 ```
 
 Decision supported: which local skill surface an agent should use for a

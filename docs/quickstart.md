@@ -12,9 +12,9 @@ brew install sourcerodeo/homebrew-tap/special
 special init
 ```
 
-`special init` creates `special.toml`
-when no active config already exists. Commit it after reviewing the root and
-ignore settings.
+`special init` creates
+`special.toml` when no active
+config already exists. Commit it after reviewing the root and ignore settings.
 
 ## Write the First Behavior Claim
 

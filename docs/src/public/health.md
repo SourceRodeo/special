@@ -15,7 +15,7 @@ can read plain source before the repo has many Special annotations.
 special health --metrics
 ```
 
-A realistic early report for a TypeScript service might look like this:
+Representative output shape for a TypeScript service:
 
 ```text
 special health

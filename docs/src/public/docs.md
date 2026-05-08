@@ -37,7 +37,7 @@ Check the relationship inventory and generated-docs graph:
 special docs --metrics
 ```
 
-Representative output:
+Representative output shape for a small repo:
 
 ```text
 special docs metrics

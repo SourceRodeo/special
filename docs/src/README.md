@@ -66,7 +66,7 @@ test("export writes headers", () => {
 });
 ```
 
-Representative output:
+Representative output shape for a small repo:
 
 ```text
 EXPORT.CSV.HEADERS

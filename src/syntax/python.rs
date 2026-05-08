@@ -231,6 +231,16 @@ class Service:
                 && call.qualifier.is_none()
                 && call.syntax == CallSyntaxKind::Identifier
         }));
+        let helper = graph
+            .items
+            .iter()
+            .find(|item| item.name == "helper")
+            .expect("helper should be present");
+        assert!(helper.calls.iter().any(|call| {
+            call.name == "run"
+                && call.qualifier.as_deref() == Some("Service()")
+                && call.syntax == CallSyntaxKind::Field
+        }));
 
         let method = graph
             .items

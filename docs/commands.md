@@ -15,7 +15,7 @@ special specs EXPORT.CSV.HEADERS --verbose
 special specs --metrics
 ```
 
-Representative output:
+Representative output shape for a small repo:
 
 ```text
 EXPORT.CSV.HEADERS
@@ -161,7 +161,9 @@ configured output builds.
 Generated output
 rewrites document links,
 removes authoring annotations,
-and refuses to overwrite docs evidence-bearing sources by accident.
+and
+refuses to overwrite docs evidence-bearing sources
+by accident.
 
 ## `special trace`
 
@@ -186,7 +188,7 @@ Use the surface that owns the relationship you are reviewing:
 | `trace arch` | modules or areas with implementation attachments and pattern applications |
 | `trace patterns` | pattern definitions with applications and module joins |
 
-Representative output:
+Representative output shape for a small repo:
 
 ```text
 special trace specs
@@ -237,7 +239,7 @@ special diff --target src/export.ts --verbose
 special diff --id APP.EXPORT
 ```
 
-Representative output:
+Representative output shape for a changed repo:
 
 ```text
 relationship diff
@@ -275,7 +277,7 @@ special health --json
 special health --html
 ```
 
-Representative output:
+Representative output shape for an existing repo:
 
 ```text
 special health
@@ -377,7 +379,8 @@ install bundled workflow skills when a plugin path is not available.
 ```sh
 special skills
 special skills install
-special skills install ship-product-change --destination project
+special skills install ship-product-change
+special skills install --destination project
 ```
 
 Decision supported: which local skill surface an agent should use for a

@@ -13,7 +13,7 @@ use serde_json::Value;
 use support::{run_special, temp_repo_dir};
 
 #[test]
-// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.DIRECTORY
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT
 fn docs_output_rewrites_document_links_and_removes_document_lines() {
     let root = temp_repo_dir("special-cli-docs-output");
     write_docs_fixture(&root);
@@ -46,6 +46,35 @@ fn docs_output_rewrites_document_links_and_removes_document_lines() {
     assert!(rendered.contains("Cache fill is intentional."));
     assert!(!rendered.contains("documents://"));
     assert!(!rendered.contains("@documents"));
+    assert_eq!(
+        fs::read_to_string(root.join("docs/dist/nested/asset.txt"))
+            .expect("plain asset should be copied"),
+        "plain\n"
+    );
+}
+
+#[test]
+// @verifies SPECIAL.DOCS_COMMAND.OUTPUT.DIRECTORY
+fn docs_output_mirrors_directory_tree() {
+    let root = temp_repo_dir("special-cli-docs-output-directory");
+    write_docs_fixture(&root);
+    fs::create_dir_all(root.join("docs/src/nested")).expect("nested docs dir should be created");
+    fs::write(
+        root.join("docs/src/README.md"),
+        "[CSV exports include headers](documents://spec/EXPORT.CSV.HEADERS).\n",
+    )
+    .expect("docs source should be written");
+    fs::write(root.join("docs/src/nested/asset.txt"), "plain\n")
+        .expect("plain asset should be written");
+
+    let output = run_special(&root, &["docs", "build", "docs/src", "docs/dist"]);
+
+    assert!(
+        output.status.success(),
+        "docs directory output should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(root.join("docs/dist/README.md").exists());
     assert_eq!(
         fs::read_to_string(root.join("docs/dist/nested/asset.txt"))
             .expect("plain asset should be copied"),
