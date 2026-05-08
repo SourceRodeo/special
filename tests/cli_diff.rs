@@ -98,6 +98,22 @@ fn diff_uses_declared_git_changed_paths_for_relationship_review() {
 }
 
 #[test]
+// @verifies SPECIAL.CLI.EXPLICIT_PATH_SCOPE
+fn diff_rejects_positional_path_scope() {
+    let root = temp_repo_dir("special-cli-diff-no-positional-scope");
+    write_diff_fixture(&root, Some("none"));
+
+    let output = run_special(&root, &["diff", "src/feature.rs"]);
+    assert!(!output.status.success());
+
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
+    assert!(stderr.contains("diff path scopes must use --target PATH"));
+    assert!(stderr.contains("special diff --target src/feature.rs"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.DIFF_COMMAND.METRICS
 fn diff_metrics_reports_relationship_breakdowns() {
     let root = temp_repo_dir("special-cli-diff-metrics");

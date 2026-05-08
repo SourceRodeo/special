@@ -35,6 +35,9 @@ special help text groups examples by user task instead of listing every command 
 @spec SPECIAL.VERSION.FLAGS
 special `-v` and `--version` print the current CLI version and exit successfully.
 
+@spec SPECIAL.CLI.EXPLICIT_PATH_SCOPE
+Special commands that scope an analysis view by path require explicit --target PATH instead of accepting ambiguous positional path scopes.
+
 @spec SPECIAL.DIFF_COMMAND
 special diff uses the VCS backend declared in special.toml to report explicit Special relationships whose source or target endpoint intersects the current changed path set.
 

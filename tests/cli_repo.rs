@@ -32,9 +32,6 @@ special health --target PATH scopes repo-wide quality and traceability reporting
 @spec SPECIAL.HEALTH_COMMAND.TARGET.MARKDOWN_SCOPE
 special health --target PATH accepts markdown-only scopes so docs and prose health checks can run over documentation trees even when no language-pack source files are present.
 
-@spec SPECIAL.HEALTH_COMMAND.NO_POSITIONAL_SCOPE
-special health requires explicit --target PATH instead of accepting positional path scopes.
-
 @spec SPECIAL.HEALTH_COMMAND.SYMBOL
 special health --target PATH --symbol NAME narrows the health view to items in that scoped file whose symbol name matches NAME.
 
@@ -779,7 +776,7 @@ fn repo_scope_progress_limits_traceability_contexts_to_scoped_languages() {
 }
 
 #[test]
-// @verifies SPECIAL.HEALTH_COMMAND.NO_POSITIONAL_SCOPE
+// @verifies SPECIAL.CLI.EXPLICIT_PATH_SCOPE
 fn repo_rejects_positional_path_scope() {
     let root = temp_repo_dir("special-cli-health-no-positional-scope");
     write_duplicate_item_signals_module_analysis_fixture(&root);

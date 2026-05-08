@@ -27,7 +27,7 @@ special docs validates documentation links and prints a documentation relationsh
 special docs --target PATH validates and prints only documentation relationships under the target file or subtree without writing files.
 
 @spec SPECIAL.DOCS_COMMAND.PATH_SCOPE_SYNTAX
-special docs rejects hidden positional path scopes and requires path scopes to use --target PATH.
+special docs follows the shared explicit path-scope syntax for validation-only path scopes.
 
 @spec SPECIAL.DOCS_COMMAND.OUTPUT
 special docs build validates documentation links and writes generated docs outputs.
