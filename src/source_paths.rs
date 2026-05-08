@@ -67,13 +67,17 @@ pub(crate) fn normalize_existing_or_lexical_path(path: &Path) -> PathBuf {
 }
 
 pub(crate) fn matches_scope_path(path: &Path, scope_paths: &[PathBuf]) -> bool {
-    scope_paths.iter().any(|scope| {
-        if scope.is_dir() {
-            path.starts_with(scope)
-        } else {
-            path == scope || path.starts_with(scope)
-        }
-    })
+    scope_paths
+        .iter()
+        .any(|scope| path_matches_scope_path(path, scope))
+}
+
+pub(crate) fn path_matches_scope_path(path: &Path, scope: &Path) -> bool {
+    path == scope || (scope_allows_descendants(scope) && path.starts_with(scope))
+}
+
+fn scope_allows_descendants(scope: &Path) -> bool {
+    scope.is_dir() || scope.extension().is_none()
 }
 
 #[cfg(test)]
@@ -82,6 +86,7 @@ mod tests {
 
     use super::{
         has_extension, looks_like_test_path, matches_scope_path, normalize_existing_or_joined_path,
+        path_matches_scope_path,
     };
 
     #[test]
@@ -136,6 +141,18 @@ mod tests {
         assert!(!matches_scope_path(
             Path::new("src/rendering.rs"),
             &[PathBuf::from("src/render")]
+        ));
+    }
+
+    #[test]
+    fn file_like_scope_paths_do_not_match_descendants() {
+        assert!(path_matches_scope_path(
+            Path::new("src/new_mod.rs"),
+            Path::new("src/new_mod.rs")
+        ));
+        assert!(!path_matches_scope_path(
+            Path::new("src/new_mod.rs/generated.rs"),
+            Path::new("src/new_mod.rs")
         ));
     }
 }

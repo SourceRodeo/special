@@ -12,7 +12,7 @@ use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureRepoSignalsSummary, ArchitectureTraceabilityItem,
     ArchitectureTraceabilitySummary,
 };
-use crate::source_paths::normalize_existing_or_joined_path;
+use crate::source_paths::{normalize_existing_or_joined_path, path_matches_scope_path};
 use crate::syntax::SourceLanguage;
 
 pub(crate) struct RepoScopeBoundary {
@@ -184,7 +184,7 @@ impl RepoScopeBoundary {
                 let candidate = normalize_scope_path(root, path);
                 request_roots
                     .iter()
-                    .any(|scope| candidate == *scope || candidate.starts_with(scope))
+                    .any(|scope| path_matches_scope_path(&candidate, scope))
             })
             .cloned()
             .collect();
@@ -232,6 +232,6 @@ impl RepoScopeBoundary {
         let candidate = normalize_scope_path(&self.root, display_path);
         self.request_roots
             .iter()
-            .any(|scope| candidate == *scope || candidate.starts_with(scope))
+            .any(|scope| path_matches_scope_path(&candidate, scope))
     }
 }
