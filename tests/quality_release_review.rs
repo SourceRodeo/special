@@ -844,15 +844,15 @@ fn release_review_adds_default_pass_for_unmatched_changed_files() {
 }
 
 #[test]
-fn release_review_keeps_diff_only_test_files_without_context() {
+fn release_review_keeps_diff_only_files_for_nonstandard_test_paths() {
     let payload = release_review_chunks_for_files_and_contexts(
-        &["tests/with_context.rs", "tests/diff_only.rs"],
+        &["src/__tests__/with_context.ts", "test_diff_only.py"],
         json!([
             {
-                "path": "tests/with_context.rs",
+                "path": "src/__tests__/with_context.ts",
                 "start_line": 1,
                 "end_line": 1,
-                "content": "#[test]\nfn covers_context() {}"
+                "content": "test(\"covers context\", () => runPath());"
             }
         ]),
     );
@@ -865,7 +865,7 @@ fn release_review_keeps_diff_only_test_files_without_context() {
             .as_array()
             .expect("files should be an array")
             .iter()
-            .any(|path| path.as_str() == Some("tests/with_context.rs"))
+            .any(|path| path.as_str() == Some("src/__tests__/with_context.ts"))
             && !chunk["file_contexts"]
                 .as_array()
                 .expect("file contexts should be an array")
@@ -876,7 +876,7 @@ fn release_review_keeps_diff_only_test_files_without_context() {
             .as_array()
             .expect("files should be an array")
             .iter()
-            .any(|path| path.as_str() == Some("tests/diff_only.rs"))
+            .any(|path| path.as_str() == Some("test_diff_only.py"))
             && chunk["file_contexts"]
                 .as_array()
                 .expect("file contexts should be an array")
