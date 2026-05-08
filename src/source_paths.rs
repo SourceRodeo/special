@@ -31,6 +31,8 @@ pub(crate) fn looks_like_test_path(path: impl AsRef<Path>) -> bool {
                 || name.ends_with(".test.tsx")
                 || name.ends_with(".spec.ts")
                 || name.ends_with(".spec.tsx")
+                || (name.starts_with("test_") && name.ends_with(".py"))
+                || name.ends_with("_test.py")
         })
 }
 
@@ -104,10 +106,14 @@ mod tests {
         assert!(looks_like_test_path("src/ui/button.spec.ts"));
         assert!(looks_like_test_path("src/lib/tests.rs"));
         assert!(looks_like_test_path("src/lib/parser_tests.rs"));
+        assert!(looks_like_test_path("src/test_parser.py"));
+        assert!(looks_like_test_path("src/parser_test.py"));
         assert!(looks_like_test_path("tests/integration.rs"));
         assert!(looks_like_test_path("src/__tests__/button.ts"));
         assert!(!looks_like_test_path("src/testing_helpers.rs"));
         assert!(!looks_like_test_path("src/lib/parser.rs"));
+        assert!(!looks_like_test_path("src/contest_parser.py"));
+        assert!(!looks_like_test_path("src/parser_tests.py"));
     }
 
     #[test]

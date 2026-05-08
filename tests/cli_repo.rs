@@ -143,7 +143,7 @@ special health reports long natural-language prose blocks outside configured doc
 @group SPECIAL.HEALTH_COMMAND.TEST_QUALITY
 
 @spec SPECIAL.HEALTH_COMMAND.TEST_QUALITY.LONG_PROSE_TEST_LITERALS
-special health reports long human-prose string literals embedded in recognized test and fixture source files as non-blocking repo-wide quality data.
+special health reports long human-prose string literals embedded in recognized test and fixture source files, including language-specific test filename conventions, as non-blocking repo-wide quality data.
 
 */
 // @fileimplements SPECIAL.TESTS.CLI_REPO
@@ -343,7 +343,7 @@ fn exact_copy_assertion() {
     )
     .expect("test fixture should be written");
     fs::write(
-        tests_dir.join("helper_prose.py"),
+        root.join("test_helper_prose.py"),
         concat!(
             "def contains(text):\n",
             "    return text\n\n",
@@ -370,7 +370,7 @@ fn exact_copy_assertion() {
             && detail["callee"] == Value::from("contains")
     }));
     assert!(details.iter().any(|detail| {
-        detail["path"] == Value::from("tests/helper_prose.py")
+        detail["path"] == Value::from("test_helper_prose.py")
             && detail["language"] == Value::from("python")
             && detail["callee"] == Value::from("contains")
     }));
