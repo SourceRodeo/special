@@ -1120,6 +1120,8 @@ struct CachedSourceItem {
     root_visible: bool,
     is_test: bool,
     calls: Vec<CachedSourceCall>,
+    #[serde(default)]
+    invocations: Vec<CachedSourceInvocation>,
 }
 
 impl CachedSourceItem {
@@ -1140,6 +1142,11 @@ impl CachedSourceItem {
             root_visible: item.root_visible,
             is_test: item.is_test,
             calls: item.calls.iter().map(CachedSourceCall::from_parsed).collect(),
+            invocations: item
+                .invocations
+                .iter()
+                .map(CachedSourceInvocation::from_parsed)
+                .collect(),
         }
     }
 
@@ -1164,7 +1171,11 @@ impl CachedSourceItem {
                 .into_iter()
                 .map(CachedSourceCall::into_parsed)
                 .collect(),
-            invocations: Vec::new(),
+            invocations: self
+                .invocations
+                .into_iter()
+                .map(CachedSourceInvocation::into_parsed)
+                .collect(),
         }
     }
 }
@@ -1274,6 +1285,53 @@ impl CachedCallSyntaxKind {
             Self::Identifier => crate::syntax::CallSyntaxKind::Identifier,
             Self::ScopedIdentifier => crate::syntax::CallSyntaxKind::ScopedIdentifier,
             Self::Field => crate::syntax::CallSyntaxKind::Field,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct CachedSourceInvocation {
+    span: CachedSourceSpan,
+    kind: CachedSourceInvocationKind,
+}
+
+impl CachedSourceInvocation {
+    fn from_parsed(invocation: &crate::syntax::SourceInvocation) -> Self {
+        Self {
+            span: CachedSourceSpan::from_parsed(invocation.span),
+            kind: CachedSourceInvocationKind::from_parsed(&invocation.kind),
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceInvocation {
+        crate::syntax::SourceInvocation {
+            span: self.span.into_parsed(),
+            kind: self.kind.into_parsed(),
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+enum CachedSourceInvocationKind {
+    LocalCargoBinary { binary_name: String },
+}
+
+impl CachedSourceInvocationKind {
+    fn from_parsed(kind: &crate::syntax::SourceInvocationKind) -> Self {
+        match kind {
+            crate::syntax::SourceInvocationKind::LocalCargoBinary { binary_name } => {
+                Self::LocalCargoBinary {
+                    binary_name: binary_name.clone(),
+                }
+            }
+        }
+    }
+
+    fn into_parsed(self) -> crate::syntax::SourceInvocationKind {
+        match self {
+            Self::LocalCargoBinary { binary_name } => {
+                crate::syntax::SourceInvocationKind::LocalCargoBinary { binary_name }
+            }
         }
     }
 }
@@ -1593,9 +1651,14 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use crate::model::{ParsedArchitecture, ParsedRepo};
+    use crate::syntax::{
+        ParsedSourceGraph, SourceInvocation, SourceInvocationKind, SourceItem, SourceItemKind,
+        SourceLanguage, SourceSpan,
+    };
 
     use super::{
-        build_traceability_inputs_for_typescript, file_graph_with_isolated_sources,
+        CachedParsedSourceGraph, build_traceability_inputs_for_typescript,
+        file_graph_with_isolated_sources,
         typescript_entry_fingerprint, write_embedded_tool_script,
     };
 
@@ -1636,6 +1699,40 @@ mod tests {
             graph.get(Path::new("src/isolated.ts")),
             Some(&BTreeSet::new())
         );
+    }
+
+    #[test]
+    fn cached_typescript_source_graph_round_trips_invocations() {
+        let graph = ParsedSourceGraph {
+            language: SourceLanguage::new("typescript"),
+            items: vec![SourceItem {
+                source_path: "src/app.ts".to_string(),
+                stable_id: "src/app.ts:run:1".to_string(),
+                name: "run".to_string(),
+                qualified_name: "run".to_string(),
+                module_path: vec!["src".to_string()],
+                container_path: Vec::new(),
+                shape_fingerprint: "function>call".to_string(),
+                normalized_fingerprints: Vec::new(),
+                shape_node_count: 2,
+                kind: SourceItemKind::Function,
+                span: span(),
+                public: true,
+                root_visible: true,
+                is_test: false,
+                calls: Vec::new(),
+                invocations: vec![SourceInvocation {
+                    kind: SourceInvocationKind::LocalCargoBinary {
+                        binary_name: "special".to_string(),
+                    },
+                    span: span(),
+                }],
+            }],
+        };
+
+        let decoded = CachedParsedSourceGraph::from_parsed(&graph).into_parsed();
+
+        assert_eq!(decoded.items[0].invocations, graph.items[0].invocations);
     }
 
     #[test]
@@ -1682,5 +1779,16 @@ mod tests {
         assert_ne!(first, second);
 
         let _ = fs::remove_file(&path);
+    }
+
+    fn span() -> SourceSpan {
+        SourceSpan {
+            start_line: 1,
+            end_line: 1,
+            start_column: 0,
+            end_column: 10,
+            start_byte: 0,
+            end_byte: 10,
+        }
     }
 }
