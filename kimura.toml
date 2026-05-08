@@ -1,4 +1,4 @@
-discovery_paths = ["_project/BACKLOG.md"]
+discovery_paths = ["_project/BACKLOG.md", "_project/research/2026-05-07-swarm-review-disposition.md"]
 authoring_paths = ["_project/**", "kimura.toml"]
 always_allowed_commands = []
 
