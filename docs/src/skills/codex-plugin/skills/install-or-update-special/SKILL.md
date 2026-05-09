@@ -3,15 +3,22 @@ name: install-or-update-special
 description: 'Use this skill when the Special Codex plugin is installed but the `special` binary is missing, too old, or not on PATH. Guide the user through normal install or update channels without silently installing binaries.'
 ---
 @filedocuments spec SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL
-@implements SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.INSTALL
-@applies DOCS.SKILL_MAIN_ENTRY
 
 # Install Or Update Special
+@implements SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.INSTALL_OR_UPDATE_SPECIAL
+@applies DOCS.SKILL_MAIN_ENTRY
 
-This plugin provides Codex integration. It does not install the native
-`special` binary by itself.
+This plugin provides [Codex MCP integration](documents://spec/SPECIAL.MCP_COMMAND.TOOLS). It does not install the native
+[`special` binary](documents://spec/SPECIAL.DISTRIBUTION.HOMEBREW.INSTALLS_SPECIAL) by itself.
+
+## When To Use
+@applies DOCS.SKILL_TRIGGER_BOUNDARY_SECTION
+
+Use this when the plugin is available but the native binary is missing, stale,
+or not on PATH. Do not use this for repo setup after the binary works.
 
 ## Workflow
+@applies DOCS.SKILL_WORKFLOW_SECTION
 
 1. Check whether `special` is available with `special --version`.
 2. If `special` is missing, tell the user the normal install command:
@@ -33,14 +40,14 @@ This plugin provides Codex integration. It does not install the native
    brew upgrade sourcerodeo/homebrew-tap/special
    ```
 
-5. After install or update, verify:
+5. After install or update, verify the binary and [MCP server](documents://spec/SPECIAL.MCP_COMMAND):
 
    ```sh
    special --version
    special mcp
    ```
 
-   For `special mcp`, only use an MCP client or a short JSON-RPC smoke test; do
+   For [`special mcp`](documents://spec/SPECIAL.MCP_COMMAND), only use an MCP client or a short JSON-RPC smoke test; do
    not expect ordinary prose on stdout.
 
 Do not silently install or update binaries. Ask before running package-manager

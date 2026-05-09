@@ -56,4 +56,5 @@ fn summarize_repo_traceability(facts: LanguageFacts) -> RepoTraceabilitySummary 
 - If health reports a repeated structure that does not fit an existing pattern, inspect the concrete examples before creating a new pattern.
 - After edits, run `special patterns --metrics --target PATH` when available.
 
+
 Read [references/pattern-workflow.md](references/pattern-workflow.md) for examples and [references/trigger-evals.md](references/trigger-evals.md) for trigger examples.

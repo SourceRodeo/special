@@ -5,8 +5,13 @@ description: 'Use this skill when the Special Codex plugin is installed but the 
 
 # Install Or Update Special
 
-This plugin provides Codex integration. It does not install the native
+This plugin provides Codex MCP integration. It does not install the native
 `special` binary by itself.
+
+## When To Use
+
+Use this when the plugin is available but the native binary is missing, stale,
+or not on PATH. Do not use this for repo setup after the binary works.
 
 ## Workflow
 
@@ -30,7 +35,7 @@ This plugin provides Codex integration. It does not install the native
    brew upgrade sourcerodeo/homebrew-tap/special
    ```
 
-5. After install or update, verify:
+5. After install or update, verify the binary and MCP server:
 
    ```sh
    special --version

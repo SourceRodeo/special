@@ -1,8 +1,8 @@
 @filedocuments spec SPECIAL.SPEC_COMMAND
-@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SPECS
-@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 # Spec Writing Rubric
+@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.DEFINE_PRODUCT_SPECS
+@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 Use this rubric when writing or tightening product specs in `special`.
 
@@ -14,8 +14,8 @@ It is anchored in a small set of standard software-engineering principles:
 
 - State the contract, not the implementation.
 - Keep the claim narrow enough that one verify can honestly support it.
-- Avoid future tense. `@planned` already carries the future state.
-- Avoid umbrella claims that only read like folders; use `@group` for those.
+- Avoid future tense. [`@planned`](documents://spec/SPECIAL.SPEC_COMMAND.PLANNED_ONLY) already carries the future state.
+- Avoid umbrella claims that only read like folders; use [`@group`](documents://spec/SPECIAL.GROUPS.STRUCTURAL_ONLY) for those.
 - Keep user-facing behavior at the command boundary and verify it there.
 - Use exact wording that can stay stable after the claim ships.
 - If a claim is not ready, keep it planned rather than overfitting a weak verify.
@@ -38,7 +38,7 @@ Good verify examples:
 
 - Assert the first CSV row equals the selected column names.
 - Assert the CLI exits non-zero and reports the unknown config key.
-- Assert `special skills install` writes the installed skill under `.agents/skills/<id>/SKILL.md`.
+- Assert [`special skills install`](documents://spec/SPECIAL.SKILLS.COMMAND.INSTALL_SUBCOMMAND) writes the installed skill under `.agents/skills/<id>/SKILL.md`.
 
 Bad verify examples:
 

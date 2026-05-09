@@ -8,6 +8,11 @@ description: 'Use this skill when configuring or validating Special in a project
 Use this skill when a project already has the `special` binary available and
 needs repo setup, configuration review, or validation.
 
+## When To Use
+
+Use this when `special --version` already works and the task is to configure or
+check a repository. Do not use this to install or upgrade the binary.
+
 ## Workflow
 
 1. Check the installed binary:
@@ -23,7 +28,7 @@ needs repo setup, configuration review, or validation.
    special lint
    ```
 
-3. If no `special.toml` exists and the user wants to adopt Special, run:
+3. If no `special.toml` exists and the user wants to adopt Special, run `special init`:
 
    ```sh
    special init
@@ -31,7 +36,7 @@ needs repo setup, configuration review, or validation.
 
 4. Choose the first inspection path:
 
-   For an existing project, start with signals that work before heavy
+   For an existing project, start with health and pattern signals that work before heavy
    annotation:
 
    ```sh

@@ -46,4 +46,5 @@ special lint
 - If the claim is not product behavior, move it to architecture, pattern guidance, or ordinary docs.
 - If the repo has no spec surface yet, add the smallest useful `@spec` and proof attachment instead of leaving the claim implicit.
 
+
 Read [references/validation-checklist.md](references/validation-checklist.md) for the review rubric and [references/trigger-evals.md](references/trigger-evals.md) for trigger examples.

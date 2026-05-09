@@ -208,31 +208,48 @@ The bundled skills fallback guide.
 ### @area SPECIAL.DOCUMENTATION.SKILLS
 The generated agent-skill source surface shipped through fallback skills and the Codex plugin.
 
+Skill docs modules describe the skill surface a reader installs or invokes. Repeated internal sections such as trigger boundaries, workflows, result handling, and reference handoffs are docs patterns, not a copied module tree under every skill. Add a sub-file skill docs module only when a reference file or section has a distinct responsibility that cannot be expressed as one of the shared `DOCS.SKILL_*` structures.
+
 ### @area SPECIAL.DOCUMENTATION.SKILLS.FALLBACK
 Fallback skill templates installed by `special skills install` for agents without the Codex plugin.
 
-### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SPECS
-Fallback skills that help agents define, inspect, validate, and ship product specs.
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.DEFINE_PRODUCT_SPECS
+The fallback skill that helps agents turn requirements and product ideas into current or planned Special specs.
 
-### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.ARCHITECTURE
-Fallback skills that help agents evolve and validate architecture ownership.
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.INSPECT_CURRENT_SPEC_STATE
+The fallback skill that helps agents inspect current supported product claims and proof state.
 
-### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.PATTERNS
-Fallback skills that help agents define, apply, and review project patterns.
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.VALIDATE_PRODUCT_CONTRACT
+The fallback skill that helps agents review whether a product claim is honestly supported.
 
-### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SETUP
-Fallback setup guidance for projects that already have the `special` binary available.
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SHIP_PRODUCT_CHANGE
+The fallback skill that helps agents update specs, implementation, proofs, architecture, and patterns while shipping one change.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.FIND_PLANNED_WORK
+The fallback skill that helps agents find planned specs and migrate durable roadmap prose into planned product claims.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.EVOLVE_MODULE_ARCHITECTURE
+The fallback skill that helps agents change architecture ownership and module boundaries.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.VALIDATE_ARCHITECTURE_IMPLEMENTATION
+The fallback skill that helps agents compare a module's declared responsibility with its implementation.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.USE_PROJECT_PATTERNS
+The fallback skill that helps agents define, apply, and review recurring project patterns.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SETUP_SPECIAL_PROJECT
+The fallback skill that helps agents configure or validate Special in a project that already has the binary available.
 
 ### @area SPECIAL.DOCUMENTATION.SKILLS.PLUGIN
 Codex plugin skills shipped with the marketplace-installable Special plugin.
 
-### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.INSTALL
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.INSTALL_OR_UPDATE_SPECIAL
 Plugin guidance for installing, updating, and validating the native `special` binary when the plugin is already present.
 
-### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.SETUP
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.SETUP_SPECIAL_PROJECT
 Plugin guidance for configuring a repository that has Special available.
 
-### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.WORKFLOW
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.SPECIAL_WORKFLOW
 Plugin guidance for using MCP tools and CLI fallbacks across specs, architecture, patterns, docs, trace, health, and lint.
 
 ### @area SPECIAL.DOCUMENTATION.CONTRIBUTOR
@@ -331,7 +348,23 @@ An opinionated patternizing guide structure: distinguish patterns from principle
 
 ### @pattern DOCS.SKILL_MAIN_ENTRY
 @strictness low
-A skill entry structure: frontmatter description with trigger context, one repeatable workflow, concise core steps, command or tool fallback where relevant, result interpretation, and explicit references for deeper guidance.
+A skill file structure: one clear workflow surface, a trigger-oriented frontmatter description, concise body sections, links to concrete Special contracts when it makes product claims, and references loaded only when deeper guidance is needed.
+
+### @pattern DOCS.SKILL_TRIGGER_BOUNDARY_SECTION
+@strictness low
+A skill trigger-boundary section: the work situations that should load the skill, the nearby situations that should not, and enough examples to keep skill selection precise.
+
+### @pattern DOCS.SKILL_WORKFLOW_SECTION
+@strictness low
+A skill workflow section: ordered actions, exact command or MCP tool shapes where useful, fallback paths when plugin tooling is unavailable, and the command output or state change the agent should inspect.
+
+### @pattern DOCS.SKILL_RESULT_DISPOSITION_SECTION
+@strictness low
+A skill result-disposition section: how to interpret command output, what to fix, what to leave visible, and when to move from one Special surface to another.
+
+### @pattern DOCS.SKILL_REFERENCE_HANDOFF_SECTION
+@strictness low
+A skill reference handoff section: names each optional reference file, states when to read it, and keeps detailed rubrics out of the main skill body.
 
 ### @pattern DOCS.SKILL_TRIGGER_EVAL_REFERENCE
 @strictness low

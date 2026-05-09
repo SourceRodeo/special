@@ -36,4 +36,5 @@ Users can export the current report as a PDF.
 - If the item is only an internal refactor, track it outside product specs or use architecture annotations.
 - If future behavior is buried in prose, move the stable claim into `@spec`.
 
+
 Read [references/planned-workflow.md](references/planned-workflow.md) for the walkthrough and [references/trigger-evals.md](references/trigger-evals.md) for trigger examples.

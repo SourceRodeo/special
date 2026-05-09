@@ -1,8 +1,8 @@
 @filedocuments spec SPECIAL.PATTERNS.COMMAND
-@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.PATTERNS
-@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 # Pattern Workflow
+@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.USE_PROJECT_PATTERNS
+@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 Use this checklist when deciding whether repeated code should define or apply a pattern.
 

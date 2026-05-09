@@ -2,7 +2,7 @@
 # Architecture Validation Checklist
 
 - Read the exact `@module` text before judging the code that claims to implement it.
-- Compare attached `@implements` bodies to the module’s stated responsibility, not to nearby files or names.
+- Compare attached `@implements` bodies to the module's stated responsibility, not to nearby files or names.
 - Use `special arch MODULE.ID --metrics --verbose` when you need architecture evidence beyond direct ownership tracing.
 - If the module lists pattern applications, read `special patterns PATTERN.ID --verbose` before judging whether the implementation approach is intentional.
 - Treat uncovered files, weak coverage, isolated items, outbound-heavy items, and complexity hotspots as inspection cues, not automatic violations.

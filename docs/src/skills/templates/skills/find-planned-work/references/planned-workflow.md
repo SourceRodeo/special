@@ -1,8 +1,8 @@
 @filedocuments spec SPECIAL.SPEC_COMMAND.PLANNED_ONLY
-@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SPECS
-@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 # Planned Work Workflow
+@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.FIND_PLANNED_WORK
+@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 Use this workflow when you need planned work:
 

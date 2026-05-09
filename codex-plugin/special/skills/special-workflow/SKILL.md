@@ -9,6 +9,11 @@ Use Special as the repo-local contract surface for durable product behavior,
 architecture ownership, adopted patterns, documentation relationships, and
 traceability. Use the surfaces as one workflow, not as independent checkboxes.
 
+## When To Use
+
+Use this when the repository already uses Special and the task needs repo-local
+claims, proof, ownership, patterns, docs, trace, health, or lint context.
+
 ## Workflow
 
 1. Check project status with `special_status`.

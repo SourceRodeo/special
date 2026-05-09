@@ -47,4 +47,5 @@ special lint
 - If a current module has no implementation, add implementation or mark it planned.
 - If the issue is behavior proof, switch to product specs.
 
+
 Read [references/validation-checklist.md](references/validation-checklist.md) for the review rubric and [references/trigger-evals.md](references/trigger-evals.md) for trigger examples.

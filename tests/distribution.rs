@@ -86,7 +86,7 @@ special keeps a marketplace-installable Codex plugin source tree under `codex-pl
 special's Codex plugin manifest version and MCP startup version argument match the package version.
 
 @spec SPECIAL.DISTRIBUTION.SKILL_DOCS.GENERATED_SOURCE
-special's shipped fallback and Codex plugin skill markdown files are generated from docs source files whose source carries Special documentation evidence.
+special's shipped fallback and Codex plugin skill markdown files are generated from docs source files whose source carries Special documentation evidence, attach to their owning skill-level docs module, and use docs patterns for repeated internal structure.
 
 @module SPECIAL.TESTS.DISTRIBUTION
 Distribution/release asset integration tests in `tests/distribution.rs`.
@@ -461,21 +461,33 @@ fn markdown_files_under(root: &Path) -> Vec<PathBuf> {
     files
 }
 
+fn skill_module_id(prefix: &str, relative: &Path) -> String {
+    let skill_name = relative
+        .components()
+        .next()
+        .and_then(|component| component.as_os_str().to_str())
+        .expect("skill source path should start with a skill directory");
+    let normalized = skill_name.replace('-', "_").to_ascii_uppercase();
+    format!("SPECIAL.DOCUMENTATION.SKILLS.{prefix}.{normalized}")
+}
+
 #[test]
 // @verifies SPECIAL.DISTRIBUTION.SKILL_DOCS.GENERATED_SOURCE
 fn shipped_skill_docs_are_generated_from_annotated_sources() {
     let roots = [
         (
+            "FALLBACK",
             repo_root().join("docs/src/skills/templates/skills"),
             repo_root().join("templates/skills"),
         ),
         (
+            "PLUGIN",
             repo_root().join("docs/src/skills/codex-plugin/skills"),
             repo_root().join("codex-plugin/special/skills"),
         ),
     ];
 
-    for (source_root, shipped_root) in roots {
+    for (module_prefix, source_root, shipped_root) in roots {
         for shipped_path in markdown_files_under(&shipped_root) {
             let relative = shipped_path
                 .strip_prefix(&shipped_root)
@@ -495,12 +507,26 @@ fn shipped_skill_docs_are_generated_from_annotated_sources() {
                 "{} should carry docs evidence in source",
                 source_path.display()
             );
+            let expected_module = skill_module_id(module_prefix, relative);
+            let implemented_modules = source
+                .lines()
+                .filter_map(|line| line.strip_prefix("@implements "))
+                .filter(|id| id.starts_with("SPECIAL.DOCUMENTATION.SKILLS."))
+                .collect::<Vec<_>>();
             assert!(
-                source
-                    .lines()
-                    .any(|line| line.starts_with("@implements SPECIAL.DOCUMENTATION.SKILLS.")),
-                "{} should attach to the generated skill docs architecture",
+                implemented_modules
+                    .iter()
+                    .any(|module| *module == expected_module),
+                "{} should attach to its owning skill docs module {expected_module}",
                 source_path.display()
+            );
+            assert!(
+                implemented_modules
+                    .iter()
+                    .all(|module| *module == expected_module),
+                "{} should not model repeated skill body sections as docs modules: {:?}",
+                source_path.display(),
+                implemented_modules
             );
             assert!(
                 source
@@ -509,6 +535,13 @@ fn shipped_skill_docs_are_generated_from_annotated_sources() {
                 "{} should apply a generated skill docs pattern",
                 source_path.display()
             );
+            if relative.file_name().and_then(|name| name.to_str()) == Some("SKILL.md") {
+                assert!(
+                    source.contains("documents://"),
+                    "{} should link concrete skill claims to Special docs targets",
+                    source_path.display()
+                );
+            }
             assert!(
                 !shipped.lines().any(|line| {
                     line.contains("(documents://") || line.starts_with("@filedocuments ")

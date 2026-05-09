@@ -41,10 +41,11 @@ special lint
 
 ## What To Do With Results
 
-- If specs are unverified, add or repair the proof.
+- If specs are unverified, add or repair the `@verifies` or `@attests` proof.
 - If lint reports unknown ids or orphan support, fix the annotation.
 - If health flags touched code, inspect whether the issue is real before widening scope.
 - If pattern metrics show a possible missing application, apply the pattern or explain why the code is intentionally different.
 - If the change only affects internals, keep product specs focused on observable behavior and use architecture/pattern annotations for implementation intent.
+
 
 Read [references/change-workflow.md](references/change-workflow.md) for the detailed workflow and [references/trigger-evals.md](references/trigger-evals.md) for trigger examples.

@@ -1,8 +1,8 @@
 @filedocuments spec SPECIAL.SPEC_COMMAND.CURRENT_ONLY
-@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SPECS
-@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 # State Walkthrough
+@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.INSPECT_CURRENT_SPEC_STATE
+@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 Use this workflow when you need the current product-contract state.
 

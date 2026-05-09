@@ -3,12 +3,13 @@ name: use-project-patterns
 description: 'Use this skill when adding, reviewing, or refactoring code that resembles a recurring project approach. Capture the "why is it done this way?" answer with `@pattern`, attach `@applies` only to real source applications, and use pattern metrics as advisory evidence.'
 ---
 @filedocuments spec SPECIAL.PATTERNS.COMMAND
-@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.PATTERNS
-@applies DOCS.SKILL_MAIN_ENTRY
 
 # Use Project Patterns
+@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.USE_PROJECT_PATTERNS
+@applies DOCS.SKILL_MAIN_ENTRY
 
 ## When To Use
+@applies DOCS.SKILL_TRIGGER_BOUNDARY_SECTION
 
 Use this when a developer task involves repeated implementation shape:
 
@@ -16,21 +17,22 @@ Use this when a developer task involves repeated implementation shape:
 - reviewing whether a one-off approach should match the project style
 - deciding whether repetition is a pattern or should become a helper/component
 - documenting why several modules solve a problem the same way
-- interpreting `special patterns --metrics`
+- interpreting [`special patterns --metrics`](documents://spec/SPECIAL.PATTERNS.METRICS)
 
 The repo does not need Special patterns yet. This skill can introduce the first useful pattern.
 
 ## How To Use
+@applies DOCS.SKILL_WORKFLOW_SECTION
 
 1. Start with the problem shape: what situation keeps recurring?
 2. Look for existing examples in nearby code.
-3. If Special is present, run `special patterns` and then `special patterns PATTERN.ID --verbose`.
-4. Use `special health --metrics --target PATH` when you are still deciding whether a repeated shape should become a pattern, helper extraction, or no action.
+3. If Special is present, run [`special patterns`](documents://spec/SPECIAL.PATTERNS.COMMAND) and then [`special patterns PATTERN.ID --verbose`](documents://spec/SPECIAL.PATTERNS.VERBOSE).
+4. Use [`special health --metrics --target PATH`](documents://spec/SPECIAL.HEALTH_COMMAND.TARGET) when you are still deciding whether a repeated shape should become a pattern, helper extraction, or no action.
 5. If there is no pattern yet, define one only when it will guide future code.
 6. Write the pattern as rationale plus fit criteria, not just a name.
-7. Attach `@applies PATTERN.ID` to source items that actually demonstrate the approach.
-8. Use `@fileapplies PATTERN.ID` only when the whole file is the application.
-9. Use `@strictness high|medium|low` when similarity expectations matter.
+7. Attach [`@applies PATTERN.ID`](documents://spec/SPECIAL.PATTERNS.SOURCE_APPLICATIONS) to source items that actually demonstrate the approach.
+8. Use [`@fileapplies PATTERN.ID`](documents://spec/SPECIAL.PATTERNS.FILE_APPLICATIONS) only when the whole file is the application.
+9. Use [`@strictness high|medium|low`](documents://spec/SPECIAL.PATTERNS.STRICTNESS) when similarity expectations matter.
 
 Example definition:
 
@@ -50,13 +52,16 @@ fn summarize_repo_traceability(facts: LanguageFacts) -> RepoTraceabilitySummary 
 ```
 
 ## What To Do With Results
+@applies DOCS.SKILL_RESULT_DISPOSITION_SECTION
 
 - If code intentionally follows a pattern, add or keep `@applies`.
 - If code is almost identical everywhere, extract a helper/component instead of naming a pattern.
 - If the shared idea is only a principle or style rule, put it in docs/module text/lint instead.
 - If pattern applications are too different, split or rewrite the pattern.
-- If `special patterns --metrics` reports possible missing applications, inspect them manually; do not treat them as lint failures.
+- If [`special patterns --metrics`](documents://spec/SPECIAL.PATTERNS.MISSING_APPLICATIONS) reports possible missing applications, inspect them manually; do not treat them as lint failures.
 - If health reports a repeated structure that does not fit an existing pattern, inspect the concrete examples before creating a new pattern.
-- After edits, run `special patterns --metrics --target PATH` when available.
+- After edits, run [`special patterns --metrics --target PATH`](documents://spec/SPECIAL.PATTERNS.METRICS) when available.
+
+@applies DOCS.SKILL_REFERENCE_HANDOFF_SECTION
 
 Read [references/pattern-workflow.md](references/pattern-workflow.md) for examples and [references/trigger-evals.md](references/trigger-evals.md) for trigger examples.
