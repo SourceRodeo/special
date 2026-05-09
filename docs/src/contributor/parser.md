@@ -33,6 +33,9 @@ the declaration they sit next to, including the
 Duplicate, fuzzy, or backward marker forms should stay rejected through
 [duplicate marker rejection](documents://spec/SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_DUPLICATE_MARKERS)
 and [backward-form rejection](documents://spec/SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_BACKWARD_FORM).
+Release metadata may follow the marker, but identifier-shaped suffixes are not
+release metadata and are rejected by
+[identifier-suffix rejection](documents://spec/SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_IDENTIFIER_SUFFIX).
 
 ## Evidence Attachments
 
@@ -61,4 +64,3 @@ and [areas remain structural](documents://spec/SPECIAL.MODULE_PARSE.AREAS_ARE_ST
 Markdown ownership and pattern attachments use heading-bounded bodies:
 [markdown implements](documents://spec/SPECIAL.MODULE_PARSE.IMPLEMENTS.MARKDOWN_SCOPE)
 and [markdown pattern applications](documents://spec/SPECIAL.PATTERNS.MARKDOWN_APPLICATIONS).
-

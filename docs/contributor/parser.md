@@ -31,6 +31,9 @@ next-line form.
 Duplicate, fuzzy, or backward marker forms should stay rejected through
 duplicate marker rejection
 and backward-form rejection.
+Release metadata may follow the marker, but identifier-shaped suffixes are not
+release metadata and are rejected by
+identifier-suffix rejection.
 
 ## Evidence Attachments
 
@@ -59,4 +62,3 @@ and areas remain structural.
 Markdown ownership and pattern attachments use heading-bounded bodies:
 markdown implements
 and markdown pattern applications.
-

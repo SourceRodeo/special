@@ -38,6 +38,9 @@ with `version = "1"` in `special.toml`, special rejects duplicate inline and adj
 @spec SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_BACKWARD_FORM
 with `version = "1"` in `special.toml`, special rejects non-adjacent backward-looking `@planned` markers later in the annotation block.
 
+@spec SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_IDENTIFIER_SUFFIX
+with `version = "1"` in `special.toml`, special rejects identifier-shaped `@planned` suffixes instead of treating them as release metadata.
+
 @spec SPECIAL.PARSE.PLANNED.RELEASE_TARGET
 special parses an optional release string after `@planned` and records it on the owning spec as planned release metadata.
 

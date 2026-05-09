@@ -543,6 +543,33 @@ fn lint_rejects_standalone_planned_suffixes_in_module_declarations() {
 }
 
 #[test]
+// @verifies SPECIAL.MODULE_PARSE.PLANNED.REJECTS_IDENTIFIER_SUFFIX
+fn lint_rejects_identifier_shaped_module_planned_suffixes() {
+    let root = temp_repo_dir("special-cli-modules-planned-identifier-suffix");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::create_dir_all(root.join("_project")).expect("project directory should be created");
+    fs::write(
+        root.join("_project/ARCHITECTURE.md"),
+        concat!(
+            "# Architecture\n\n",
+            "@module DEMO.PLANNED\n",
+            "@planned APP.FUTURE_WORK\n",
+            "Planned module.\n",
+        ),
+    )
+    .expect("architecture fixture should be written");
+
+    let output = run_special(&root, &["lint"]);
+    assert!(!output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(stdout.contains("identifier-shaped @planned suffixes"));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.MODULE_PARSE.CURRENT_MODULES_REQUIRE_IMPLEMENTATION
 fn lint_rejects_current_modules_without_direct_implements() {
     let root = temp_repo_dir("special-cli-modules-unimplemented");

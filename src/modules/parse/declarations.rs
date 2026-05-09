@@ -278,6 +278,15 @@ pub(crate) fn maybe_consume_standalone_planned(
             });
             StandalonePlanned::Invalid
         }
+        Err(PlannedAnnotationError::IdentifierSuffix) => {
+            parsed.diagnostics.push(Diagnostic {
+                severity: DiagnosticSeverity::Error,
+                path: path.to_path_buf(),
+                line,
+                message: "identifier-shaped @planned suffixes are not release metadata".to_string(),
+            });
+            StandalonePlanned::Invalid
+        }
     }
 }
 

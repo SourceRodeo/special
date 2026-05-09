@@ -293,6 +293,9 @@ special records `@planned` on declared modules from supported module declaration
 @spec SPECIAL.MODULE_PARSE.PLANNED.EXACT_STANDALONE_MARKER
 special only accepts an exact standalone `@planned` marker on the next line after a module declaration.
 
+@spec SPECIAL.MODULE_PARSE.PLANNED.REJECTS_IDENTIFIER_SUFFIX
+special rejects identifier-shaped `@planned` suffixes on module declarations instead of treating them as release metadata.
+
 @group SPECIAL.MODULE_PARSE.IMPLEMENTS
 special parses explicit item-scoped and file-scoped module attachments from supported source files.
 
