@@ -463,6 +463,7 @@ fn repo_metrics_verbose_text_surfaces_metric_explanations() {
     assert!(stdout.contains("untraced implementation exact:"));
     assert!(stdout.contains("possible pattern clusters meaning:"));
     assert!(stdout.contains("long prose test literals exact:"));
+    assert!(!stdout.contains("\ncontext\n"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

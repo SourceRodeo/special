@@ -5,7 +5,6 @@ Projects repo-wide health, signals, and traceability documents into backend-read
 // @fileimplements SPECIAL.RENDER.PROJECTION.REPO
 use crate::model::{
     ArchitectureRepoSignalsSummary, GroupedCount, RepoDocument, RepoMetricsSummary,
-    RepoTraceabilityMetrics,
 };
 use crate::modules::analyze::explain::{MetricExplanationKey, metric_explanation};
 
@@ -115,9 +114,6 @@ pub(in crate::render) fn project_repo_health_metric_sections(
         &metrics.tests.exact_long_prose_assertions_by_file,
     );
     push_docs_coverage_section(&mut sections, metrics, verbose);
-    if let Some(traceability) = &metrics.traceability {
-        sections.push(project_repo_traceability_metric_section(traceability));
-    }
 
     sections
 }
@@ -218,55 +214,6 @@ fn push_grouped_metric_section(
             .collect(),
         explanations: Vec::new(),
     });
-}
-
-fn project_repo_traceability_metric_section(
-    metrics: &RepoTraceabilityMetrics,
-) -> ProjectedRepoMetricSection {
-    ProjectedRepoMetricSection {
-        title: "context",
-        counts: vec![
-            metric_count("analyzed implementation items", metrics.analyzed_items),
-            metric_count(
-                "current-spec traced implementation",
-                metrics.current_spec_items,
-            ),
-            metric_count(
-                "statically mediated implementation",
-                metrics.statically_mediated_items,
-            ),
-            metric_count(
-                "test-covered unlinked implementation",
-                metrics.unverified_test_items,
-            ),
-            metric_count("untraced implementation", metrics.unexplained_items),
-            metric_count(
-                "untraced review-surface implementation",
-                metrics.unexplained_review_surface_items,
-            ),
-            metric_count(
-                "untraced public implementation",
-                metrics.unexplained_public_items,
-            ),
-            metric_count(
-                "untraced internal implementation",
-                metrics.unexplained_internal_items,
-            ),
-            metric_count(
-                "untraced module-backed implementation",
-                metrics.unexplained_module_backed_items,
-            ),
-            metric_count(
-                "untraced module-connected implementation",
-                metrics.unexplained_module_connected_items,
-            ),
-            metric_count(
-                "untraced module-isolated implementation",
-                metrics.unexplained_module_isolated_items,
-            ),
-        ],
-        explanations: Vec::new(),
-    }
 }
 
 fn metric_count(label: impl Into<String>, value: usize) -> ProjectedRepoMetricCount {
