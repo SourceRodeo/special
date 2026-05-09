@@ -6,7 +6,8 @@ relationships do not yet answer the practical question: which code, prose,
 repeated shape, or proof path needs attention next?
 
 Health is usually the best first command in an existing repository because it
-can read plain source before the repo has many Special annotations.
+can read plain Rust, TypeScript/TSX, Go, and Python source before the repo has
+many Special annotations.
 
 ```sh
 special health --metrics
@@ -38,6 +39,12 @@ Read this as a signal list, not as a failure list. The report says the
 repo has repeated billing/export shapes, a few pattern candidates, prose worth
 reviewing deliberately, and implementation paths Special cannot yet connect to
 current proof.
+
+Built-in source support has different local boundaries. Rust, TypeScript, and
+Go can use project tools for stronger traceability when those tools are
+available. Python currently uses parser-backed static edges. In every case,
+health reports unavailable or degraded analysis as a boundary in the result
+rather than treating absent evidence as proof.
 
 When `--metrics` has enough detail to make the next review step concrete, it
 also prints cleanup targets:

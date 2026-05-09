@@ -16,6 +16,9 @@ The README install path and first binary check.
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.README.QUICKSTART
 The README's smallest runnable example and first inspection command.
 
+### @module SPECIAL.DOCUMENTATION.PUBLIC.README.LANGUAGE_SUPPORT
+The README's supported source language summary and current analysis boundaries.
+
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.README.SURFACE_MAP
 The README map of the first-class Special surfaces: specs, arch, patterns, docs, and health.
 

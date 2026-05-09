@@ -59,6 +59,8 @@ APP.EXPORT
 Decision supported: whether code has an explicit architecture owner and whether
 declared modules are still only aspirational.
 
+Source metrics currently cover Rust, TypeScript/TSX, Go, and Python. Python reports item-level signals; the other built-in source languages also expose complexity and quality metrics where the local parser/tool boundary supports them.
+
 Contract details: `special arch` supports
 current-only,
 planned-only,
@@ -296,6 +298,12 @@ duplicate source shapes by file
 
 Decision supported: which raw inferred queues should be promoted into specs,
 architecture, patterns, docs, or test changes.
+
+Health uses built-in source analysis for Rust, TypeScript/TSX, Go, and Python.
+Tool-backed traceability depends on the local project tools for the language;
+when a tool is unavailable or a language is using parser-backed static edges,
+the health output reports the boundary instead of treating missing evidence as
+proof.
 
 Contract details: `special health` supports
 target scoping,

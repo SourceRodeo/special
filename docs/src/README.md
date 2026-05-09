@@ -57,7 +57,7 @@ special lint
 ```
 
 The quickstart uses TypeScript examples, but the same annotation model works
-across supported source languages and markdown:
+across Rust, TypeScript/TSX, Go, Python, and markdown:
 
 ```ts
 // @verifies EXPORT.CSV.HEADERS
@@ -106,6 +106,23 @@ That output supports one concrete next step: inspect billing export code before
 trying to model the whole repository. Continue with the
 [existing-project tutorial](docs/how-to.md#adopt-special-in-an-existing-repo)
 when the repository already has code, tests, and docs.
+
+@implements SPECIAL.DOCUMENTATION.PUBLIC.README.LANGUAGE_SUPPORT
+## Supported Source
+
+Special ships built-in source support for
+[Rust, TypeScript/TSX, Go, and Python](documents://spec/SPECIAL.LANGUAGE_PACKS.ADMISSION.PARSER_SURFACE).
+All four can carry Special annotations, contribute owned implementation items,
+and participate in source metrics. Traceability is also exercised across those
+languages by the shared
+[admission contract](documents://spec/SPECIAL.LANGUAGE_PACKS.ADMISSION.TRACEABILITY).
+
+Language-backed analysis is deliberately local. Rust uses `rust-analyzer` when
+available, TypeScript uses the TypeScript compiler API when available, Go uses
+`gopls` when available, and Python currently uses parser-backed static edges.
+When a required local tool is missing or a language can only provide parser
+semantics, Special reports that boundary instead of pretending the analysis was
+stronger than it was.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.README.SURFACE_MAP
 ## Surface Map
