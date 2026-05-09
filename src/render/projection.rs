@@ -3,6 +3,12 @@ mod module;
 /**
 @module SPECIAL.RENDER.PROJECTION
 Projects materialized specs, modules, and repo health documents into the visible verbose or non-verbose shape shared by all render backends.
+
+@group SPECIAL.RENDER
+Renderer contracts shared by text, JSON, HTML, and generated output.
+
+@spec SPECIAL.RENDER.OUTPUT_PARITY
+Text, JSON, and HTML renderers may use format-specific structure, but a command's renderers must expose the same command-owned information unless an explicit product contract documents the exception.
 */
 // @fileimplements SPECIAL.RENDER.PROJECTION
 mod module_analysis;

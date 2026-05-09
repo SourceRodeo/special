@@ -4,6 +4,17 @@ Special builds typed domain documents before rendering text, JSON, or HTML.
 Rendering changes should preserve the command contract first, then update text,
 JSON, HTML, docs, and tests together.
 
+## Output Parity
+
+Text, JSON, and HTML do not need identical structure. They do need the same
+command-owned information unless a product contract documents an exception.
+Use the shared projection layer for renderer policy, then test the relevant
+command family across formats so text cannot silently summarize data that JSON
+or HTML still exposes, or vice versa.
+
+The current parity contract is
+output parity.
+
 ## Generated Docs
 
 `special docs build` writes generated markdown from configured docs source and

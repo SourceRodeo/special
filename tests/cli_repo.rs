@@ -435,6 +435,103 @@ fn repo_metrics_text_surfaces_repo_health_counts() {
 }
 
 #[test]
+// @verifies SPECIAL.RENDER.OUTPUT_PARITY
+fn repo_metrics_renderers_preserve_visible_metric_information() {
+    let root = temp_repo_dir("special-cli-repo-metrics-output-parity");
+    write_many_duplicate_item_signals_module_analysis_fixture(&root);
+
+    let text_output = run_special(&root, &["health", "--metrics"]);
+    assert!(text_output.status.success());
+    let text = String::from_utf8(text_output.stdout).expect("text stdout should be utf-8");
+
+    let html_output = run_special(&root, &["health", "--metrics", "--html"]);
+    assert!(html_output.status.success());
+    let html = String::from_utf8(html_output.stdout).expect("html stdout should be utf-8");
+
+    let json_output = run_special(&root, &["health", "--metrics", "--json"]);
+    assert!(json_output.status.success());
+    let json: Value =
+        serde_json::from_slice(&json_output.stdout).expect("json output should be valid json");
+
+    for (label, value) in [
+        (
+            "source outside architecture",
+            &json["metrics"]["architecture"]["source_outside_architecture"],
+        ),
+        (
+            "untraced implementation",
+            &json["metrics"]["specs"]["untraced_implementation"],
+        ),
+        (
+            "duplicate source shapes",
+            &json["metrics"]["patterns"]["duplicate_source_shapes"],
+        ),
+        (
+            "possible pattern clusters",
+            &json["metrics"]["patterns"]["possible_pattern_clusters"],
+        ),
+        (
+            "possible missing pattern applications",
+            &json["metrics"]["patterns"]["possible_missing_applications"],
+        ),
+        (
+            "uncaptured prose outside docs",
+            &json["metrics"]["docs"]["long_prose_outside_docs"],
+        ),
+        (
+            "long prose test literals",
+            &json["metrics"]["tests"]["exact_long_prose_assertions"],
+        ),
+    ] {
+        let value = json_number_string(value);
+        assert_text_count(&text, label, &value);
+        assert_html_count(&html, label, &value);
+    }
+
+    assert_grouped_counts_visible(
+        &text,
+        &html,
+        json["metrics"]["patterns"]["duplicate_source_shapes_by_file"]
+            .as_array()
+            .expect("duplicate-by-file counts should be an array"),
+    );
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+fn json_number_string(value: &Value) -> String {
+    value
+        .as_u64()
+        .expect("metric value should be an unsigned integer")
+        .to_string()
+}
+
+fn assert_text_count(output: &str, label: &str, value: &str) {
+    assert!(
+        output.contains(&format!("{label}: {value}")),
+        "text output should include {label}: {value}"
+    );
+}
+
+fn assert_html_count(output: &str, label: &str, value: &str) {
+    assert!(
+        output.contains(&format!("{label}: {value}")),
+        "html output should include {label}: {value}"
+    );
+}
+
+fn assert_grouped_counts_visible(text: &str, html: &str, counts: &[Value]) {
+    for count in counts {
+        let value = count["value"]
+            .as_str()
+            .expect("grouped metric value should be text");
+        let count = json_number_string(&count["count"]);
+        assert_text_count(text, value, &count);
+        assert_html_count(html, value, &count);
+    }
+}
+
+#[test]
 // @verifies SPECIAL.HEALTH_COMMAND.METRICS.CLEANUP_TARGETS
 fn repo_metrics_text_surfaces_cleanup_targets_with_representative_items() {
     let root = temp_repo_dir("special-cli-repo-metrics-cleanup-targets");
