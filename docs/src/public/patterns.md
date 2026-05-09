@@ -54,8 +54,9 @@ and where it appears. If health reports a similar repeated source shape but
 `special patterns` has no pattern for it, decide whether the signal deserves a
 helper extraction, an adopted pattern, or no action.
 
-Pattern metrics are advisory fit checks for declared applications. Raw repeated
-source shapes and possible missing applications appear in
+Pattern metrics are advisory fit checks for declared applications. Scoped
+pattern metrics also show source items that may be missing `@applies` for that
+known pattern. Raw repeated source shapes still appear in
 [`special health --metrics`](documents://spec/SPECIAL.HEALTH_COMMAND), because
 health owns uncaptured analysis queues. A good pattern is identifiable by
 structure; a principle like "write clear docs" is not a Special pattern.

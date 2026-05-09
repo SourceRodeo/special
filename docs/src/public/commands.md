@@ -120,9 +120,11 @@ Contract details: `special patterns` supports
 [id-scoped](documents://spec/SPECIAL.PATTERNS.ID_SCOPE),
 [verbose](documents://spec/SPECIAL.PATTERNS.VERBOSE), and
 [metrics](documents://spec/SPECIAL.PATTERNS.METRICS) views. Metrics report
-[similarity](documents://spec/SPECIAL.PATTERNS.METRICS.SIMILARITY). Raw
-missing-application and unannotated-cluster queues belong to
-[`special health`](documents://spec/SPECIAL.HEALTH_COMMAND).
+[similarity](documents://spec/SPECIAL.PATTERNS.METRICS.SIMILARITY) and
+[possible missing applications](documents://spec/SPECIAL.PATTERNS.MISSING_APPLICATIONS)
+for declared patterns. `special health` keeps the repo-wide view of uncaptured
+repetition and can show the same missing-application evidence from that broader
+review angle.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.DOCS
 @applies DOCS.COMMAND_REFERENCE_ENTRY

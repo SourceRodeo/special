@@ -136,8 +136,9 @@ fn docs_self_check_pattern_metrics_cover_docs_patterns() {
 
     for (pattern_id, minimum_applications) in expected {
         let json = run_repo_json(&["patterns", pattern_id, "--metrics", "--json"]);
-        assert!(number_at(&json, &["metrics", "total_patterns"]) >= 20);
-        assert!(number_at(&json, &["metrics", "total_applications"]) >= 140);
+        assert_eq!(number_at(&json, &["metrics", "total_patterns"]), 1);
+        assert_eq!(number_at(&json, &["metrics", "total_definitions"]), 1);
+        assert!(number_at(&json, &["metrics", "total_applications"]) >= minimum_applications);
 
         let pattern = array_at(&json, &["patterns"])
             .first()

@@ -73,6 +73,21 @@ fn materialize_patterns(
     for children in children_map.values_mut() {
         children.sort();
     }
+    let candidate_report = if filter.metrics {
+        Some(pattern_metric_candidates(
+            root,
+            ignore_patterns,
+            parsed,
+            filter,
+            benchmark_config,
+        )?)
+    } else {
+        None
+    };
+    let possible_missing_by_pattern = candidate_report
+        .as_ref()
+        .map(|report| missing_applications_by_pattern(&report.possible_missing_applications))
+        .unwrap_or_default();
 
     let patterns = build_pattern_children(
         None,
@@ -81,25 +96,17 @@ fn materialize_patterns(
         &modules_by_id,
         filter.metrics,
         benchmark_config,
+        &possible_missing_by_pattern,
     );
     let patterns = if let Some(scope) = filter.scope.as_deref() {
         scoped_patterns(patterns, scope)
     } else {
         patterns
     };
+    let metrics = filter.metrics.then(|| pattern_metrics(&patterns));
 
     Ok(PatternDocument {
-        metrics: if filter.metrics {
-            Some(pattern_metrics(
-                root,
-                ignore_patterns,
-                parsed,
-                filter,
-                benchmark_config,
-            )?)
-        } else {
-            None
-        },
+        metrics,
         scoped: filter.scope.is_some(),
         patterns,
     })
@@ -127,6 +134,7 @@ fn build_pattern_children(
     modules_by_id: &BTreeMap<&str, &crate::model::ModuleDecl>,
     include_metrics: bool,
     benchmark_config: PatternMetricBenchmarks,
+    possible_missing_by_pattern: &BTreeMap<String, Vec<PatternMissingApplicationCandidate>>,
 ) -> Vec<PatternNode> {
     let Some(ids) = children_map.get(&parent) else {
         return Vec::new();
@@ -142,6 +150,10 @@ fn build_pattern_children(
                 .cloned(),
             metrics: include_metrics
                 .then(|| pattern_similarity_metrics(parsed, id, benchmark_config)),
+            possible_missing_applications: possible_missing_by_pattern
+                .get(id)
+                .cloned()
+                .unwrap_or_default(),
             applications: applications_for_pattern(parsed, id),
             modules: modules_for_pattern(parsed, id, modules_by_id),
             children: build_pattern_children(
@@ -151,6 +163,7 @@ fn build_pattern_children(
                 modules_by_id,
                 include_metrics,
                 benchmark_config,
+                possible_missing_by_pattern,
             ),
         })
         .collect()
@@ -255,38 +268,48 @@ pub(crate) fn implementation_contains_application(
         && implementation.location.path == application.location.path
 }
 
-fn pattern_metrics(
-    _root: &Path,
-    _ignore_patterns: &[String],
-    parsed: &ParsedArchitecture,
-    _filter: &PatternFilter,
-    _benchmark_config: PatternMetricBenchmarks,
-) -> Result<PatternMetricsSummary> {
-    let pattern_ids = parsed
-        .patterns
+fn pattern_metrics(nodes: &[PatternNode]) -> PatternMetricsSummary {
+    let nodes = collect_pattern_nodes(nodes);
+    let modules_with_applications = nodes
         .iter()
-        .map(|definition| definition.pattern_id.as_str())
-        .collect::<BTreeSet<_>>();
-    let modules_with_applications = parsed
-        .pattern_applications
-        .iter()
-        .flat_map(|application| {
-            parsed
-                .implements
-                .iter()
-                .filter(move |implementation| {
-                    implementation_contains_application(implementation, application)
-                })
-                .map(|implementation| implementation.module_id.as_str())
-        })
+        .flat_map(|node| node.modules.iter().map(|module| module.id.as_str()))
         .collect::<BTreeSet<_>>()
         .len();
-    Ok(PatternMetricsSummary {
-        total_patterns: pattern_ids.len(),
-        total_definitions: parsed.patterns.len(),
-        total_applications: parsed.pattern_applications.len(),
+    PatternMetricsSummary {
+        total_patterns: nodes.len(),
+        total_definitions: nodes
+            .iter()
+            .filter(|node| node.definition.is_some())
+            .count(),
+        total_applications: nodes.iter().map(|node| node.applications.len()).sum(),
         modules_with_applications,
-    })
+        possible_missing_applications: nodes
+            .iter()
+            .map(|node| node.possible_missing_applications.len())
+            .sum(),
+    }
+}
+
+fn collect_pattern_nodes(nodes: &[PatternNode]) -> Vec<&PatternNode> {
+    let mut collected = Vec::new();
+    for node in nodes {
+        collected.push(node);
+        collected.extend(collect_pattern_nodes(&node.children));
+    }
+    collected
+}
+
+fn missing_applications_by_pattern(
+    candidates: &[PatternMissingApplicationCandidate],
+) -> BTreeMap<String, Vec<PatternMissingApplicationCandidate>> {
+    let mut by_pattern = BTreeMap::<String, Vec<PatternMissingApplicationCandidate>>::new();
+    for candidate in candidates {
+        by_pattern
+            .entry(candidate.pattern_id.clone())
+            .or_default()
+            .push(candidate.clone());
+    }
+    by_pattern
 }
 
 pub(crate) struct PatternCandidateReport {
@@ -337,6 +360,7 @@ pub(crate) fn pattern_metric_candidates(
         parsed,
         &target_items,
         &annotated,
+        filter.scope.as_deref(),
         &filter.comparison_paths,
         benchmark_config,
     );
@@ -481,11 +505,15 @@ fn possible_missing_applications(
     parsed: &ParsedArchitecture,
     target_items: &[SourceFeatureItem],
     annotated: &AnnotatedApplicationLocations,
+    scope: Option<&str>,
     comparison_paths: &[PathBuf],
     benchmark_config: PatternMetricBenchmarks,
 ) -> Vec<PatternMissingApplicationCandidate> {
     let mut candidates = Vec::new();
     for definition in &parsed.patterns {
+        if scope.is_some_and(|scope| !pattern_id_matches_scope(&definition.pattern_id, scope)) {
+            continue;
+        }
         let applications = parsed
             .pattern_applications
             .iter()
@@ -530,6 +558,10 @@ fn possible_missing_applications(
     });
     candidates.truncate(20);
     candidates
+}
+
+fn pattern_id_matches_scope(pattern_id: &str, scope: &str) -> bool {
+    pattern_id == scope || pattern_id.starts_with(&format!("{scope}."))
 }
 
 struct PatternProfile {

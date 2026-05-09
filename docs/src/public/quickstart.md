@@ -117,12 +117,14 @@ Inspect pattern usage:
 
 ```sh
 special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
+special patterns EXPORT.LABEL_VALUE_COLUMNS --metrics --verbose
 special patterns --metrics
 ```
 
-Use `special patterns --metrics` even before a project has many adopted
-patterns. In a new project, it keeps repeated structures visible before they
-turn into copy-paste architecture.
+Use `special health --metrics` before naming many patterns; it keeps repeated
+source shapes visible while you decide what deserves a durable name. Use
+`special patterns --metrics` after you have declared patterns and want to review
+their applications, fit, and possible missing applications.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.QUICKSTART.DOCS
 @applies DOCS.TRACEABLE_DOCS_EXAMPLE

@@ -45,7 +45,10 @@ special patterns PATTERN.ID shows that pattern's definition, applications, and m
 special patterns --verbose includes pattern definition text and application bodies.
 
 @spec SPECIAL.PATTERNS.METRICS
-special patterns --metrics reports total patterns, total pattern definitions, total applications, and modules with applications.
+special patterns --metrics reports visible-pattern totals, visible definitions, visible applications, and visible modules with applications.
+
+@spec SPECIAL.PATTERNS.MISSING_APPLICATIONS
+special patterns PATTERN.ID --metrics reports unannotated source items that match the selected declared pattern strongly enough to review as possible missing applications.
 
 @spec SPECIAL.PATTERNS.STRICTNESS
 pattern definitions may declare optional `@strictness high`, `@strictness medium`, or `@strictness low` metadata; omitted strictness defaults to medium.
@@ -626,9 +629,52 @@ fn patterns_metrics_use_special_toml_benchmarks() {
 }
 
 #[test]
-// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS
+// @verifies SPECIAL.PATTERNS.MISSING_APPLICATIONS
 fn patterns_metrics_reports_possible_missing_applications() {
     let root = temp_repo_dir("special-cli-pattern-missing-applications");
+    write_pattern_candidate_fixture(&root);
+
+    let output = run_special(
+        &root,
+        &[
+            "patterns",
+            "APP.CACHE.FILL",
+            "--metrics",
+            "--verbose",
+            "--json",
+        ],
+    );
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    assert_eq!(json["metrics"]["total_patterns"], 1);
+    assert_eq!(json["metrics"]["total_definitions"], 1);
+    assert_eq!(json["metrics"]["total_applications"], 2);
+    assert_eq!(json["metrics"]["modules_with_applications"], 1);
+    assert_eq!(json["metrics"]["possible_missing_applications"], 1);
+    let candidates = json["patterns"][0]["possible_missing_applications"]
+        .as_array()
+        .expect("possible missing applications should be an array");
+    assert!(candidates.iter().any(|candidate| {
+        candidate["pattern_id"] == "APP.CACHE.FILL"
+            && candidate["item_name"] == "load_third"
+            && candidate["score"]
+                .as_f64()
+                .is_some_and(|score| (0.0..=1.0).contains(&score))
+    }));
+    assert_eq!(json["patterns"][0]["id"], "APP.CACHE.FILL");
+
+    let lint_output = run_special(&root, &["lint"]);
+    assert!(lint_output.status.success());
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS
+fn health_metrics_reports_possible_missing_applications() {
+    let root = temp_repo_dir("special-cli-health-pattern-missing-applications");
     write_pattern_candidate_fixture(&root);
 
     let output = run_special(&root, &["health", "--metrics", "--verbose", "--json"]);
@@ -641,15 +687,8 @@ fn patterns_metrics_reports_possible_missing_applications() {
             .as_array()
             .expect("possible missing applications should be an array");
     assert!(candidates.iter().any(|candidate| {
-        candidate["pattern_id"] == "APP.CACHE.FILL"
-            && candidate["item_name"] == "load_third"
-            && candidate["score"]
-                .as_f64()
-                .is_some_and(|score| (0.0..=1.0).contains(&score))
+        candidate["pattern_id"] == "APP.CACHE.FILL" && candidate["item_name"] == "load_third"
     }));
-
-    let lint_output = run_special(&root, &["lint"]);
-    assert!(lint_output.status.success());
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

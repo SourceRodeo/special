@@ -128,7 +128,8 @@ That signal might mean:
 Do not silence this by adding annotations. First decide whether the repeated
 shape is accidental duplication, an intentional pattern, or acceptable local
 parallelism. Use `special health --metrics --verbose --target PATH` for evidence
-and `special patterns --metrics` when you are reviewing declared patterns.
+and `special patterns PATTERN.ID --metrics --verbose` when you are reviewing one
+declared pattern.
 
 @applies DOCS.METRIC_REFERENCE_ENTRY
 ## Pattern Signals
@@ -138,6 +139,13 @@ are candidate repeated structures Special found before you named a pattern.
 [`possible missing pattern applications`](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS)
 are places that look similar to an existing pattern application but do not yet
 carry `@applies`.
+
+The same missing-application evidence also appears on the matching declared
+pattern in
+[`special patterns PATTERN.ID --metrics`](documents://spec/SPECIAL.PATTERNS.MISSING_APPLICATIONS).
+Use the pattern view when the question starts with a known pattern. Use the
+health view when the question starts with repeated source shapes that have not
+yet been classified.
 
 Use these as review queues:
 
@@ -190,7 +198,6 @@ duplicate shapes and a few untraced items, inspect just that slice:
 
 ```sh
 special health --metrics --verbose --target src/billing
-special patterns --metrics --target src/billing
 special arch --unimplemented
 ```
 
@@ -200,6 +207,8 @@ Then make one durable improvement:
 - extract a shared billing export helper if duplicate shapes are accidental
 - define `@pattern BILLING.TABLE_EXPORT` if the repeated export structure is
   intentional across invoices, refunds, and adjustments
+- after defining it, run `special patterns BILLING.TABLE_EXPORT --metrics --verbose`
+  to review known applications and possible missing ones
 - add a spec and direct test only when the behavior is a real product claim
 - move reader-facing billing rules into generated docs source and link them to
   the relevant specs or modules

@@ -248,10 +248,13 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_patterns",
-            "Show declared patterns, known applications, modules, and applied-pattern fit metrics.",
+            "Show declared patterns, known applications, modules, fit metrics, and possible missing applications for known patterns.",
             object_schema(vec![
                 string_property("id", "Optional pattern id to scope the view."),
-                bool_property("metrics", "Include pattern metrics."),
+                bool_property(
+                    "metrics",
+                    "Include pattern fit and missing-application review metrics.",
+                ),
                 bool_property(
                     "verbose",
                     "Show pattern definitions and application bodies.",

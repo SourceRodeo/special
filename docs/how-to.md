@@ -47,8 +47,8 @@ repo-wide list.
 | source outside architecture | `special arch --unimplemented` | Add or adjust module ownership. |
 | untraced implementation | `special specs --verbose` | Move behavior behind a tested module or add direct proof. |
 | duplicate source shapes | `special health --metrics --verbose --target PATH` | Decide whether to extract a helper, name a pattern, or leave local parallelism visible. |
-| possible pattern clusters | `special patterns --metrics` | Promote a real repeated structure into `@pattern`, or do no action. |
-| possible missing pattern applications | `special health --metrics --target PATH --verbose` | Add `@applies` where the pattern is really present. |
+| possible pattern clusters | `special health --metrics --target PATH --verbose` | Promote a real repeated structure into `@pattern`, extract a helper, or do no action. |
+| possible missing pattern applications | `special patterns PATTERN.ID --metrics --verbose` | Add `@applies` where the known pattern is really present. |
 | uncaptured prose outside docs | focused source or docs review | Keep useful local comments, move reader-facing prose into docs, connect docs claims, or remove stale prose. |
 | long prose test literals | focused test review | Assert smaller contractual pieces, test a structured representation, or move large samples into fixtures. |
 

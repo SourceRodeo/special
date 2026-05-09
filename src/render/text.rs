@@ -42,6 +42,10 @@ pub(super) fn render_pattern_text(document: &PatternDocument, verbose: bool) -> 
             "  modules with applications: {}\n",
             metrics.modules_with_applications
         ));
+        output.push_str(&format!(
+            "  possible missing applications: {}\n",
+            metrics.possible_missing_applications
+        ));
     }
 
     for pattern in &document.patterns {
@@ -106,6 +110,22 @@ fn append_pattern_node_text(
             output.push_str(&format!(
                 "{detail_indent}  benchmark estimate: {}\n",
                 benchmark.label()
+            ));
+        }
+    }
+    output.push_str(&format!(
+        "{detail_indent}possible missing applications: {}\n",
+        pattern.possible_missing_applications.len()
+    ));
+    if verbose {
+        for candidate in &pattern.possible_missing_applications {
+            output.push_str(&format!(
+                "{detail_indent}  {} at {}:{} ({}, score {:.3})\n",
+                candidate.item_name,
+                candidate.location.path.display(),
+                candidate.location.line,
+                candidate.confidence.label(),
+                candidate.score
             ));
         }
     }

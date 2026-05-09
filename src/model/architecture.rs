@@ -224,6 +224,8 @@ pub struct PatternNode {
     pub definition: Option<PatternDefinition>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metrics: Option<PatternSimilarityMetrics>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub possible_missing_applications: Vec<PatternMissingApplicationCandidate>,
     pub applications: Vec<PatternApplicationNode>,
     pub modules: Vec<PatternModuleRef>,
     pub children: Vec<PatternNode>,
@@ -252,6 +254,7 @@ pub struct PatternMetricsSummary {
     pub total_definitions: usize,
     pub total_applications: usize,
     pub modules_with_applications: usize,
+    pub possible_missing_applications: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]

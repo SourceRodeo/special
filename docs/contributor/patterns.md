@@ -11,14 +11,16 @@ application:
 
 ```sh
 special patterns --metrics
-special patterns COMMAND.PROJECTION_PIPELINE --verbose
+special patterns COMMAND.PROJECTION_PIPELINE --metrics --verbose
 special health --metrics --target src
 ```
 
-`special patterns --metrics` reviews declared applications. `special health`
-shows raw duplicate structures and missing applications that are not yet part
-of a declared pattern. A new `@applies` should make the existing implementation
-shape easier to review; it should not be added only to make a queue disappear.
+`special patterns --metrics` reviews declared applications and unannotated items
+that may belong to a known pattern. `special health` shows raw duplicate
+structures and uncaptured clusters before you have decided whether they are
+patterns, helper extractions, or acceptable local parallelism. A new `@applies`
+should make the existing implementation shape easier to review; it should not
+be added only to make a queue disappear.
 
 ## Current Catalog
 
@@ -40,7 +42,7 @@ are the patterns that currently have contributor-facing maintenance value:
 Before editing a pattern body, inspect its applications:
 
 ```sh
-special patterns ADAPTER.FACTS_TO_MODEL --verbose
+special patterns ADAPTER.FACTS_TO_MODEL --metrics --verbose
 ```
 
 If the applications no longer share one recognizable structure, split the

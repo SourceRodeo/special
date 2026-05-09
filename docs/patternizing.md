@@ -46,14 +46,16 @@ Review the pattern with:
 
 ```sh
 special patterns EXPORT.LABEL_VALUE_COLUMNS --verbose
+special patterns EXPORT.LABEL_VALUE_COLUMNS --metrics --verbose
 special patterns --metrics
 special health --metrics --target src
 ```
 
-Use pattern metrics to review declared applications. Use health metrics for
-uncaptured raw opportunities: a high-similarity unannotated item may mean a
-missing application, a helper that should be extracted, or a pattern definition
-that is too broad.
+Use pattern metrics to review declared applications and the unannotated items
+that may belong to a known pattern. Use health metrics for uncaptured raw
+opportunities: a high-similarity unannotated item may mean a missing
+application, a helper that should be extracted, or a pattern definition that is
+too broad.
 
 ## Patternizing Documentation
 
