@@ -205,6 +205,36 @@ The Codex plugin installation and native-binary relationship guide.
 ### @module SPECIAL.DOCUMENTATION.PUBLIC.AGENTS.SKILLS
 The bundled skills fallback guide.
 
+### @area SPECIAL.DOCUMENTATION.SKILLS
+The generated agent-skill source surface shipped through fallback skills and the Codex plugin.
+
+### @area SPECIAL.DOCUMENTATION.SKILLS.FALLBACK
+Fallback skill templates installed by `special skills install` for agents without the Codex plugin.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SPECS
+Fallback skills that help agents define, inspect, validate, and ship product specs.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.ARCHITECTURE
+Fallback skills that help agents evolve and validate architecture ownership.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.PATTERNS
+Fallback skills that help agents define, apply, and review project patterns.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SETUP
+Fallback setup guidance for projects that already have the `special` binary available.
+
+### @area SPECIAL.DOCUMENTATION.SKILLS.PLUGIN
+Codex plugin skills shipped with the marketplace-installable Special plugin.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.INSTALL
+Plugin guidance for installing, updating, and validating the native `special` binary when the plugin is already present.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.SETUP
+Plugin guidance for configuring a repository that has Special available.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.WORKFLOW
+Plugin guidance for using MCP tools and CLI fallbacks across specs, architecture, patterns, docs, trace, health, and lint.
+
 ### @area SPECIAL.DOCUMENTATION.CONTRIBUTOR
 Generated documentation for changing and shipping Special itself.
 
@@ -298,3 +328,15 @@ A contributor runbook structure: maintainer-only goal, ordered command phases, e
 ### @pattern DOCS.PATTERNIZING_GUIDE_PAGE
 @strictness low
 An opinionated patternizing guide structure: distinguish patterns from principles, show the admission bar, show a code pattern path, show a documentation pattern path, and explain how metrics guide review without becoming proof.
+
+### @pattern DOCS.SKILL_MAIN_ENTRY
+@strictness low
+A skill entry structure: frontmatter description with trigger context, one repeatable workflow, concise core steps, command or tool fallback where relevant, result interpretation, and explicit references for deeper guidance.
+
+### @pattern DOCS.SKILL_TRIGGER_EVAL_REFERENCE
+@strictness low
+A skill trigger-eval reference structure: realistic should-trigger examples, realistic should-not-trigger examples where useful, and phrasing that tests the frontmatter description boundary rather than the implementation details.
+
+### @pattern DOCS.SKILL_SUPPORT_REFERENCE
+@strictness low
+A skill support-reference structure: focused rubric, checklist, or workflow detail that the main skill can load on demand without duplicating the main workflow.

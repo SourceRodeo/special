@@ -1,3 +1,6 @@
+@filedocuments spec SPECIAL.SPEC_COMMAND
+@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SPECS
+@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 # Spec Writing Rubric
 

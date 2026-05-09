@@ -43,6 +43,14 @@ output = "docs/contributor"
 source = "docs/src/README.md"
 output = "README.md"
 
+[[docs.outputs]]
+source = "docs/src/skills/templates/skills"
+output = "templates/skills"
+
+[[docs.outputs]]
+source = "docs/src/skills/codex-plugin/skills"
+output = "codex-plugin/special/skills"
+
 [health]
 ignore-unexplained = [
   "src/language_packs/*/test_fixtures.rs",

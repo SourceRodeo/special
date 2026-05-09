@@ -26,6 +26,9 @@ special Homebrew distribution.
 @group SPECIAL.DISTRIBUTION.CODEX_PLUGIN
 special Codex plugin distribution.
 
+@group SPECIAL.DISTRIBUTION.SKILL_DOCS
+special generated skill documentation distribution.
+
 @spec SPECIAL.DISTRIBUTION.GITHUB_RELEASES.REPOSITORY_URL
 special release automation declares the `https://github.com/sourcerodeo/special` repository URL.
 
@@ -81,6 +84,9 @@ special keeps a marketplace-installable Codex plugin source tree under `codex-pl
 
 @spec SPECIAL.DISTRIBUTION.CODEX_PLUGIN.VERSION_AWARENESS
 special's Codex plugin manifest version and MCP startup version argument match the package version.
+
+@spec SPECIAL.DISTRIBUTION.SKILL_DOCS.GENERATED_SOURCE
+special's shipped fallback and Codex plugin skill markdown files are generated from docs source files whose source carries Special documentation evidence.
 
 @module SPECIAL.TESTS.DISTRIBUTION
 Distribution/release asset integration tests in `tests/distribution.rs`.
@@ -434,6 +440,84 @@ fn codex_plugin_versions_match_package_version() {
         args.iter()
             .any(|arg| arg.as_str() == Some(&format!("--special-version={version}")))
     );
+}
+
+fn markdown_files_under(root: &Path) -> Vec<PathBuf> {
+    fn visit(path: &Path, files: &mut Vec<PathBuf>) {
+        for entry in fs::read_dir(path).expect("directory should be readable") {
+            let entry = entry.expect("directory entry should be readable");
+            let path = entry.path();
+            if path.is_dir() {
+                visit(&path, files);
+            } else if path.extension().and_then(|value| value.to_str()) == Some("md") {
+                files.push(path);
+            }
+        }
+    }
+
+    let mut files = Vec::new();
+    visit(root, &mut files);
+    files.sort();
+    files
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.SKILL_DOCS.GENERATED_SOURCE
+fn shipped_skill_docs_are_generated_from_annotated_sources() {
+    let roots = [
+        (
+            repo_root().join("docs/src/skills/templates/skills"),
+            repo_root().join("templates/skills"),
+        ),
+        (
+            repo_root().join("docs/src/skills/codex-plugin/skills"),
+            repo_root().join("codex-plugin/special/skills"),
+        ),
+    ];
+
+    for (source_root, shipped_root) in roots {
+        for shipped_path in markdown_files_under(&shipped_root) {
+            let relative = shipped_path
+                .strip_prefix(&shipped_root)
+                .expect("shipped skill path should be under shipped root");
+            let source_path = source_root.join(relative);
+            let source = fs::read_to_string(&source_path)
+                .unwrap_or_else(|error| panic!("{}: {error}", source_path.display()));
+            let shipped = fs::read_to_string(&shipped_path)
+                .unwrap_or_else(|error| panic!("{}: {error}", shipped_path.display()));
+
+            assert!(
+                source.contains("documents://")
+                    || source.lines().any(|line| line.starts_with("@documents "))
+                    || source
+                        .lines()
+                        .any(|line| line.starts_with("@filedocuments ")),
+                "{} should carry docs evidence in source",
+                source_path.display()
+            );
+            assert!(
+                source
+                    .lines()
+                    .any(|line| line.starts_with("@implements SPECIAL.DOCUMENTATION.SKILLS.")),
+                "{} should attach to the generated skill docs architecture",
+                source_path.display()
+            );
+            assert!(
+                source
+                    .lines()
+                    .any(|line| line.starts_with("@applies DOCS.SKILL_")),
+                "{} should apply a generated skill docs pattern",
+                source_path.display()
+            );
+            assert!(
+                !shipped.lines().any(|line| {
+                    line.contains("(documents://") || line.starts_with("@filedocuments ")
+                }),
+                "{} should be scrubbed generated output",
+                shipped_path.display()
+            );
+        }
+    }
 }
 
 #[test]

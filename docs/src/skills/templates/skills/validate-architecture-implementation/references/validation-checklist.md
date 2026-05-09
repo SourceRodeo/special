@@ -1,3 +1,6 @@
+@filedocuments spec SPECIAL.TRACE_COMMAND.ARCH
+@implements SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.ARCHITECTURE
+@applies DOCS.SKILL_SUPPORT_REFERENCE
 
 # Architecture Validation Checklist
 
