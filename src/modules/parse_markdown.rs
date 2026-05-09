@@ -188,7 +188,7 @@ pub(super) fn parse_markdown_architecture_decls(
                 continue;
             };
 
-            let mut cursor = skip_blank_doc_lines(&lines, index + 1);
+            let mut cursor = index + 1;
             let (planned, planned_release, next_cursor) = maybe_consume_doc_planned(
                 kind,
                 &lines,

@@ -1205,12 +1205,12 @@ fn write_rust_imported_call_fixture(root: &std::path::Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.RENDER`\nImported function calls participate in traceability.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.RENDER\nImported function calls participate in traceability.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -1241,12 +1241,12 @@ fn write_rust_module_context_fixture(root: &std::path::Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.MODULE_CONTEXT`\nRepo traceability exposes whether unsupported items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.MODULE_CONTEXT\nRepo traceability exposes whether unsupported items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -1277,12 +1277,12 @@ fn write_rust_instance_method_fixture(root: &std::path::Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.INSTANCE_METHOD`\nInstance-method dispatch traceability behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.INSTANCE_METHOD\nInstance-method dispatch traceability behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -1313,12 +1313,12 @@ fn write_rust_multiple_support_roots_fixture(root: &std::path::Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module OTHER`\nOther module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module OTHER\nOther module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.MULTI_ROOT`\nMultiple verifying roots and off-scope module context preserve the same scoped traceability.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.MULTI_ROOT\nMultiple verifying roots and off-scope module context preserve the same scoped traceability.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -1364,12 +1364,12 @@ fn write_rust_recursive_cycle_fixture(root: &std::path::Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.RECURSIVE_CYCLE`\nRecursive supported cycles preserve scoped traceability under a canonical exact contract target.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.RECURSIVE_CYCLE\nRecursive supported cycles preserve scoped traceability under a canonical exact contract target.\n",
     )
     .expect("spec fixture should be written");
     fs::write(

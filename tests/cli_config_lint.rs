@@ -333,19 +333,18 @@ fn lint_rejects_non_adjacent_planned_in_version_1() {
 }
 
 #[test]
-// @verifies SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_IDENTIFIER_SUFFIX
-fn lint_rejects_identifier_shaped_planned_suffixes() {
-    let root = temp_repo_dir("special-cli-planned-identifier-suffix");
+// @verifies SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_FLOATING_MARKERS
+fn lint_rejects_floating_markdown_planned_release_markers() {
+    let root = temp_repo_dir("special-cli-planned-floating-release");
     fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
         .expect("special.toml should be written");
     fs::write(
-        root.join("specs.rs"),
+        root.join("specs.md"),
         concat!(
-            "// @group DEMO\n",
-            "// Demo root.\n\n",
-            "// @spec DEMO.PLANNED\n",
-            "// @planned APP.FUTURE_WORK\n",
-            "// Planned behavior.\n",
+            "# Specs\n\n",
+            "Introductory prose.\n\n",
+            "@planned 0.9.0\n",
+            "Future behavior.\n",
         ),
     )
     .expect("spec fixture should be written");
@@ -354,7 +353,7 @@ fn lint_rejects_identifier_shaped_planned_suffixes() {
     assert!(!output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("identifier-shaped @planned suffixes"));
+    assert!(stdout.contains("@planned must be adjacent to exactly one owning @spec or @module"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

@@ -62,7 +62,7 @@ fn parsed_architecture_cache_invalidates_after_file_change() {
     std::thread::sleep(std::time::Duration::from_millis(5));
     std::fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module APP.CORE`\nChanged module text.\n",
+        "# Architecture\n\n### @module APP.CORE\nChanged module text.\n",
     )
     .expect("architecture should be rewritten");
 
@@ -294,7 +294,7 @@ fn parsed_repo_contract_fingerprint_invalidates_on_spec_change() {
     std::thread::sleep(std::time::Duration::from_millis(5));
     std::fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.CORE`\nChanged contract text.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.CORE\nChanged contract text.\n",
     )
     .expect("spec fixture should be rewritten");
 

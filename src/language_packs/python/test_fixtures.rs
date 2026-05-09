@@ -16,11 +16,11 @@ pub fn write_python_traceability_fixture(root: &Path) {
     write_file(root, "special.toml", "version = \"1\"\nroot = \".\"\n");
     write_architecture(
         root,
-        "# Architecture\n\n### `@module APP`\nApp module.\n\n### `@module SHARED`\nShared module.\n\n### `@module WORKER`\nWorker module.\n",
+        "# Architecture\n\n### @module APP\nApp module.\n\n### @module SHARED\nShared module.\n\n### @module WORKER\nWorker module.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive Python behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive Python behavior.\n",
     );
     write_file(
         root,

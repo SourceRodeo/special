@@ -39,10 +39,21 @@ pub(super) fn parse_block(block: &CommentBlock, parsed: &mut ParsedRepo, rules: 
     let mut index = 0;
     let mut state = BlockState::default();
     let mut seen_verifies = false;
+    let mut in_code_fence = false;
 
     while index < block.lines.len() {
         let entry = &block.lines[index];
         let trimmed = entry.text.trim();
+
+        if super::starts_markdown_fence(trimmed) {
+            in_code_fence = !in_code_fence;
+            index += 1;
+            continue;
+        }
+        if in_code_fence {
+            index += 1;
+            continue;
+        }
 
         if trimmed.is_empty() {
             index += 1;
@@ -87,9 +98,18 @@ pub(super) fn parse_block(block: &CommentBlock, parsed: &mut ParsedRepo, rules: 
 
 pub(super) fn collect_description_lines(block: &CommentBlock, cursor: &mut usize) -> Vec<String> {
     let mut description_lines = Vec::new();
+    let mut in_code_fence = false;
     while *cursor < block.lines.len() {
         let text = block.lines[*cursor].text.trim();
-        if is_any_tag_boundary(text) {
+        if super::starts_markdown_fence(text) {
+            in_code_fence = !in_code_fence;
+            if !text.is_empty() {
+                description_lines.push(text.to_string());
+            }
+            *cursor += 1;
+            continue;
+        }
+        if !in_code_fence && is_any_tag_boundary(text) {
             break;
         }
         if !text.is_empty() {

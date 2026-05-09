@@ -103,10 +103,16 @@ pub(crate) fn is_any_tag_boundary(text: &str) -> bool {
 }
 
 pub(crate) fn normalize_markdown_annotation_line(line: &str) -> Option<&str> {
+    if special_annotation_starts_inside_code_span(line) {
+        return None;
+    }
     parse_source_annotations::markdown_annotation_line(line).map(|line| line.text)
 }
 
 pub(crate) fn normalize_markdown_declaration_line(line: &str) -> Option<&str> {
+    if special_annotation_starts_inside_code_span(line) {
+        return None;
+    }
     parse_source_annotations::markdown_declaration_line(line)
 }
 
@@ -114,12 +120,40 @@ fn starts_with_tag_like_boundary(text: &str) -> bool {
     parse_source_annotations::starts_with_tag_like_boundary(text)
 }
 
+fn special_annotation_starts_inside_code_span(line: &str) -> bool {
+    let Some(at_index) = line.find('@') else {
+        return false;
+    };
+    let mut in_code_span = false;
+    let mut escaped = false;
+
+    for (index, ch) in line.char_indices() {
+        if index >= at_index {
+            break;
+        }
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            escaped = true;
+            continue;
+        }
+        if ch == '`' {
+            in_code_span = !in_code_span;
+        }
+    }
+
+    in_code_span
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         ReservedSpecialAnnotation, is_any_tag_boundary, is_foreign_tag_boundary,
-        is_reserved_special_annotation, normalize_markdown_declaration_line,
-        reserved_special_annotation, reserved_special_annotation_rest,
+        is_reserved_special_annotation, normalize_markdown_annotation_line,
+        normalize_markdown_declaration_line, reserved_special_annotation,
+        reserved_special_annotation_rest,
     };
 
     #[test]
@@ -183,14 +217,22 @@ mod tests {
     }
 
     #[test]
-    fn markdown_declaration_lines_exclude_lists_and_blockquotes() {
+    fn markdown_declaration_lines_exclude_lists_blockquotes_and_code_spans() {
         assert_eq!(
             normalize_markdown_declaration_line("@spec EXPORT.CSV"),
             Some("@spec EXPORT.CSV")
         );
         assert_eq!(
-            normalize_markdown_declaration_line("### `@spec EXPORT.CSV`"),
+            normalize_markdown_declaration_line("### @spec EXPORT.CSV"),
             Some("@spec EXPORT.CSV")
+        );
+        assert_eq!(
+            normalize_markdown_declaration_line("### `@spec EXPORT.CSV`"),
+            None
+        );
+        assert_eq!(
+            normalize_markdown_annotation_line("`@spec EXPORT.CSV`"),
+            None
         );
         assert_eq!(
             normalize_markdown_declaration_line("- @spec EXPORT.CSV"),

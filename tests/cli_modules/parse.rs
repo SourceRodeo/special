@@ -211,7 +211,7 @@ fn modules_record_markdown_file_scoped_implements() {
         .expect("special.toml should be written");
     fs::write(
         root.join("docs.md"),
-        "### `@module DOCS`\nDocs module.\n\n@fileimplements DOCS\n",
+        "### @module DOCS\nDocs module.\n\n@fileimplements DOCS\n",
     )
     .expect("markdown fixture should be written");
 
@@ -242,7 +242,7 @@ fn modules_attach_markdown_implements_to_heading_sections() {
         .expect("special.toml should be written");
     fs::write(
         root.join("docs.md"),
-        "### `@area DOCS`\nDocs area.\n\n### `@module DOCS.QUICK`\nQuick module.\n\n@implements DOCS.QUICK\n## Quick start\nRun setup.\n\n### Details\nKeep it short.\n\n## Reference\nOptions.\n",
+        "### @area DOCS\nDocs area.\n\n### @module DOCS.QUICK\nQuick module.\n\n@implements DOCS.QUICK\n## Quick start\nRun setup.\n\n### Details\nKeep it short.\n\n## Reference\nOptions.\n",
     )
     .expect("markdown fixture should be written");
 
@@ -280,7 +280,7 @@ fn modules_attach_inline_markdown_implements_to_containing_section() {
         .expect("special.toml should be written");
     fs::write(
         root.join("docs.md"),
-        "### `@area DOCS`\nDocs area.\n\n### `@module DOCS.INSTALL`\nInstall module.\n\n## Install\n@implements DOCS.INSTALL\nUse setup.\n",
+        "### @area DOCS\nDocs area.\n\n### @module DOCS.INSTALL\nInstall module.\n\n## Install\n@implements DOCS.INSTALL\nUse setup.\n",
     )
     .expect("markdown fixture should be written");
 
@@ -320,9 +320,9 @@ fn modules_markdown_implements_ignores_fenced_headings_after_annotation() {
     fs::write(
         root.join("docs.md"),
         concat!(
-            "### `@area DOCS`\n",
+            "### @area DOCS\n",
             "Docs area.\n\n",
-            "### `@module DOCS.GUIDE`\n",
+            "### @module DOCS.GUIDE\n",
             "Guide module.\n\n",
             "## Guide\n",
             "@implements DOCS.GUIDE\n",
@@ -543,9 +543,9 @@ fn lint_rejects_standalone_planned_suffixes_in_module_declarations() {
 }
 
 #[test]
-// @verifies SPECIAL.MODULE_PARSE.PLANNED.REJECTS_IDENTIFIER_SUFFIX
-fn lint_rejects_identifier_shaped_module_planned_suffixes() {
-    let root = temp_repo_dir("special-cli-modules-planned-identifier-suffix");
+// @verifies SPECIAL.MODULE_PARSE.PLANNED.REJECTS_FLOATING_MARKERS
+fn lint_rejects_floating_module_planned_markers() {
+    let root = temp_repo_dir("special-cli-modules-planned-floating");
     fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
         .expect("special.toml should be written");
     fs::create_dir_all(root.join("_project")).expect("project directory should be created");
@@ -554,7 +554,8 @@ fn lint_rejects_identifier_shaped_module_planned_suffixes() {
         concat!(
             "# Architecture\n\n",
             "@module DEMO.PLANNED\n",
-            "@planned APP.FUTURE_WORK\n",
+            "\n",
+            "@planned 0.9.0\n",
             "Planned module.\n",
         ),
     )
@@ -564,7 +565,7 @@ fn lint_rejects_identifier_shaped_module_planned_suffixes() {
     assert!(!output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("identifier-shaped @planned suffixes"));
+    assert!(stdout.contains("@planned must be adjacent to exactly one owning @spec or @module"));
 
     fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
 }

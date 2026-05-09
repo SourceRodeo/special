@@ -13,6 +13,7 @@ use crate::model::{
     ArchitectureKind, Diagnostic, DiagnosticSeverity, ModuleDecl, ParsedArchitecture,
     PatternApplication, PatternDefinition, PlanState, PlannedRelease, SourceLocation,
 };
+use crate::parser::starts_markdown_fence;
 
 use super::declarations::{
     StandalonePlanned, maybe_consume_pattern_strictness, maybe_consume_standalone_planned,
@@ -26,10 +27,21 @@ pub(super) fn parse_source_module_decls(
 ) -> Result<()> {
     for block in collect_comment_blocks(root, ignore_patterns)? {
         let mut index = 0;
+        let mut in_code_fence = false;
 
         while index < block.lines.len() {
             let entry = &block.lines[index];
             let trimmed = entry.text.trim();
+
+            if starts_markdown_fence(trimmed) {
+                in_code_fence = !in_code_fence;
+                index += 1;
+                continue;
+            }
+            if in_code_fence {
+                index += 1;
+                continue;
+            }
 
             if let Some(rest) =
                 reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::Pattern)
@@ -86,7 +98,7 @@ pub(super) fn parse_source_module_decls(
                     continue;
                 };
 
-                let mut cursor = skip_blank_block_lines(&block, index + 1);
+                let mut cursor = index + 1;
                 let (planned, planned_release, next_cursor) = maybe_consume_block_planned(
                     kind,
                     &block,
@@ -182,9 +194,18 @@ fn collect_block_description_lines(
     mut cursor: usize,
 ) -> (Vec<String>, usize) {
     let mut description_lines = Vec::new();
+    let mut in_code_fence = false;
     while cursor < block.lines.len() {
         let text = block.lines[cursor].text.trim();
-        if crate::annotation_syntax::is_any_tag_boundary(text) {
+        if starts_markdown_fence(text) {
+            in_code_fence = !in_code_fence;
+            if !text.is_empty() {
+                description_lines.push(text.to_string());
+            }
+            cursor += 1;
+            continue;
+        }
+        if !in_code_fence && crate::annotation_syntax::is_any_tag_boundary(text) {
             break;
         }
         if !text.is_empty() {

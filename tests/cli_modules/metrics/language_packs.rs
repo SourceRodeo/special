@@ -425,7 +425,7 @@ fn modules_metrics_warns_when_typescript_analyzer_enrichment_is_unavailable() {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module APP`\nApp module.\n",
+        "# Architecture\n\n### @module APP\nApp module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -455,7 +455,7 @@ fn modules_metrics_warns_when_go_analyzer_enrichment_is_unavailable() {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module APP`\nApp module.\n",
+        "# Architecture\n\n### @module APP\nApp module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -490,7 +490,7 @@ fn modules_metrics_uses_typescript_compiler_resolution_for_path_alias_coupling()
     .expect("tsconfig should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module APP`\nApp module.\n\n### `@module SHARED`\nShared module.\n",
+        "# Architecture\n\n### @module APP\nApp module.\n\n### @module SHARED\nShared module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -542,7 +542,7 @@ fn modules_metrics_uses_go_list_resolution_for_module_import_coupling() {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module APP`\nApp module.\n\n### `@module SHARED`\nShared module.\n",
+        "# Architecture\n\n### @module APP\nApp module.\n\n### @module SHARED\nShared module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(

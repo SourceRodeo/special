@@ -15,11 +15,11 @@ pub fn write_typescript_traceability_fixture(root: &Path) {
     write_special_toml(root);
     write_architecture(
         root,
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module SHARED`\nShared module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module SHARED\nShared module.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive behavior.\n",
     );
     write_file(
         root,
@@ -42,10 +42,10 @@ pub fn write_typescript_traceability_fixture(root: &Path) {
 pub fn write_typescript_inline_test_callback_traceability_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs", "src"]);
     write_special_toml(root);
-    write_architecture(root, "# Architecture\n\n### `@module APP`\nApp module.\n");
+    write_architecture(root, "# Architecture\n\n### @module APP\nApp module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.DAEMON_CLEANUP`\nDaemon cleanup is verified from an inline Vitest callback.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.DAEMON_CLEANUP\nDaemon cleanup is verified from an inline Vitest callback.\n",
     );
     write_file(
         root,
@@ -65,11 +65,11 @@ pub fn write_typescript_tool_traceability_fixture(root: &Path) {
     write_special_toml(root);
     write_architecture(
         root,
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LEFT`\nLeft shared module.\n\n### `@module RIGHT`\nRight shared module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LEFT\nLeft shared module.\n\n### @module RIGHT\nRight shared module.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive behavior.\n",
     );
     write_file(
         root,
@@ -99,11 +99,11 @@ pub fn write_typescript_reference_traceability_fixture(root: &Path) {
     write_special_toml(root);
     write_architecture(
         root,
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive callback module.\n\n### `@module DEAD`\nDead callback module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive callback module.\n\n### @module DEAD\nDead callback module.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive callback behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive callback behavior.\n",
     );
     write_file(
         root,
@@ -133,11 +133,11 @@ pub fn write_typescript_cycle_traceability_fixture(root: &Path) {
     write_special_toml(root);
     write_architecture(
         root,
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@area LIVE`\nLive cycle modules.\n\n### `@module LIVE.A`\nLive cycle entry module.\n\n### `@module LIVE.B`\nLive cycle leaf module.\n\n### `@area DEAD`\nDead cycle modules.\n\n### `@module DEAD.A`\nDead cycle entry module.\n\n### `@module DEAD.B`\nDead cycle leaf module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @area LIVE\nLive cycle modules.\n\n### @module LIVE.A\nLive cycle entry module.\n\n### @module LIVE.B\nLive cycle leaf module.\n\n### @area DEAD\nDead cycle modules.\n\n### @module DEAD.A\nDead cycle entry module.\n\n### @module DEAD.B\nDead cycle leaf module.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive behavior routed through a cyclic module graph should preserve only the reachable cycle.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive behavior routed through a cyclic module graph should preserve only the reachable cycle.\n",
     );
     write_file(
         root,

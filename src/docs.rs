@@ -1059,9 +1059,19 @@ fn collect_source_document_refs(
 ) -> Result<()> {
     for block in collect_comment_blocks(root, ignore_patterns)? {
         let mut previous_docs_line = false;
+        let mut in_code_fence = false;
         for entry in &block.lines {
+            let trimmed = entry.text.trim();
+            if starts_markdown_fence(trimmed) {
+                in_code_fence = !in_code_fence;
+                previous_docs_line = false;
+                continue;
+            }
+            if in_code_fence {
+                continue;
+            }
             let parsed = parse_documents_annotation_line(
-                entry.text.trim(),
+                trimmed,
                 &block.path,
                 entry.line,
                 refs,

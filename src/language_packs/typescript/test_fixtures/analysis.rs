@@ -13,7 +13,7 @@ pub fn write_typescript_module_analysis_fixture(root: &Path) {
     write_special_toml(root);
     write_architecture(
         root,
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module SHARED`\nShared module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module SHARED\nShared module.\n",
     );
     write_file(
         root,

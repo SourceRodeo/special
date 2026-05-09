@@ -942,12 +942,12 @@ fn repo_scope_progress_limits_traceability_contexts_to_scoped_languages() {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@area DEMO`\nDemo root.\n\n### `@module DEMO.TS`\nTypeScript module.\n\n### `@module DEMO.RUST`\nRust module.\n",
+        "# Architecture\n\n### @area DEMO\nDemo root.\n\n### @module DEMO.TS\nTypeScript module.\n\n### @module DEMO.RUST\nRust module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.TS`\nTypeScript flow.\n\n### `@spec APP.RUST`\nRust flow.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.TS\nTypeScript flow.\n\n### @spec APP.RUST\nRust flow.\n",
     )
     .expect("specs fixture should be written");
     fs::write(
@@ -1253,12 +1253,12 @@ fn repo_traceability_does_not_follow_process_boundaries_into_scripts() {
         .expect("config should be written");
     fs::write(
         root.join("ARCHITECTURE.md"),
-        "### `@module APP`\nApp module.\n",
+        "### @module APP\nApp module.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.SCRIPT`\nScript behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.SCRIPT\nScript behavior.\n",
     )
     .expect("specs should be written");
     fs::write(

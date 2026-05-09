@@ -14,10 +14,10 @@ use super::support::{
 pub fn write_traceability_module_analysis_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs"]);
     write_special_toml(root);
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive behavior.\n\n### `@spec APP.PLANNED`\n### `@planned 0.6.0`\nPlanned behavior.\n\n### `@spec APP.DEPRECATED`\n### `@deprecated 0.6.0`\nDeprecated behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive behavior.\n\n### @spec APP.PLANNED\n### @planned 0.6.0\nPlanned behavior.\n\n### @spec APP.DEPRECATED\n### @deprecated 0.6.0\nDeprecated behavior.\n",
     );
     write_file(
         root,
@@ -36,10 +36,10 @@ pub fn write_traceability_module_analysis_fixture(root: &Path) {
 pub fn write_traceability_module_context_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs", "src", "tests"]);
     write_rust_toolchain_contract(root);
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.MODULE_CONTEXT`\nRepo traceability exposes whether unsupported items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.MODULE_CONTEXT\nRepo traceability exposes whether unsupported items sit in spec-backed modules and whether they connect inside those modules to traced code.\n",
     );
     write_file(
         root,
@@ -62,10 +62,10 @@ pub fn write_traceability_module_context_fixture(root: &Path) {
 pub fn write_traceability_multiple_supports_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs", "src", "tests"]);
     write_rust_toolchain_contract(root);
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.ALPHA`\nAlpha flow reaches shared implementation.\n\n### `@spec APP.BETA`\nBeta flow reaches shared implementation.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.ALPHA\nAlpha flow reaches shared implementation.\n\n### @spec APP.BETA\nBeta flow reaches shared implementation.\n",
     );
     write_file(
         root,
@@ -95,11 +95,11 @@ pub fn write_traceability_review_surface_fixture(root: &Path) {
     write_rust_toolchain_contract(root);
     write_architecture(
         root,
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module DEMO.TESTS`\nDemo test helpers.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module DEMO.TESTS\nDemo test helpers.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.REVIEW_SURFACE`\nRepo traceability review surface excludes public items that only live in test files.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.REVIEW_SURFACE\nRepo traceability review surface excludes public items that only live in test files.\n",
     );
     write_file(
         root,

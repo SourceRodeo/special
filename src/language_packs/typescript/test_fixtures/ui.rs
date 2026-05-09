@@ -19,11 +19,11 @@ pub fn write_typescript_react_traceability_fixture(root: &Path) {
     write_tsconfig(root, JSX_TSCONFIG);
     write_architecture(
         root,
-        "# Architecture\n\n### `@area APP`\nApp root.\n\n### `@module APP.PAGE`\nTop-level page components.\n\n### `@module APP.SHARED`\nShared UI components.\n",
+        "# Architecture\n\n### @area APP\nApp root.\n\n### @module APP.PAGE\nTop-level page components.\n\n### @module APP.SHARED\nShared UI components.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.PAGE_RENDER`\nThe page renders through its shared component stack.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.PAGE_RENDER\nThe page renders through its shared component stack.\n",
     );
     write_file(
         root,
@@ -49,11 +49,11 @@ pub fn write_typescript_next_traceability_fixture(root: &Path) {
     write_tsconfig(root, NEXT_TSCONFIG);
     write_architecture(
         root,
-        "# Architecture\n\n### `@area APP`\nApp root.\n\n### `@module APP.PAGE`\nTop-level route components.\n\n### `@module APP.CLIENT`\nClient-side interactive components.\n",
+        "# Architecture\n\n### @area APP\nApp root.\n\n### @module APP.PAGE\nTop-level route components.\n\n### @module APP.CLIENT\nClient-side interactive components.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.PAGE_RENDER`\nThe page renders through its client component stack.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.PAGE_RENDER\nThe page renders through its client component stack.\n",
     );
     write_file(
         root,

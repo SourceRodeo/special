@@ -224,7 +224,7 @@ fn lint_reports_applies_to_unknown_pattern() {
     write_special_toml(&root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CACHE`\nCache module.\n",
+        "### @area APP\nApp area.\n\n### @module APP.CACHE\nCache module.\n",
     )
     .expect("architecture should be written");
     fs::write(
@@ -249,7 +249,7 @@ fn lint_reports_duplicate_pattern_definitions() {
     write_special_toml(&root);
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern APP.CACHE_FILL`\nFirst definition.\n\n### `@pattern APP.CACHE_FILL`\nSecond definition.\n",
+        "### @pattern APP.CACHE_FILL\nFirst definition.\n\n### @pattern APP.CACHE_FILL\nSecond definition.\n",
     )
     .expect("patterns should be written");
 
@@ -269,7 +269,7 @@ fn markdown_pattern_applications_attach_heading_sections() {
     write_special_toml(&root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area DOCS`\nDocs area.\n\n### `@module DOCS.QUICK`\nQuick docs.\n\n### `@pattern DOCS.CALLOUT`\nUse callouts sparingly.\n\n@implements DOCS.QUICK\n@applies DOCS.CALLOUT\n## Quick start\nUse a short note.\n\n## Reference\nOptions.\n",
+        "### @area DOCS\nDocs area.\n\n### @module DOCS.QUICK\nQuick docs.\n\n### @pattern DOCS.CALLOUT\nUse callouts sparingly.\n\n@implements DOCS.QUICK\n@applies DOCS.CALLOUT\n## Quick start\nUse a short note.\n\n## Reference\nOptions.\n",
     )
     .expect("architecture should be written");
 
@@ -299,11 +299,11 @@ fn markdown_pattern_applications_preserve_fenced_annotation_examples() {
     fs::write(
         root.join("docs.md"),
         concat!(
-            "### `@area DOCS`\n",
+            "### @area DOCS\n",
             "Docs area.\n\n",
-            "### `@module DOCS.GUIDE`\n",
+            "### @module DOCS.GUIDE\n",
             "Docs guide.\n\n",
-            "### `@pattern DOCS.EXAMPLE`\n",
+            "### @pattern DOCS.EXAMPLE\n",
             "Show annotation examples.\n\n",
             "@implements DOCS.GUIDE\n",
             "@applies DOCS.EXAMPLE\n",
@@ -339,9 +339,9 @@ fn markdown_file_pattern_applications_attach_owned_docs_files() {
     fs::write(
         root.join("docs.md"),
         concat!(
-            "### `@module DOCS`\n",
+            "### @module DOCS\n",
             "Docs module.\n\n",
-            "### `@pattern DOCS.TONE`\n",
+            "### @pattern DOCS.TONE\n",
             "Use direct prose.\n\n",
             "@fileimplements DOCS\n",
             "@fileapplies DOCS.TONE\n",
@@ -403,12 +403,12 @@ fn patterns_command_nests_dotted_pattern_ids() {
     write_special_toml(&root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CACHE`\nCache module.\n",
+        "### @area APP\nApp area.\n\n### @module APP.CACHE\nCache module.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("nested.md"),
-        "### `@pattern APP`\nApplication-wide patterns.\n\n### `@pattern APP.CACHE`\nCache patterns.\n\n### `@pattern APP.CACHE.SINGLE_FLIGHT`\nSingle-flight cache fill.\n",
+        "### @pattern APP\nApplication-wide patterns.\n\n### @pattern APP.CACHE\nCache patterns.\n\n### @pattern APP.CACHE.SINGLE_FLIGHT\nSingle-flight cache fill.\n",
     )
     .expect("nested patterns should be written");
     fs::write(
@@ -439,7 +439,7 @@ fn patterns_id_scope_shows_one_pattern_with_definition_and_modules() {
     write_pattern_fixture(&root);
     fs::write(
         root.join("other.md"),
-        "### `@pattern APP.OTHER_PATTERN`\nAnother pattern.\n",
+        "### @pattern APP.OTHER_PATTERN\nAnother pattern.\n",
     )
     .expect("other pattern should be written");
 
@@ -961,12 +961,12 @@ fn write_pattern_fixture_with_source_application(root: &std::path::Path) {
     write_special_toml(root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CACHE`\nCache module.\n",
+        "### @area APP\nApp area.\n\n### @module APP.CACHE\nCache module.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern APP.SINGLE_FLIGHT_CACHE_FILL`\nUse a read-lock-reread-build-write cache fill shape for expensive reusable computations.\n",
+        "### @pattern APP.SINGLE_FLIGHT_CACHE_FILL\nUse a read-lock-reread-build-write cache fill shape for expensive reusable computations.\n",
     )
     .expect("patterns should be written");
     fs::write(
@@ -980,12 +980,12 @@ fn write_pattern_fixture_with_two_source_applications(root: &std::path::Path) {
     write_special_toml(root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CACHE`\nCache module.\n",
+        "### @area APP\nApp area.\n\n### @module APP.CACHE\nCache module.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern APP.SINGLE_FLIGHT_CACHE_FILL`\n@strictness high\nUse a read-lock-reread-build-write cache fill shape for expensive reusable computations.\n",
+        "### @pattern APP.SINGLE_FLIGHT_CACHE_FILL\n@strictness high\nUse a read-lock-reread-build-write cache fill shape for expensive reusable computations.\n",
     )
     .expect("patterns should be written");
     fs::write(
@@ -999,12 +999,12 @@ fn write_pattern_fixture_with_fileapplies(root: &std::path::Path) {
     write_special_toml(root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CACHE`\nCache module.\n",
+        "### @area APP\nApp area.\n\n### @module APP.CACHE\nCache module.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern APP.SINGLE_FLIGHT_CACHE_FILL`\nUse a read-lock-reread-build-write cache fill shape for expensive reusable computations.\n",
+        "### @pattern APP.SINGLE_FLIGHT_CACHE_FILL\nUse a read-lock-reread-build-write cache fill shape for expensive reusable computations.\n",
     )
     .expect("patterns should be written");
     fs::write(
@@ -1018,12 +1018,12 @@ fn write_pattern_candidate_fixture(root: &std::path::Path) {
     write_special_toml(root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CACHE`\nCache module.\n\n### `@module APP.MAPPERS`\nMapper module.\n",
+        "### @area APP\nApp area.\n\n### @module APP.CACHE\nCache module.\n\n### @module APP.MAPPERS\nMapper module.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern APP.CACHE.FILL`\n@strictness high\nUse a read-lock-reread-build-write cache fill shape.\n",
+        "### @pattern APP.CACHE.FILL\n@strictness high\nUse a read-lock-reread-build-write cache fill shape.\n",
     )
     .expect("patterns should be written");
     fs::write(
@@ -1102,24 +1102,24 @@ fn write_hierarchical_pattern_fixture(root: &std::path::Path) {
     fs::write(
         root.join("architecture.md"),
         concat!(
-            "### `@area DOCS`\n",
+            "### @area DOCS\n",
             "Docs area.\n\n",
-            "### `@module DOCS.ONE`\n",
+            "### @module DOCS.ONE\n",
             "First page.\n\n",
-            "### `@module DOCS.ONE.TRACE`\n",
+            "### @module DOCS.ONE.TRACE\n",
             "First traceable section.\n\n",
-            "### `@module DOCS.TWO`\n",
+            "### @module DOCS.TWO\n",
             "Second page.\n\n",
-            "### `@module DOCS.TWO.TRACE`\n",
+            "### @module DOCS.TWO.TRACE\n",
             "Second traceable section.\n\n",
-            "### `@module DOCS.THREE`\n",
+            "### @module DOCS.THREE\n",
             "Third page.\n\n",
-            "### `@module DOCS.THREE.TRACE`\n",
+            "### @module DOCS.THREE.TRACE\n",
             "Third traceable section.\n\n",
-            "### `@pattern DOCS.SURFACE`\n",
+            "### @pattern DOCS.SURFACE\n",
             "@strictness low\n",
             "A guide page with command and traceable section.\n\n",
-            "### `@pattern DOCS.TRACEABLE`\n",
+            "### @pattern DOCS.TRACEABLE\n",
             "@strictness low\n",
             "A section with source docs, output, and checks.\n",
         ),
@@ -1189,12 +1189,12 @@ fn write_thin_delegate_fixture(root: &std::path::Path) {
     write_special_toml(root);
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp area.\n\n### `@module APP.CLI`\nCLI module.\n",
+        "### @area APP\nApp area.\n\n### @module APP.CLI\nCLI module.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern APP.COMMAND`\nA command pattern.\n",
+        "### @pattern APP.COMMAND\nA command pattern.\n",
     )
     .expect("patterns should be written");
     fs::write(

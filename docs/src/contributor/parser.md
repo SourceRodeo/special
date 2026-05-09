@@ -33,9 +33,14 @@ the declaration they sit next to, including the
 Duplicate, fuzzy, or backward marker forms should stay rejected through
 [duplicate marker rejection](documents://spec/SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_DUPLICATE_MARKERS)
 and [backward-form rejection](documents://spec/SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_BACKWARD_FORM).
-Release metadata may follow the marker, but identifier-shaped suffixes are not
-release metadata and are rejected by
-[identifier-suffix rejection](documents://spec/SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_IDENTIFIER_SUFFIX).
+Release metadata may follow the marker. The parser must not guess whether that
+release string is a version, milestone, or human label; the deciding rule is
+ownership adjacency, and floating markers are rejected by
+[floating marker rejection](documents://spec/SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_FLOATING_MARKERS).
+Backticks quote Special syntax in prose and comments. A markdown heading like
+`### @spec APP.X` declares a spec; ``### `@spec APP.X` `` names the syntax
+without declaring anything, as covered by
+[literal code-span handling](documents://spec/SPECIAL.PARSE.RESERVED_TAGS.CODE_SPAN_LITERAL).
 
 ## Evidence Attachments
 

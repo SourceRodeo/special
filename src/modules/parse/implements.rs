@@ -12,6 +12,7 @@ use crate::extractor::collect_comment_blocks;
 use crate::model::{
     Diagnostic, DiagnosticSeverity, ImplementRef, ParsedArchitecture, SourceLocation,
 };
+use crate::parser::starts_markdown_fence;
 
 use super::declarations::parse_implements_module_id;
 
@@ -21,8 +22,16 @@ pub(super) fn parse_implements_refs(
     parsed: &mut ParsedArchitecture,
 ) -> Result<()> {
     for block in collect_comment_blocks(root, ignore_patterns)? {
+        let mut in_code_fence = false;
         for entry in &block.lines {
             let trimmed = entry.text.trim();
+            if starts_markdown_fence(trimmed) {
+                in_code_fence = !in_code_fence;
+                continue;
+            }
+            if in_code_fence {
+                continue;
+            }
             let (rest, file_scoped, annotation) = if let Some(rest) =
                 reserved_special_annotation_rest(trimmed, ReservedSpecialAnnotation::Implements)
             {

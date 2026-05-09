@@ -24,10 +24,10 @@ fn normalize_markdown_annotation_line_preserves_inline_code_at_line_start() {
 }
 
 #[test]
-fn normalize_markdown_annotation_line_unwraps_whole_line_code_span() {
+fn normalize_markdown_annotation_line_treats_whole_line_code_span_as_literal() {
     assert_eq!(
         super::normalize_markdown_annotation_line("`@spec DEMO.CMD`"),
-        Some("@spec DEMO.CMD")
+        None
     );
 }
 

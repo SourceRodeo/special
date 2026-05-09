@@ -12,7 +12,7 @@ pub fn write_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -30,7 +30,7 @@ pub fn write_item_scoped_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -56,7 +56,7 @@ pub fn write_dependency_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -72,7 +72,7 @@ pub fn write_complexity_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -88,7 +88,7 @@ pub fn write_cognitive_complexity_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -104,7 +104,7 @@ pub fn write_quality_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -120,7 +120,7 @@ pub fn write_coupling_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@area DEMO`\nDemo root.\n\n### `@module DEMO.API`\nAPI module.\n\n### `@module DEMO.SHARED`\nShared module.\n",
+        "# Architecture\n\n### @area DEMO\nDemo root.\n\n### @module DEMO.API\nAPI module.\n\n### @module DEMO.SHARED\nShared module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -141,7 +141,7 @@ pub fn write_ambiguous_coupling_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@area DEMO`\nDemo root.\n\n### `@module DEMO.API`\nAPI module.\n\n### `@module DEMO.LEFT`\nLeft shared module.\n\n### `@module DEMO.RIGHT`\nRight shared module.\n",
+        "# Architecture\n\n### @area DEMO\nDemo root.\n\n### @module DEMO.API\nAPI module.\n\n### @module DEMO.LEFT\nLeft shared module.\n\n### @module DEMO.RIGHT\nRight shared module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -162,7 +162,7 @@ pub fn write_item_signals_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -178,7 +178,7 @@ pub fn write_item_scoped_item_signals_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -194,7 +194,7 @@ pub fn write_unreached_code_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -212,7 +212,7 @@ pub fn write_duplicate_item_signals_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -233,7 +233,7 @@ pub fn write_normalized_duplicate_item_signals_module_analysis_fixture(root: &Pa
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -295,7 +295,7 @@ pub fn write_many_duplicate_item_signals_module_analysis_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
 
@@ -316,7 +316,7 @@ pub fn write_restricted_visibility_root_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -332,7 +332,7 @@ pub fn write_binary_entrypoint_root_fixture(root: &Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n",
     )
     .expect("architecture fixture should be written");
     fs::create_dir_all(root.join("src/bin")).expect("binary fixture dir should be created");

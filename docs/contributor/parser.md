@@ -31,9 +31,14 @@ next-line form.
 Duplicate, fuzzy, or backward marker forms should stay rejected through
 duplicate marker rejection
 and backward-form rejection.
-Release metadata may follow the marker, but identifier-shaped suffixes are not
-release metadata and are rejected by
-identifier-suffix rejection.
+Release metadata may follow the marker. The parser must not guess whether that
+release string is a version, milestone, or human label; the deciding rule is
+ownership adjacency, and floating markers are rejected by
+floating marker rejection.
+Backticks quote Special syntax in prose and comments. A markdown heading like
+`### @spec APP.X` declares a spec; ``### `@spec APP.X` `` names the syntax
+without declaring anything, as covered by
+literal code-span handling.
 
 ## Evidence Attachments
 

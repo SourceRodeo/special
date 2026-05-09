@@ -18,11 +18,11 @@ pub fn write_typescript_event_traceability_fixture(root: &Path) {
     write_tsconfig(root, JSX_TSCONFIG);
     write_architecture(
         root,
-        "# Architecture\n\n### `@area APP`\nApp root.\n\n### `@module APP.PAGE`\nTop-level page components.\n\n### `@module APP.UI`\nShared UI components.\n\n### `@module APP.ACTIONS`\nClient-side action helpers.\n",
+        "# Architecture\n\n### @area APP\nApp root.\n\n### @module APP.PAGE\nTop-level page components.\n\n### @module APP.UI\nShared UI components.\n\n### @module APP.ACTIONS\nClient-side action helpers.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.BUTTON_ACTION`\nThe page renders a button component and routes its action through the shared action helper stack.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.BUTTON_ACTION\nThe page renders a button component and routes its action through the shared action helper stack.\n",
     );
     write_file(
         root,
@@ -53,11 +53,11 @@ pub fn write_typescript_forwarded_callback_traceability_fixture(root: &Path) {
     write_tsconfig(root, JSX_TSCONFIG);
     write_architecture(
         root,
-        "# Architecture\n\n### `@area APP`\nApp root.\n\n### `@module APP.PAGE`\nTop-level page components.\n\n### `@module APP.UI`\nShared UI components.\n\n### `@module APP.ACTIONS`\nClient-side action helpers.\n",
+        "# Architecture\n\n### @area APP\nApp root.\n\n### @module APP.PAGE\nTop-level page components.\n\n### @module APP.UI\nShared UI components.\n\n### @module APP.ACTIONS\nClient-side action helpers.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.BUTTON_ACTION`\nThe page routes button actions through a forwarded callback prop stack.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.BUTTON_ACTION\nThe page routes button actions through a forwarded callback prop stack.\n",
     );
     write_file(
         root,
@@ -88,11 +88,11 @@ pub fn write_typescript_hook_callback_traceability_fixture(root: &Path) {
     write_tsconfig(root, JSX_TSCONFIG);
     write_architecture(
         root,
-        "# Architecture\n\n### `@area APP`\nApp root.\n\n### `@module APP.PAGE`\nTop-level page components.\n\n### `@module APP.UI`\nShared UI components.\n\n### `@module APP.HOOKS`\nClient-side hooks.\n\n### `@module APP.ACTIONS`\nClient-side action helpers.\n",
+        "# Architecture\n\n### @area APP\nApp root.\n\n### @module APP.PAGE\nTop-level page components.\n\n### @module APP.UI\nShared UI components.\n\n### @module APP.HOOKS\nClient-side hooks.\n\n### @module APP.ACTIONS\nClient-side action helpers.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.BUTTON_ACTION`\nThe page routes button actions through a hook-provided callback.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.BUTTON_ACTION\nThe page routes button actions through a hook-provided callback.\n",
     );
     write_file(
         root,
@@ -128,11 +128,11 @@ pub fn write_typescript_effect_traceability_fixture(root: &Path) {
     write_tsconfig(root, JSX_TSCONFIG);
     write_architecture(
         root,
-        "# Architecture\n\n### `@area APP`\nApp root.\n\n### `@module APP.PAGE`\nTop-level page components.\n\n### `@module APP.EFFECTS`\nClient-side effect helpers.\n",
+        "# Architecture\n\n### @area APP\nApp root.\n\n### @module APP.PAGE\nTop-level page components.\n\n### @module APP.EFFECTS\nClient-side effect helpers.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.EFFECT_SYNC`\nThe page triggers its shared sync helper from an effect callback.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.EFFECT_SYNC\nThe page triggers its shared sync helper from an effect callback.\n",
     );
     write_file(
         root,
@@ -158,11 +158,11 @@ pub fn write_typescript_context_traceability_fixture(root: &Path) {
     write_tsconfig(root, JSX_TSCONFIG);
     write_architecture(
         root,
-        "# Architecture\n\n### `@area APP`\nApp root.\n\n### `@module APP.PAGE`\nTop-level page components.\n\n### `@module APP.CONTEXT`\nClient-side shared context.\n\n### `@module APP.ACTIONS`\nClient-side action helpers.\n",
+        "# Architecture\n\n### @area APP\nApp root.\n\n### @module APP.PAGE\nTop-level page components.\n\n### @module APP.CONTEXT\nClient-side shared context.\n\n### @module APP.ACTIONS\nClient-side action helpers.\n",
     );
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.CONTEXT_ACTION`\nThe page routes button actions through a shared context-provided callback.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.CONTEXT_ACTION\nThe page routes button actions through a shared context-provided callback.\n",
     );
     write_file(
         root,

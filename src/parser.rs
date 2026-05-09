@@ -8,6 +8,9 @@ reserved special annotation shape and validation.
 @spec SPECIAL.PARSE.RESERVED_TAGS.REQUIRE_DIRECTIVE_SHAPE
 special reports malformed reserved annotations when a reserved tag appears at line start but omits the required directive shape, instead of silently treating it as foreign syntax.
 
+@spec SPECIAL.PARSE.RESERVED_TAGS.CODE_SPAN_LITERAL
+special treats reserved annotation-looking text inside inline code spans or fenced code blocks as literal examples rather than declarations, attachments, or lifecycle markers.
+
 @spec SPECIAL.PARSE.FOREIGN_TAG_BOUNDARIES
 special treats foreign line-start `@...` and `\\...` tags as block boundaries for attached annotation text without treating them as special annotations.
 
@@ -38,8 +41,8 @@ with `version = "1"` in `special.toml`, special rejects duplicate inline and adj
 @spec SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_BACKWARD_FORM
 with `version = "1"` in `special.toml`, special rejects non-adjacent backward-looking `@planned` markers later in the annotation block.
 
-@spec SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_IDENTIFIER_SUFFIX
-with `version = "1"` in `special.toml`, special rejects identifier-shaped `@planned` suffixes instead of treating them as release metadata.
+@spec SPECIAL.PARSE.PLANNED.ADJACENT_V1.REJECTS_FLOATING_MARKERS
+with `version = "1"` in `special.toml`, special rejects `@planned` markers that are not inline on, or adjacent to, one owning `@spec`.
 
 @spec SPECIAL.PARSE.PLANNED.RELEASE_TARGET
 special parses an optional release string after `@planned` and records it on the owning spec as planned release metadata.

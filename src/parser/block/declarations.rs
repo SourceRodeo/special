@@ -163,12 +163,6 @@ pub(super) fn handle_standalone_planned_line(
             line,
             "use an exact standalone `@planned` marker with no trailing suffix",
         ),
-        Err(PlannedAnnotationError::IdentifierSuffix) => push_diag(
-            parsed,
-            block,
-            line,
-            "identifier-shaped @planned suffixes are not release metadata",
-        ),
     }
 
     true
@@ -201,12 +195,6 @@ pub(super) fn handle_standalone_deprecated_line(
             block,
             line,
             "use an exact standalone `@deprecated` marker with no trailing suffix",
-        ),
-        Err(PlannedAnnotationError::IdentifierSuffix) => push_diag(
-            parsed,
-            block,
-            line,
-            "identifier-shaped @deprecated suffixes are not release metadata",
         ),
     }
 

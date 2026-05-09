@@ -103,11 +103,6 @@ pub(super) fn parse_adjacent_spec_planned(
             None,
             Some("use an exact standalone `@planned` marker with no trailing suffix"),
         ),
-        Err(PlannedAnnotationError::IdentifierSuffix) => (
-            AdjacentLifecycle::Invalid,
-            None,
-            Some("identifier-shaped @planned suffixes are not release metadata"),
-        ),
     }
 }
 
@@ -139,11 +134,6 @@ pub(super) fn parse_adjacent_spec_deprecated(
             AdjacentLifecycle::Invalid,
             None,
             Some("use an exact standalone `@deprecated` marker with no trailing suffix"),
-        ),
-        Err(PlannedAnnotationError::IdentifierSuffix) => (
-            AdjacentLifecycle::Invalid,
-            None,
-            Some("identifier-shaped @deprecated suffixes are not release metadata"),
         ),
     }
 }

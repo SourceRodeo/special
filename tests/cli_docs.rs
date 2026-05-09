@@ -534,6 +534,18 @@ fn docs_validate_ignores_inline_code_examples() {
         ),
     )
     .expect("docs markdown should be written");
+    fs::write(
+        root.join("examples.rs"),
+        concat!(
+            "/**\n",
+            "```text\n",
+            "@documents spec EXPORT.MISSING\n",
+            "```\n",
+            "*/\n",
+            "fn example() {}\n",
+        ),
+    )
+    .expect("source example should be written");
 
     let output = run_special(&root, &["docs"]);
 
@@ -773,17 +785,17 @@ fn write_docs_fixture(root: &std::path::Path) {
         .expect("special.toml should be written");
     fs::write(
         root.join("specs.md"),
-        "### `@group EXPORT`\nExports.\n\n### `@spec EXPORT.CSV.HEADERS`\nCSV headers.\n",
+        "### @group EXPORT\nExports.\n\n### @spec EXPORT.CSV.HEADERS\nCSV headers.\n",
     )
     .expect("specs should be written");
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApplication.\n\n### `@module APP.PARSER`\nParser.\n",
+        "### @area APP\nApplication.\n\n### @module APP.PARSER\nParser.\n",
     )
     .expect("architecture should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern CACHE.SINGLE_FLIGHT_FILL`\nSingle-flight cache fill.\n",
+        "### @pattern CACHE.SINGLE_FLIGHT_FILL\nSingle-flight cache fill.\n",
     )
     .expect("patterns should be written");
     fs::write(
@@ -811,11 +823,11 @@ fn write_docs_metrics_fixture(root: &std::path::Path) {
     fs::write(
         root.join("specs.md"),
         concat!(
-            "### `@group EXPORT`\n",
+            "### @group EXPORT\n",
             "Exports.\n\n",
-            "### `@spec EXPORT.CSV.HEADERS`\n",
+            "### @spec EXPORT.CSV.HEADERS\n",
             "CSV headers.\n\n",
-            "### `@spec EXPORT.INTERNAL`\n",
+            "### @spec EXPORT.INTERNAL\n",
             "Internal export.\n",
         ),
     )
@@ -823,16 +835,16 @@ fn write_docs_metrics_fixture(root: &std::path::Path) {
     fs::write(
         root.join("architecture.md"),
         concat!(
-            "### `@area APP`\n",
+            "### @area APP\n",
             "App.\n\n",
-            "### `@module APP.PARSER`\n",
+            "### @module APP.PARSER\n",
             "Parser.\n",
         ),
     )
     .expect("architecture should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern CACHE.SINGLE_FLIGHT_FILL`\nCache fill.\n",
+        "### @pattern CACHE.SINGLE_FLIGHT_FILL\nCache fill.\n",
     )
     .expect("patterns should be written");
     fs::write(
@@ -881,18 +893,18 @@ fn write_docs_source_target_coverage_fixture(root: &std::path::Path) {
     fs::write(
         root.join("specs.md"),
         concat!(
-            "### `@group EXPORT`\n",
+            "### @group EXPORT\n",
             "Exports.\n\n",
-            "### `@spec EXPORT.CSV.HEADERS`\n",
+            "### @spec EXPORT.CSV.HEADERS\n",
             "CSV headers.\n\n",
-            "### `@spec EXPORT.INTERNAL`\n",
+            "### @spec EXPORT.INTERNAL\n",
             "Internal export.\n",
         ),
     )
     .expect("specs should be written");
     fs::write(
         root.join("architecture.md"),
-        "### `@area APP`\nApp.\n\n### `@module APP.PARSER`\nParser.\n",
+        "### @area APP\nApp.\n\n### @module APP.PARSER\nParser.\n",
     )
     .expect("architecture should be written");
     fs::write(
@@ -902,17 +914,17 @@ fn write_docs_source_target_coverage_fixture(root: &std::path::Path) {
     .expect("source should be written");
     fs::write(
         root.join("patterns.md"),
-        "### `@pattern CACHE.SINGLE_FLIGHT_FILL`\nCache fill.\n",
+        "### @pattern CACHE.SINGLE_FLIGHT_FILL\nCache fill.\n",
     )
     .expect("patterns should be written");
     fs::write(
         root.join("docs-architecture.md"),
         concat!(
-            "### `@area DOCS`\n",
+            "### @area DOCS\n",
             "Docs architecture.\n\n",
-            "### `@module DOCS.README`\n",
+            "### @module DOCS.README\n",
             "README docs section.\n\n",
-            "### `@pattern DOCS.TRACEABLE_EXAMPLE`\n",
+            "### @pattern DOCS.TRACEABLE_EXAMPLE\n",
             "Traceable docs example.\n",
         ),
     )

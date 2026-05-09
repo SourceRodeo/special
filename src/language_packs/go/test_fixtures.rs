@@ -26,7 +26,7 @@ pub fn write_go_module_analysis_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module SHARED`\nShared module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module SHARED\nShared module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
@@ -54,12 +54,12 @@ pub fn write_go_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module SHARED`\nShared module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module SHARED\nShared module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -93,12 +93,12 @@ pub fn write_go_tool_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LEFT`\nLeft shared module.\n\n### `@module RIGHT`\nRight shared module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LEFT\nLeft shared module.\n\n### @module RIGHT\nRight shared module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -137,12 +137,12 @@ pub fn write_go_reference_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive callback module.\n\n### `@module DEAD`\nDead callback module.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive callback module.\n\n### @module DEAD\nDead callback module.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive callback behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive callback behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -181,12 +181,12 @@ pub fn write_go_interface_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive interface implementation.\n\n### `@module DEAD`\nDead interface implementation.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive interface implementation.\n\n### @module DEAD\nDead interface implementation.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive interface behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive interface behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -226,12 +226,12 @@ pub fn write_go_embedding_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive embedding wrapper.\n\n### `@module INNER`\nEmbedded runner implementation.\n\n### `@module DEAD`\nDead unrelated implementation.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive embedding wrapper.\n\n### @module INNER\nEmbedded runner implementation.\n\n### @module DEAD\nDead unrelated implementation.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive embedding behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive embedding behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -275,12 +275,12 @@ pub fn write_go_method_value_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive method-value implementation.\n\n### `@module DEAD`\nDead unrelated implementation.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive method-value implementation.\n\n### @module DEAD\nDead unrelated implementation.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive method-value behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive method-value behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -320,12 +320,12 @@ pub fn write_go_embedding_method_value_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive embedding wrapper.\n\n### `@module INNER`\nEmbedded runner implementation.\n\n### `@module DEAD`\nDead unrelated implementation.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive embedding wrapper.\n\n### @module INNER\nEmbedded runner implementation.\n\n### @module DEAD\nDead unrelated implementation.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive embedding method-value behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive embedding method-value behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -369,12 +369,12 @@ pub fn write_go_method_expression_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive method-expression implementation.\n\n### `@module DEAD`\nDead unrelated implementation.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive method-expression implementation.\n\n### @module DEAD\nDead unrelated implementation.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive method-expression behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive method-expression behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -413,12 +413,12 @@ pub fn write_go_receiver_collision_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive receiver-collision implementation.\n\n### `@module DEAD`\nDead receiver-collision implementation.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive receiver-collision implementation.\n\n### @module DEAD\nDead receiver-collision implementation.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive receiver-collision behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive receiver-collision behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(
@@ -458,12 +458,12 @@ pub fn write_go_embedded_interface_traceability_fixture(root: &Path) {
         .expect("go.mod should be written");
     fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module DEMO`\nDemo module.\n\n### `@module LIVE`\nLive embedded interface wrapper.\n\n### `@module INNER`\nEmbedded runner implementation.\n\n### `@module DEAD`\nDead unrelated implementation.\n",
+        "# Architecture\n\n### @module DEMO\nDemo module.\n\n### @module LIVE\nLive embedded interface wrapper.\n\n### @module INNER\nEmbedded runner implementation.\n\n### @module DEAD\nDead unrelated implementation.\n",
     )
     .expect("architecture fixture should be written");
     fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive embedded interface behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive embedded interface behavior.\n",
     )
     .expect("spec fixture should be written");
     fs::write(

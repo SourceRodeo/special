@@ -70,6 +70,62 @@ fn modules_render_markdown_declarations() {
 }
 
 #[test]
+// @verifies SPECIAL.PARSE.RESERVED_TAGS.CODE_SPAN_LITERAL
+fn specs_ignore_code_styled_annotation_examples() {
+    let root = temp_repo_dir("special-cli-discovery-literal-annotations");
+    fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+        .expect("special.toml should be written");
+    fs::write(
+        root.join("specs.md"),
+        concat!(
+            "### @group APP\n",
+            "App.\n\n",
+            "### @spec APP.LIVE\n",
+            "Live claim.\n\n",
+            "### `@spec APP.MARKDOWN_EXAMPLE`\n",
+            "Literal markdown example.\n",
+        ),
+    )
+    .expect("markdown fixture should be written");
+    fs::write(
+        root.join("src.rs"),
+        concat!(
+            "/**\n",
+            "`@spec APP.SOURCE_CODE_SPAN`\n",
+            "\n",
+            "```text\n",
+            "@spec APP.SOURCE_FENCED_EXAMPLE\n",
+            "```\n",
+            "*/\n",
+            "fn literal_examples() {}\n",
+        ),
+    )
+    .expect("source fixture should be written");
+
+    let output = run_special(&root, &["specs", "--json"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+    let nodes = json["nodes"].as_array().expect("nodes should be an array");
+    assert!(
+        nodes
+            .iter()
+            .any(|node| find_node_by_id(node, "APP.LIVE").is_some())
+    );
+    assert!(!nodes.iter().any(|node| {
+        [
+            "APP.MARKDOWN_EXAMPLE",
+            "APP.SOURCE_CODE_SPAN",
+            "APP.SOURCE_FENCED_EXAMPLE",
+        ]
+        .contains(&node["id"].as_str().unwrap_or_default())
+    }));
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
 // @verifies SPECIAL.SPEC_COMMAND.NO_SPECIAL_SPECS_DIRECTORY
 fn specs_do_not_require_special_specs_directory() {
     let root = temp_repo_dir("special-cli-discovery-no-specs-dir");
@@ -133,7 +189,7 @@ fn special_toml_ignore_patterns_hide_matching_paths_from_specs_modules_and_metri
     fs::create_dir_all(root.join("ignored")).expect("ignored dir should be created");
     fs::write(
         root.join("ignored/specs.md"),
-        "### `@spec IGNORED.SPEC`\nIgnored markdown spec.\n\n### `@module IGNORED.MODULE`\nIgnored markdown module.\n",
+        "### @spec IGNORED.SPEC\nIgnored markdown spec.\n\n### @module IGNORED.MODULE\nIgnored markdown module.\n",
     )
     .expect("ignored markdown fixture should be written");
     fs::write(
@@ -169,14 +225,14 @@ fn discovery_respects_gitignore_and_jjignore_by_default() {
     fs::create_dir_all(root.join("ignored-git")).expect("gitignored dir should be created");
     fs::write(
         root.join("ignored-git/specs.md"),
-        "### `@spec IGNORED.GIT`\nIgnored git claim.\n",
+        "### @spec IGNORED.GIT\nIgnored git claim.\n",
     )
     .expect("gitignored markdown should be written");
 
     fs::create_dir_all(root.join("ignored-jj")).expect("jjignored dir should be created");
     fs::write(
         root.join("ignored-jj/arch.md"),
-        "### `@module IGNORED.JJ`\nIgnored jj module.\n",
+        "### @module IGNORED.JJ\nIgnored jj module.\n",
     )
     .expect("jjignored markdown should be written");
 

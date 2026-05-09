@@ -276,7 +276,7 @@ fn spec_text_output_preserves_inline_code_when_description_starts_with_code() {
         .expect("config should be written");
     fs::write(
         root.join("specs/demo.md"),
-        "### `@group DEMO`\nDemo command surfaces.\n\n### `@spec DEMO.CMD`\n`paypal login` captures a reusable local developer session.\n",
+        "### @group DEMO\nDemo command surfaces.\n\n### @spec DEMO.CMD\n`paypal login` captures a reusable local developer session.\n",
     )
     .expect("markdown spec should be written");
 

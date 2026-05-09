@@ -26,12 +26,12 @@ pub(super) fn write_repo_fixture(root: &Path) {
         .expect("config should be written");
     std::fs::write(
         root.join("_project/ARCHITECTURE.md"),
-        "# Architecture\n\n### `@module APP.CORE`\nCore module.\n",
+        "# Architecture\n\n### @module APP.CORE\nCore module.\n",
     )
     .expect("architecture should be written");
     std::fs::write(
         root.join("specs/root.md"),
-        "### `@group APP`\nApp root.\n\n### `@spec APP.LIVE`\nLive behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.LIVE\nLive behavior.\n",
     )
     .expect("specs should be written");
     std::fs::write(

@@ -15,7 +15,6 @@ pub(crate) enum PlannedSyntax {
 pub(crate) enum PlannedAnnotationError {
     InvalidSuffix,
     InvalidRelease,
-    IdentifierSuffix,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,9 +82,6 @@ pub(crate) fn parse_decl_header<'a>(
                         Err(PlannedAnnotationError::InvalidSuffix) => {
                             return Err(DeclHeaderError::InvalidTrailingContent);
                         }
-                        Err(PlannedAnnotationError::IdentifierSuffix) => {
-                            return Err(DeclHeaderError::InvalidTrailingContent);
-                        }
                     }
                 } else if let Some(result) = parse_deprecated_annotation(suffix) {
                     match result {
@@ -94,9 +90,6 @@ pub(crate) fn parse_decl_header<'a>(
                             return Err(DeclHeaderError::InvalidDeprecatedRelease);
                         }
                         Err(PlannedAnnotationError::InvalidSuffix) => {
-                            return Err(DeclHeaderError::InvalidTrailingContent);
-                        }
-                        Err(PlannedAnnotationError::IdentifierSuffix) => {
                             return Err(DeclHeaderError::InvalidTrailingContent);
                         }
                     }
@@ -160,8 +153,6 @@ fn parse_release_annotation<R>(
     let release = rest.trim();
     if release.is_empty() {
         Some(Ok(ParsedReleaseAnnotation { release: None }))
-    } else if looks_like_special_identifier(release) {
-        Some(Err(PlannedAnnotationError::IdentifierSuffix))
     } else {
         Some(match parse_release(release) {
             Ok(release) => Ok(ParsedReleaseAnnotation {
@@ -175,16 +166,4 @@ fn parse_release_annotation<R>(
 #[derive(Debug, Clone)]
 struct ParsedReleaseAnnotation<R> {
     release: Option<R>,
-}
-
-fn looks_like_special_identifier(value: &str) -> bool {
-    value.contains('.')
-        && value.chars().any(|ch| ch.is_ascii_uppercase())
-        && value
-            .split('.')
-            .all(|part| !part.is_empty() && part.chars().all(is_identifier_part))
-}
-
-fn is_identifier_part(ch: char) -> bool {
-    ch.is_ascii_uppercase() || ch.is_ascii_digit() || matches!(ch, '_' | '-')
 }

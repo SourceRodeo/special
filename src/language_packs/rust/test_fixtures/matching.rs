@@ -13,10 +13,10 @@ use super::support::{
 pub fn write_traceability_file_verify_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs"]);
     write_special_toml(root);
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.FILE`\nFile scoped behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.FILE\nFile scoped behavior.\n",
     );
     write_file(
         root,
@@ -34,10 +34,10 @@ pub fn write_traceability_file_verify_fixture(root: &Path) {
 pub fn write_traceability_name_collision_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs"]);
     write_special_toml(root);
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.COLLISION`\nCollision behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.COLLISION\nCollision behavior.\n",
     );
     write_file(
         root,
@@ -60,10 +60,10 @@ pub fn write_traceability_name_collision_fixture(root: &Path) {
 pub fn write_traceability_qualified_match_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs"]);
     write_special_toml(root);
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.NESTED`\nNested function behavior.\n\n### `@spec APP.METHOD`\nQualified method behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.NESTED\nNested function behavior.\n\n### @spec APP.METHOD\nQualified method behavior.\n",
     );
     write_file(
         root,
@@ -81,10 +81,10 @@ pub fn write_traceability_qualified_match_fixture(root: &Path) {
 pub fn write_traceability_transitive_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs"]);
     write_special_toml(root);
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.TRANSITIVE`\nTransitive traceability behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.TRANSITIVE\nTransitive traceability behavior.\n",
     );
     write_file(
         root,

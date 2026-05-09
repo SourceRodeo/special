@@ -8,6 +8,9 @@ use std::path::Path;
 
 use anyhow::Result;
 
+use crate::annotation_syntax::{
+    ReservedSpecialAnnotation, normalize_markdown_declaration_line, reserved_special_annotation,
+};
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::model::{Diagnostic, DiagnosticSeverity, ParsedRepo, SourceLocation};
 
@@ -21,7 +24,6 @@ use attests::{handle_markdown_file_attest, parse_markdown_file_attest};
 use declarations::{
     collect_markdown_description_lines, maybe_consume_markdown_deprecated,
     maybe_consume_markdown_planned, parse_markdown_decl_header, parse_markdown_spec_decl,
-    skip_blank_markdown_lines,
 };
 
 struct MarkdownLifecycleState {
@@ -63,6 +65,17 @@ pub(super) fn parse_markdown_declarations(
 
             if let Some(rest) = parse_markdown_file_attest(raw_line) {
                 index = handle_markdown_file_attest(&content, &path, &lines, parsed, index, rest);
+                continue;
+            }
+
+            if let Some(message) = floating_markdown_lifecycle_message(&lines, index) {
+                parsed.diagnostics.push(Diagnostic {
+                    severity: DiagnosticSeverity::Error,
+                    path: path.clone(),
+                    line: index + 1,
+                    message: message.to_string(),
+                });
+                index += 1;
                 continue;
             }
 
@@ -143,6 +156,43 @@ pub(super) fn parse_markdown_declarations(
     Ok(())
 }
 
+fn floating_markdown_lifecycle_message(lines: &[&str], index: usize) -> Option<&'static str> {
+    let annotation =
+        normalize_markdown_declaration_line(lines[index]).and_then(reserved_special_annotation)?;
+    let message = match annotation {
+        ReservedSpecialAnnotation::Planned => {
+            "@planned must be adjacent to exactly one owning @spec or @module"
+        }
+        ReservedSpecialAnnotation::Deprecated => {
+            "@deprecated must be adjacent to exactly one owning @spec"
+        }
+        _ => return None,
+    };
+    if previous_markdown_declaration(lines, index).is_some() {
+        None
+    } else {
+        Some(message)
+    }
+}
+
+fn previous_markdown_declaration(
+    lines: &[&str],
+    index: usize,
+) -> Option<ReservedSpecialAnnotation> {
+    let previous_index = index.checked_sub(1)?;
+    normalize_markdown_declaration_line(lines[previous_index])
+        .and_then(reserved_special_annotation)
+        .filter(|annotation| {
+            matches!(
+                annotation,
+                ReservedSpecialAnnotation::Spec
+                    | ReservedSpecialAnnotation::Group
+                    | ReservedSpecialAnnotation::Module
+                    | ReservedSpecialAnnotation::Area
+            )
+        })
+}
+
 fn consume_markdown_lifecycle_markers(
     kind: crate::model::NodeKind,
     lines: &[&str],
@@ -152,7 +202,7 @@ fn consume_markdown_lifecycle_markers(
     planned_syntax: crate::planned_syntax::PlannedSyntax,
     header: &crate::planned_syntax::ParsedDeclHeader<'_>,
 ) -> MarkdownLifecycleState {
-    let mut cursor = skip_blank_markdown_lines(lines, start_cursor);
+    let mut cursor = start_cursor;
     let mut planned = false;
     let mut planned_release = None;
     let mut deprecated = false;
@@ -266,7 +316,7 @@ mod tests {
 
     #[test]
     fn markdown_rejects_invalid_trailing_deprecated_suffix_with_neutral_message() {
-        let parsed = parse_markdown_fixture("### `@spec APP.BAD @deprecatedx`\nBroken.\n");
+        let parsed = parse_markdown_fixture("### @spec APP.BAD @deprecatedx\nBroken.\n");
 
         assert!(parsed.specs.is_empty());
         assert_eq!(parsed.diagnostics.len(), 1);
@@ -308,7 +358,7 @@ mod tests {
     #[test]
     fn markdown_rejects_duplicate_inline_and_adjacent_planned_markers() {
         let parsed = parse_markdown_fixture(
-            "### `@spec APP.BAD @planned 0.4.0`\n### `@planned 0.5.0`\nPlanned.\n",
+            "### @spec APP.BAD @planned 0.4.0\n### @planned 0.5.0\nPlanned.\n",
         );
 
         assert_eq!(parsed.specs.len(), 1);
@@ -325,7 +375,7 @@ mod tests {
     #[test]
     fn markdown_rejects_duplicate_inline_and_adjacent_deprecated_markers() {
         let parsed = parse_markdown_fixture(
-            "### `@spec APP.BAD @deprecated 0.6.0`\n### `@deprecated 0.7.0`\nDeprecated.\n",
+            "### @spec APP.BAD @deprecated 0.6.0\n### @deprecated 0.7.0\nDeprecated.\n",
         );
 
         assert_eq!(parsed.specs.len(), 1);
@@ -342,7 +392,7 @@ mod tests {
     #[test]
     fn markdown_rejects_adjacent_planned_and_deprecated_combination() {
         let parsed = parse_markdown_fixture(
-            "### `@spec APP.BAD`\n### `@planned 0.4.0`\n### `@deprecated 0.6.0`\nConflicting.\n",
+            "### @spec APP.BAD\n### @planned 0.4.0\n### @deprecated 0.6.0\nConflicting.\n",
         );
 
         assert_eq!(parsed.specs.len(), 1);
@@ -360,7 +410,7 @@ mod tests {
     #[test]
     fn markdown_rejects_reverse_order_adjacent_deprecated_and_planned_combination() {
         let parsed = parse_markdown_fixture(
-            "### `@spec APP.BAD`\n### `@deprecated 0.6.0`\n### `@planned 0.4.0`\nConflicting.\n",
+            "### @spec APP.BAD\n### @deprecated 0.6.0\n### @planned 0.4.0\nConflicting.\n",
         );
 
         assert_eq!(parsed.specs.len(), 1);

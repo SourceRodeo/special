@@ -18,10 +18,10 @@ pub fn write_traceability_local_binary_fixture(root: &Path) {
         "Cargo.toml",
         "[package]\nname = \"demo-cli\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[[bin]]\nname = \"app\"\npath = \"src/main.rs\"\n",
     );
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.CLI`\nLocal binary invocation behavior.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.CLI\nLocal binary invocation behavior.\n",
     );
     write_file(
         root,
@@ -44,10 +44,10 @@ pub fn write_traceability_lib_crate_binary_fixture(root: &Path) {
         "Cargo.toml",
         "[package]\nname = \"demo-cli\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[lib]\nname = \"demo\"\n\n[[bin]]\nname = \"app\"\npath = \"src/main.rs\"\n",
     );
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.CLI`\nBinary entrypoint reaches the library crate root honestly.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.CLI\nBinary entrypoint reaches the library crate root honestly.\n",
     );
     write_file(
         root,
@@ -75,10 +75,10 @@ pub fn write_traceability_default_binary_fixture(root: &Path) {
         "Cargo.toml",
         "[package]\nname = \"demo-cli\"\nversion = \"0.1.0\"\nedition = \"2024\"\n",
     );
-    write_architecture(root, "# Architecture\n\n### `@module DEMO`\nDemo module.\n");
+    write_architecture(root, "# Architecture\n\n### @module DEMO\nDemo module.\n");
     write_specs(
         root,
-        "### `@group APP`\nApp root.\n\n### `@spec APP.CLI`\nDefault Cargo binary entrypoints participate in process-boundary traceability.\n",
+        "### @group APP\nApp root.\n\n### @spec APP.CLI\nDefault Cargo binary entrypoints participate in process-boundary traceability.\n",
     );
     write_file(
         root,
