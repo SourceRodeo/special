@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.10.0 - 2026-05-09
+
+- Expanded docs-as-code into a generated documentation system for public docs,
+  contributor docs, fallback skills, and Codex plugin skills, with source-side
+  `documents://` links and scrubbed generated output.
+- Added and hardened `special trace` and `special diff` so relationship audits
+  can follow specs, docs, architecture, and pattern evidence without relying on
+  raw search.
+- Reworked health, docs, architecture, and pattern metrics boundaries so each
+  command owns a clearer diagnostic surface, including docs coverage,
+  interconnectivity, pattern-fit signals, and repo-wide health findings.
+- Promoted the Codex plugin/MCP distribution path with generated plugin skill
+  docs, binary-version awareness, and CLI fallbacks for non-plugin users.
+- Shipped Python as a first-class language pack alongside Rust, TypeScript, and
+  Go, with parser-backed item/call extraction and parity-oriented health and
+  architecture metrics.
+- Hardened the Lean traceability kernel narrative and executable proof boundary,
+  keeping JSON transport ring-fenced as an adapter surface covered by tests.
+- Strengthened self-hosting quality checks around generated docs, skill source
+  structure, command examples, release review capture, and Special metrics used
+  as semantic quality assertions.
+
 ## 0.9.1 - 2026-05-05
 
 - Restored `special docs --metrics` as the intended 0.9 docs-audit surface,

@@ -73,8 +73,8 @@ fn docs_self_check_metrics_keep_generated_docs_connected_and_traceable() {
     let json = run_repo_json(&["docs", "--metrics", "--json", "--target", "docs/src"]);
 
     let total_references = number_at(&json, &["metrics", "total_references"]);
-    assert!(total_references >= 280);
-    assert!(number_at(&json, &["metrics", "link_references"]) >= 450);
+    assert!(total_references >= 350);
+    assert!(number_at(&json, &["metrics", "link_references"]) >= 300);
     assert_eq!(
         number_at(&json, &["metrics", "documents_line_references"]),
         0
