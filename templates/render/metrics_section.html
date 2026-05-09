@@ -1,5 +1,8 @@
 <section class="node">
   <div class="node-header"><span class="node-id">{{ title }}</span></div>
+  {% if let Some(guidance) = guidance %}
+  <p>{{ guidance }}</p>
+  {% endif %}
   <div class="meta counts">{{ counts_html|safe }}</div>
   {{ explanations_html|safe }}
 </section>

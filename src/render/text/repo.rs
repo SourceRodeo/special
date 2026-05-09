@@ -15,9 +15,11 @@ use super::analysis::{format_repo_signal_details, format_repo_signals, format_re
 use super::render_repo_metrics_text;
 
 pub(in crate::render) fn render_repo_text(document: &RepoDocument, verbose: bool) -> String {
-    let cleanup_targets = (!verbose && document.metrics.is_some())
-        .then(|| render_cleanup_targets(document.analysis.as_ref()))
-        .unwrap_or_default();
+    let cleanup_targets = if !verbose && document.metrics.is_some() {
+        render_cleanup_targets(document.analysis.as_ref())
+    } else {
+        String::new()
+    };
     let document = project_repo_document(document, verbose);
     let mut output = String::from("special health\n");
     if let Some(metrics) = &document.metrics {

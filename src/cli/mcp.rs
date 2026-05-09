@@ -264,7 +264,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_docs",
-            "Audit docs relationships from Special's parsed docs graph. Use this for docs-native link validity and generated docs graph checks; use health for broad docs coverage gaps and trace for one relationship chain.",
+            "Audit docs relationships from Special's parsed docs graph. Use this for docs-native link validity, generated docs graph checks, public docs coverage gaps, and trace for one relationship chain.",
             object_schema(vec![
                 string_array_property(
                     "target",
@@ -272,7 +272,7 @@ fn tool_definitions() -> Vec<Value> {
                 ),
                 bool_property(
                     "metrics",
-                    "Include docs relationship inventory and generated docs graph metrics.",
+                    "Include docs relationship inventory, generated docs graph metrics, and public docs coverage gaps.",
                 ),
                 bool_property(
                     "verbose",

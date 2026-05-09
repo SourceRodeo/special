@@ -21,8 +21,8 @@ generated-page reachability in docs:
 metrics,
 relationship inventory,
 and interconnectivity.
-Broad public-docs coverage belongs to health:
-docs coverage and
+Broad public-docs coverage also belongs to docs metrics:
+coverage and
 docs-source declaration scoping.
 Focused relationship-chain review belongs to
 `special trace`.

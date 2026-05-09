@@ -143,20 +143,8 @@ pub struct RepoPatternHealthMetrics {
 #[derive(Debug, Clone, Serialize)]
 pub struct RepoDocsHealthMetrics {
     pub long_prose_outside_docs: usize,
-    pub undocumented_current_specs: usize,
-    pub undocumented_modules: usize,
-    pub undocumented_patterns: usize,
-    pub internal_only_documented_targets: usize,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub long_prose_outside_docs_by_file: Vec<GroupedCount>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub undocumented_current_spec_ids: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub undocumented_module_ids: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub undocumented_pattern_ids: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub internal_only_documented_target_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

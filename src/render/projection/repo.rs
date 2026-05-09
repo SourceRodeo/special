@@ -13,6 +13,7 @@ use super::ProjectedExplanation;
 #[derive(Debug, Clone)]
 pub(in crate::render) struct ProjectedRepoMetricSection {
     pub(in crate::render) title: &'static str,
+    pub(in crate::render) guidance: Option<&'static str>,
     pub(in crate::render) counts: Vec<ProjectedRepoMetricCount>,
     pub(in crate::render) explanations: Vec<ProjectedExplanation>,
 }
@@ -41,42 +42,105 @@ pub(in crate::render) fn project_repo_health_metric_sections(
     metrics: &RepoMetricsSummary,
     verbose: bool,
 ) -> Vec<ProjectedRepoMetricSection> {
-    let mut sections = vec![ProjectedRepoMetricSection {
-        title: "summary",
-        counts: vec![
-            metric_count(
+    let mut sections = vec![
+        ProjectedRepoMetricSection {
+            title: "architecture ownership",
+            guidance: verbose.then_some(
+                "Review source that exists outside declared modules before treating architecture metrics as complete.",
+            ),
+            counts: vec![metric_count(
                 "source outside architecture",
                 metrics.architecture.source_outside_architecture,
+            )],
+            explanations: repo_health_explanations(
+                verbose,
+                &[(
+                    "source outside architecture",
+                    MetricExplanationKey::UnownedItems,
+                )],
             ),
-            metric_count(
+        },
+        ProjectedRepoMetricSection {
+            title: "proof traceability",
+            guidance: verbose.then_some(
+                "Review implementation Special cannot connect to current spec support, without treating process or framework entrypoints as proof edges.",
+            ),
+            counts: vec![metric_count(
                 "untraced implementation",
                 metrics.specs.untraced_implementation,
+            )],
+            explanations: repo_health_explanations(
+                verbose,
+                &[(
+                    "untraced implementation",
+                    MetricExplanationKey::UntracedImplementation,
+                )],
             ),
-            metric_count(
-                "duplicate source shapes",
-                metrics.patterns.duplicate_source_shapes,
+        },
+        ProjectedRepoMetricSection {
+            title: "repeated structure",
+            guidance: verbose.then_some(
+                "Review repeated implementation or documentation shapes before deciding whether they are duplication, named patterns, or acceptable parallelism.",
             ),
-            metric_count(
-                "possible pattern clusters",
-                metrics.patterns.possible_pattern_clusters,
+            counts: vec![
+                metric_count(
+                    "duplicate source shapes",
+                    metrics.patterns.duplicate_source_shapes,
+                ),
+                metric_count(
+                    "possible pattern clusters",
+                    metrics.patterns.possible_pattern_clusters,
+                ),
+                metric_count(
+                    "possible missing pattern applications",
+                    metrics.patterns.possible_missing_applications,
+                ),
+            ],
+            explanations: repo_health_explanations(
+                verbose,
+                &[
+                    ("duplicate source shapes", MetricExplanationKey::DuplicateItems),
+                    (
+                        "possible pattern clusters",
+                        MetricExplanationKey::PossiblePatternClusters,
+                    ),
+                    (
+                        "possible missing pattern applications",
+                        MetricExplanationKey::PossibleMissingPatternApplications,
+                    ),
+                ],
             ),
-            metric_count(
-                "possible missing pattern applications",
-                metrics.patterns.possible_missing_applications,
+        },
+        ProjectedRepoMetricSection {
+            title: "prose and tests",
+            guidance: verbose.then_some(
+                "Review substantial natural-language blocks and long prose literals so docs, comments, specs, and tests each carry the right kind of text.",
             ),
-            metric_count(
-                "uncaptured prose outside docs",
-                metrics.docs.long_prose_outside_docs,
+            counts: vec![
+                metric_count(
+                    "uncaptured prose outside docs",
+                    metrics.docs.long_prose_outside_docs,
+                ),
+                metric_count(
+                    "long prose test literals",
+                    metrics.tests.exact_long_prose_assertions,
+                ),
+            ],
+            explanations: repo_health_explanations(
+                verbose,
+                &[
+                    (
+                        "uncaptured prose outside docs",
+                        MetricExplanationKey::LongProseOutsideDocs,
+                    ),
+                    (
+                        "long prose test literals",
+                        MetricExplanationKey::LongExactProseAssertions,
+                    ),
+                ],
             ),
-            metric_count(
-                "long prose test literals",
-                metrics.tests.exact_long_prose_assertions,
-            ),
-        ],
-        explanations: verbose
-            .then(repo_health_summary_explanations)
-            .unwrap_or_default(),
-    }];
+        },
+    ];
 
     push_grouped_metric_section(
         &mut sections,
@@ -113,86 +177,8 @@ pub(in crate::render) fn project_repo_health_metric_sections(
         "long prose test literals by file",
         &metrics.tests.exact_long_prose_assertions_by_file,
     );
-    push_docs_coverage_section(&mut sections, metrics, verbose);
 
     sections
-}
-
-fn push_docs_coverage_section(
-    sections: &mut Vec<ProjectedRepoMetricSection>,
-    metrics: &RepoMetricsSummary,
-    verbose: bool,
-) {
-    let docs = &metrics.docs;
-    let counts = [
-        (
-            "undocumented current specs",
-            docs.undocumented_current_specs,
-        ),
-        ("undocumented modules", docs.undocumented_modules),
-        ("undocumented patterns", docs.undocumented_patterns),
-        (
-            "internal-only documented targets",
-            docs.internal_only_documented_targets,
-        ),
-    ];
-    if !verbose && counts.iter().all(|(_, value)| *value == 0) {
-        return;
-    }
-    sections.push(ProjectedRepoMetricSection {
-        title: "docs coverage",
-        counts: counts
-            .into_iter()
-            .filter(|(_, value)| verbose || *value > 0)
-            .map(|(label, value)| metric_count(label, value))
-            .collect(),
-        explanations: Vec::new(),
-    });
-    if !verbose {
-        return;
-    }
-    push_id_list_metric_section(
-        sections,
-        "undocumented current spec ids",
-        &docs.undocumented_current_spec_ids,
-    );
-    push_id_list_metric_section(
-        sections,
-        "undocumented module ids",
-        &docs.undocumented_module_ids,
-    );
-    push_id_list_metric_section(
-        sections,
-        "undocumented pattern ids",
-        &docs.undocumented_pattern_ids,
-    );
-    push_id_list_metric_section(
-        sections,
-        "internal-only documented target ids",
-        &docs.internal_only_documented_target_ids,
-    );
-}
-
-fn push_id_list_metric_section(
-    sections: &mut Vec<ProjectedRepoMetricSection>,
-    title: &'static str,
-    ids: &[String],
-) {
-    if ids.is_empty() {
-        return;
-    }
-    let counts = ids
-        .iter()
-        .map(|id| ProjectedRepoMetricCount {
-            label: id.clone(),
-            value: String::new(),
-        })
-        .collect::<Vec<_>>();
-    sections.push(ProjectedRepoMetricSection {
-        title,
-        counts,
-        explanations: Vec::new(),
-    });
 }
 
 fn push_grouped_metric_section(
@@ -205,6 +191,7 @@ fn push_grouped_metric_section(
     }
     sections.push(ProjectedRepoMetricSection {
         title,
+        guidance: None,
         counts: counts
             .iter()
             .map(|count| ProjectedRepoMetricCount {
@@ -223,45 +210,26 @@ fn metric_count(label: impl Into<String>, value: usize) -> ProjectedRepoMetricCo
     }
 }
 
-fn repo_health_summary_explanations() -> Vec<ProjectedExplanation> {
-    vec![
-        repo_health_explanation(
-            "source outside architecture",
-            MetricExplanationKey::UnownedItems,
-        ),
-        repo_health_explanation(
-            "untraced implementation",
-            MetricExplanationKey::UntracedImplementation,
-        ),
-        repo_health_explanation(
-            "duplicate source shapes",
-            MetricExplanationKey::DuplicateItems,
-        ),
-        repo_health_explanation(
-            "possible pattern clusters",
-            MetricExplanationKey::PossiblePatternClusters,
-        ),
-        repo_health_explanation(
-            "possible missing pattern applications",
-            MetricExplanationKey::PossibleMissingPatternApplications,
-        ),
-        repo_health_explanation(
-            "uncaptured prose outside docs",
-            MetricExplanationKey::LongProseOutsideDocs,
-        ),
-        repo_health_explanation(
-            "long prose test literals",
-            MetricExplanationKey::LongExactProseAssertions,
-        ),
-    ]
-}
-
 fn repo_health_explanation(label: &'static str, key: MetricExplanationKey) -> ProjectedExplanation {
     let explanation = metric_explanation(key);
     ProjectedExplanation {
         label,
         plain: explanation.plain,
         precise: explanation.precise,
+    }
+}
+
+fn repo_health_explanations(
+    verbose: bool,
+    items: &[(&'static str, MetricExplanationKey)],
+) -> Vec<ProjectedExplanation> {
+    if verbose {
+        items
+            .iter()
+            .map(|(label, key)| repo_health_explanation(label, *key))
+            .collect()
+    } else {
+        Vec::new()
     }
 }
 

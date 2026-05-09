@@ -152,7 +152,7 @@ special docs metrics
 
 Decision supported: whether docs links resolve, whether generated docs pages are
 connected, and whether docs output can be built safely. Use
-`special health --metrics`
+`special docs --metrics`
 when the question is which specs, modules, or patterns lack public docs. Use
 `special trace` when one docs
 relationship needs its full resource chain.
@@ -318,7 +318,6 @@ HTML. Metrics cover
 source outside architecture,
 duplicate source shapes,
 cleanup targets,
-docs coverage,
 untraced implementation,
 missing pattern applications,
 pattern clusters,

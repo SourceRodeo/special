@@ -161,7 +161,7 @@ special docs metrics
 
 Decision supported: whether docs links resolve, whether generated docs pages are
 connected, and whether docs output can be built safely. Use
-[`special health --metrics`](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE)
+[`special docs --metrics`](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE)
 when the question is which specs, modules, or patterns lack public docs. Use
 [`special trace`](documents://spec/SPECIAL.TRACE_COMMAND) when one docs
 relationship needs its full resource chain.
@@ -333,7 +333,6 @@ Contract details: `special health` supports
 [source outside architecture](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS),
 [duplicate source shapes](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION),
 [cleanup targets](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.CLEANUP_TARGETS),
-[docs coverage](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE),
 [untraced implementation](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
 [missing pattern applications](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS),
 [pattern clusters](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION),

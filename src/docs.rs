@@ -42,19 +42,19 @@ special docs build SOURCE OUTPUT refuses to write docs output over the input pat
 special docs build uses `[[docs.outputs]]` mappings from special.toml to write configured generated docs outputs without repeating paths on the command line.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS
-special docs --metrics reports documentation relationship inventory and generated docs graph metrics without writing files or claiming cross-surface documentation coverage.
+special docs --metrics reports documentation relationship inventory, generated docs graph metrics, and public documentation coverage for current specs, modules, and patterns without writing files.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS
-special docs --metrics counts documentation relationship inventory by target kind, source shape, and generated/internal source placement without claiming cross-surface documentation coverage.
+special docs --metrics counts documentation relationship inventory by target kind, source shape, and generated/internal source placement separately from public target coverage.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
 special docs --metrics reports configured generated docs pages, markdown links among those pages, broken local docs links, orphan pages, and configured-entrypoint reachability.
 
-@spec SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE
-special health --metrics reports broad public-docs coverage gaps for current specs, modules, and patterns using generated docs evidence without tracing each documented relationship chain.
+@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+special docs --metrics reports broad public-docs coverage gaps for current specs, modules, and patterns using generated docs evidence without tracing each documented relationship chain.
 
-@spec SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE.DOCS_SOURCE_DECLARATIONS
-special health docs coverage excludes module, area, and pattern targets that are declared, implemented, or applied by configured docs output source paths.
+@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE.DOCS_SOURCE_DECLARATIONS
+special docs coverage excludes module, area, and pattern targets that are declared, implemented, or applied by configured docs output source paths.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -74,8 +74,7 @@ use crate::config::{DocsOutputConfig, SpecialVersion};
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::extractor::collect_comment_blocks;
 use crate::model::{
-    ArchitectureKind, Diagnostic, DiagnosticSeverity, LintReport, NodeKind, RepoDocsHealthMetrics,
-    SourceLocation,
+    ArchitectureKind, Diagnostic, DiagnosticSeverity, LintReport, NodeKind, SourceLocation,
 };
 use crate::parser::starts_markdown_fence;
 use crate::source_paths::matches_scope_path;
@@ -176,8 +175,21 @@ pub(crate) struct DocsMetricsSummary {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entrypoint_pages: Option<usize>,
     pub target_kinds: Vec<DocsTargetKindMetrics>,
+    pub coverage: DocsCoverageMetrics,
     pub broken_local_doc_link_details: Vec<DocsLocalLinkIssue>,
     pub orphan_page_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct DocsCoverageMetrics {
+    pub undocumented_current_specs: usize,
+    pub undocumented_modules: usize,
+    pub undocumented_patterns: usize,
+    pub internal_only_documented_targets: usize,
+    pub undocumented_current_spec_ids: Vec<String>,
+    pub undocumented_module_ids: Vec<String>,
+    pub undocumented_pattern_ids: Vec<String>,
+    pub internal_only_documented_target_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -273,21 +285,9 @@ pub(crate) fn build_docs_metrics_document(
     let (document, report) = build_docs_document(root, ignore_patterns, version, scope_paths)?;
     let generated_sources = configured_output_sources(root, outputs);
     let generated_graph = build_generated_docs_graph(root, outputs, entrypoints)?;
-    let metrics = docs_metrics_summary(root, &document, &generated_sources, generated_graph);
-    Ok((DocsMetricsDocument { metrics }, report))
-}
-
-pub(crate) fn build_docs_health_metrics(
-    root: &Path,
-    ignore_patterns: &[String],
-    version: SpecialVersion,
-    scope_paths: &[PathBuf],
-    outputs: &[DocsOutputConfig],
-) -> Result<RepoDocsHealthMetrics> {
-    let (document, _) = build_docs_document(root, ignore_patterns, version, scope_paths)?;
-    let generated_sources = configured_output_sources(root, outputs);
     let targets = DocumentTargets::load(root, ignore_patterns, version)?;
-    Ok(docs_health_metrics(&document, &targets, &generated_sources))
+    let metrics = docs_metrics_summary(&document, &generated_sources, generated_graph, &targets);
+    Ok((DocsMetricsDocument { metrics }, report))
 }
 
 pub(crate) fn write_docs_path(
@@ -477,6 +477,45 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
             ));
         }
     }
+    output.push_str("  public target coverage\n");
+    output.push_str(&format!(
+        "    undocumented current specs: {}\n",
+        metrics.coverage.undocumented_current_specs
+    ));
+    output.push_str(&format!(
+        "    undocumented modules: {}\n",
+        metrics.coverage.undocumented_modules
+    ));
+    output.push_str(&format!(
+        "    undocumented patterns: {}\n",
+        metrics.coverage.undocumented_patterns
+    ));
+    output.push_str(&format!(
+        "    internal-only documented targets: {}\n",
+        metrics.coverage.internal_only_documented_targets
+    ));
+    if verbose {
+        append_docs_coverage_ids(
+            &mut output,
+            "undocumented current spec ids",
+            &metrics.coverage.undocumented_current_spec_ids,
+        );
+        append_docs_coverage_ids(
+            &mut output,
+            "undocumented module ids",
+            &metrics.coverage.undocumented_module_ids,
+        );
+        append_docs_coverage_ids(
+            &mut output,
+            "undocumented pattern ids",
+            &metrics.coverage.undocumented_pattern_ids,
+        );
+        append_docs_coverage_ids(
+            &mut output,
+            "internal-only documented target ids",
+            &metrics.coverage.internal_only_documented_target_ids,
+        );
+    }
     output.push_str("  generated docs graph\n");
     output.push_str(&format!(
         "    generated pages: {}\n",
@@ -521,6 +560,16 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
     output.trim_end().to_string()
 }
 
+fn append_docs_coverage_ids(output: &mut String, label: &str, ids: &[String]) {
+    if ids.is_empty() {
+        return;
+    }
+    output.push_str(&format!("    {label}\n"));
+    for id in ids {
+        output.push_str(&format!("      {id}\n"));
+    }
+}
+
 pub(crate) fn render_docs_metrics_json(document: &DocsMetricsDocument) -> Result<String> {
     Ok(serde_json::to_string_pretty(document)?)
 }
@@ -540,10 +589,10 @@ struct GeneratedDocsLink {
 }
 
 fn docs_metrics_summary(
-    _root: &Path,
     document: &DocsDocument,
     generated_sources: &[PathBuf],
     generated_graph: GeneratedDocsGraph,
+    targets: &DocumentTargets,
 ) -> DocsMetricsSummary {
     DocsMetricsSummary {
         total_references: document.references.len(),
@@ -572,6 +621,7 @@ fn docs_metrics_summary(
             .into_iter()
             .map(|kind| target_kind_metrics(kind, document, generated_sources))
             .collect(),
+        coverage: docs_coverage_metrics(document, targets, generated_sources),
         broken_local_doc_link_details: generated_graph.broken_links,
         orphan_page_paths: generated_graph.orphan_pages,
     }
@@ -625,11 +675,11 @@ fn target_kind_metrics(
     }
 }
 
-fn docs_health_metrics(
+fn docs_coverage_metrics(
     document: &DocsDocument,
     targets: &DocumentTargets,
     generated_sources: &[PathBuf],
-) -> RepoDocsHealthMetrics {
+) -> DocsCoverageMetrics {
     let spec_generated_ids =
         generated_documented_target_ids(DocumentTargetKind::Spec, document, generated_sources);
     let module_generated_ids =
@@ -653,13 +703,11 @@ fn docs_health_metrics(
     let internal_only_documented_target_ids =
         internal_only_documented_target_ids(document, generated_sources);
 
-    RepoDocsHealthMetrics {
-        long_prose_outside_docs: 0,
+    DocsCoverageMetrics {
         undocumented_current_specs: undocumented_current_spec_ids.len(),
         undocumented_modules: undocumented_module_ids.len(),
         undocumented_patterns: undocumented_pattern_ids.len(),
         internal_only_documented_targets: internal_only_documented_target_ids.len(),
-        long_prose_outside_docs_by_file: Vec::new(),
         undocumented_current_spec_ids,
         undocumented_module_ids,
         undocumented_pattern_ids,

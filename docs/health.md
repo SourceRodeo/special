@@ -229,9 +229,3 @@ names and evidence, `--json` when
 a script or self-check needs stable data, and
 `--html` when the review benefits
 from a browsable report.
-
-`docs coverage`
-is broad repo accounting: current specs, modules, and patterns that do not have
-generated public docs evidence yet. It does not inspect whether one documented
-relationship is true. Use `special trace`
-for that focused chain review.

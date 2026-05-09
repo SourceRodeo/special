@@ -62,7 +62,16 @@ fn render_projected_metric_section_html(section: ProjectedRepoMetricSection) -> 
         })
         .collect::<Vec<_>>();
     if section.explanations.is_empty() {
-        return render_metrics_section_html(section.title, &counts);
+        if section.guidance.is_none() {
+            return render_metrics_section_html(section.title, &counts);
+        }
+        let counts_html = render_template(&super::CountsSectionHtmlTemplate { counts: &counts });
+        return render_template(&super::MetricsSectionHtmlTemplate {
+            title: section.title.to_string(),
+            guidance: section.guidance.map(str::to_string),
+            counts_html,
+            explanations_html: String::new(),
+        });
     }
     let counts_html = render_template(&super::CountsSectionHtmlTemplate { counts: &counts });
     let explanations = section
@@ -72,6 +81,7 @@ fn render_projected_metric_section_html(section: ProjectedRepoMetricSection) -> 
         .collect::<Vec<_>>();
     render_template(&super::MetricsSectionHtmlTemplate {
         title: section.title.to_string(),
+        guidance: section.guidance.map(str::to_string),
         counts_html,
         explanations_html: render_template(&ExplanationsHtmlTemplate {
             explanations: &explanations,

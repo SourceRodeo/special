@@ -63,7 +63,7 @@ full resource chain behind a documented target.
 Use `--json` when another tool needs the same docs relationship view in a
 structured form.
 
-Use [`special health --metrics`](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE)
+Use [`special docs --metrics`](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE)
 when the question is which current specs, modules, or patterns lack public docs.
 Use [`special trace`](documents://spec/SPECIAL.TRACE_COMMAND) when a specific
 docs link needs to be followed through the relevant spec, module, pattern, and

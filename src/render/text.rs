@@ -217,6 +217,9 @@ pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary, verbose: bo
     {
         output.push_str(section.title);
         output.push('\n');
+        if let Some(guidance) = section.guidance {
+            output.push_str(&format!("  review: {guidance}\n"));
+        }
         for count in section.counts {
             if count.value.is_empty() {
                 output.push_str(&format!("  {}\n", count.label));

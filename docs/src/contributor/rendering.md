@@ -23,9 +23,9 @@ generated-page reachability in docs:
 [metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS),
 [relationship inventory](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS),
 and [interconnectivity](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY).
-Broad public-docs coverage belongs to health:
-[docs coverage](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE) and
-[docs-source declaration scoping](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE.DOCS_SOURCE_DECLARATIONS).
+Broad public-docs coverage also belongs to docs metrics:
+[coverage](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE) and
+[docs-source declaration scoping](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE.DOCS_SOURCE_DECLARATIONS).
 Focused relationship-chain review belongs to
 [`special trace`](documents://spec/SPECIAL.TRACE_COMMAND).
 

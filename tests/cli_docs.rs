@@ -293,16 +293,16 @@ fn docs_metrics_reports_documentation_relationship_inventory() {
 }
 
 #[test]
-// @verifies SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE
-fn health_metrics_text_surfaces_docs_coverage() {
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+fn docs_metrics_text_surfaces_public_target_coverage() {
     let root = temp_repo_dir("special-cli-docs-target-coverage");
     write_docs_metrics_fixture(&root);
 
-    let output = run_special(&root, &["health", "--metrics"]);
+    let output = run_special(&root, &["docs", "--metrics"]);
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
-    assert!(stdout.contains("docs coverage"));
+    assert!(stdout.contains("public target coverage"));
     assert!(stdout.contains("undocumented current specs: 1"));
     assert!(stdout.contains("internal-only documented targets: 1"));
 
@@ -310,25 +310,25 @@ fn health_metrics_text_surfaces_docs_coverage() {
 }
 
 #[test]
-// @verifies SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE
-fn health_metrics_json_includes_docs_coverage() {
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
+fn docs_metrics_json_includes_public_target_coverage() {
     let root = temp_repo_dir("special-cli-docs-target-coverage-json");
     write_docs_metrics_fixture(&root);
 
-    let output = run_special(&root, &["health", "--metrics", "--json"]);
+    let output = run_special(&root, &["docs", "--metrics", "--json"]);
     assert!(output.status.success());
 
     let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
     assert_eq!(
-        json["metrics"]["docs"]["undocumented_current_specs"],
+        json["metrics"]["coverage"]["undocumented_current_specs"],
         Value::from(1)
     );
     assert_eq!(
-        json["metrics"]["docs"]["undocumented_current_spec_ids"],
+        json["metrics"]["coverage"]["undocumented_current_spec_ids"],
         Value::Array(vec![Value::from("EXPORT.INTERNAL")])
     );
     assert_eq!(
-        json["metrics"]["docs"]["internal_only_documented_targets"],
+        json["metrics"]["coverage"]["internal_only_documented_targets"],
         Value::from(1)
     );
 
@@ -336,21 +336,21 @@ fn health_metrics_json_includes_docs_coverage() {
 }
 
 #[test]
-// @verifies SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE.DOCS_SOURCE_DECLARATIONS
-fn health_docs_coverage_excludes_docs_source_architecture_targets() {
+// @verifies SPECIAL.DOCS_COMMAND.METRICS.COVERAGE.DOCS_SOURCE_DECLARATIONS
+fn docs_coverage_excludes_docs_source_architecture_targets() {
     let root = temp_repo_dir("special-cli-docs-source-target-coverage");
     write_docs_source_target_coverage_fixture(&root);
 
-    let output = run_special(&root, &["health", "--metrics", "--json"]);
+    let output = run_special(&root, &["docs", "--metrics", "--json"]);
     assert!(output.status.success());
 
     let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
     assert_eq!(
-        json["metrics"]["docs"]["undocumented_module_ids"],
+        json["metrics"]["coverage"]["undocumented_module_ids"],
         Value::Array(vec![Value::from("APP.PARSER")])
     );
     assert_eq!(
-        json["metrics"]["docs"]["undocumented_pattern_ids"],
+        json["metrics"]["coverage"]["undocumented_pattern_ids"],
         Value::Array(vec![Value::from("CACHE.SINGLE_FLIGHT_FILL")])
     );
 
@@ -359,7 +359,7 @@ fn health_docs_coverage_excludes_docs_source_architecture_targets() {
 
 #[test]
 // @verifies SPECIAL.DOCS_COMMAND.METRICS
-fn docs_metrics_json_omits_cross_surface_coverage_and_target_audit() {
+fn docs_metrics_json_includes_coverage_and_omits_target_audit() {
     let root = temp_repo_dir("special-cli-docs-target-audit");
     write_docs_metrics_fixture(&root);
 
@@ -371,7 +371,7 @@ fn docs_metrics_json_omits_cross_surface_coverage_and_target_audit() {
         String::from_utf8_lossy(&output.stderr)
     );
     let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
-    assert!(json["metrics"]["coverage"].is_null());
+    assert!(json["metrics"]["coverage"].is_object());
     assert!(json["metrics"]["target_audit"].is_null());
 }
 
@@ -422,7 +422,7 @@ fn docs_metrics_json_exposes_structured_counts() {
     assert_eq!(specs["documented_targets"], 2);
     assert_eq!(specs["generated"], 1);
     assert_eq!(specs["internal_only"], 1);
-    assert!(json["metrics"]["coverage"].is_null());
+    assert!(json["metrics"]["coverage"].is_object());
     assert!(json["metrics"]["target_audit"].is_null());
 }
 
