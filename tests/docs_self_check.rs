@@ -62,14 +62,6 @@ fn docs_target_kind<'a>(metrics: &'a Value, kind: &str) -> &'a Value {
     )
 }
 
-fn docs_coverage_kind<'a>(metrics: &'a Value, kind: &str) -> &'a Value {
-    entry_with_value(
-        array_at(metrics, &["metrics", "coverage", "target_kinds"]),
-        "kind",
-        kind,
-    )
-}
-
 fn grouped_count(entries: &[Value], value: &str) -> u64 {
     entry_with_value(entries, "value", value)["count"]
         .as_u64()
@@ -111,19 +103,6 @@ fn docs_self_check_metrics_keep_generated_docs_connected_and_traceable() {
     assert!(spec_references["generated"].as_u64().unwrap_or_default() >= 200);
     let pattern_references = docs_target_kind(&json, "pattern");
     assert!(pattern_references["generated"].as_u64().unwrap_or_default() >= 4);
-
-    let spec_coverage = docs_coverage_kind(&json, "spec");
-    assert!(spec_coverage["documented"].as_u64().unwrap_or_default() >= 200);
-
-    let targets_with_issues = array_at(&json, &["metrics", "target_audit"])
-        .iter()
-        .filter(|target| {
-            target["issues"]
-                .as_array()
-                .is_some_and(|issues| !issues.is_empty())
-        })
-        .count();
-    assert_eq!(targets_with_issues, 0);
 }
 
 #[test]

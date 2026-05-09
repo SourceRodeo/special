@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.MODULES.ANALYZE.PROSE
-Finds long natural-language prose blocks outside configured docs sources so health can surface uncaptured explanatory text without treating docs coverage as a health concern.
+Finds long natural-language prose blocks outside configured docs sources so health can surface uncaptured explanatory text as a broad repo signal.
 */
 // @fileimplements SPECIAL.MODULES.ANALYZE.PROSE
 use std::path::{Path, PathBuf};

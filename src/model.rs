@@ -31,11 +31,10 @@ pub use core::{
     SourceLocation,
 };
 pub use overview::{
-    ArchitectureMetricsSummary, DocumentationCoverageSummary, DocumentationTargetCoverage,
-    GroupedCount, LintReport, ModuleDocument, RepoArchitectureHealthMetrics, RepoDocsHealthMetrics,
-    RepoDocument, RepoMetricsSummary, RepoPatternHealthMetrics, RepoSpecHealthMetrics,
-    RepoTestHealthMetrics, RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary,
-    grouped_count_map, grouped_counts,
+    ArchitectureMetricsSummary, GroupedCount, LintReport, ModuleDocument,
+    RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument, RepoMetricsSummary,
+    RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
+    RepoTraceabilityMetrics, SpecDocument, SpecMetricsSummary, grouped_count_map, grouped_counts,
 };
 pub use spec::{
     AttestRef, AttestScope, Diagnostic, ParsedRepo, SpecDecl, SpecFilter, SpecNode, VerifyRef,

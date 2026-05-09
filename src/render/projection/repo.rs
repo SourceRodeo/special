@@ -114,11 +114,89 @@ pub(in crate::render) fn project_repo_health_metric_sections(
         "long prose test literals by file",
         &metrics.tests.exact_long_prose_assertions_by_file,
     );
+    push_docs_coverage_section(&mut sections, metrics, verbose);
     if let Some(traceability) = &metrics.traceability {
         sections.push(project_repo_traceability_metric_section(traceability));
     }
 
     sections
+}
+
+fn push_docs_coverage_section(
+    sections: &mut Vec<ProjectedRepoMetricSection>,
+    metrics: &RepoMetricsSummary,
+    verbose: bool,
+) {
+    let docs = &metrics.docs;
+    let counts = [
+        (
+            "undocumented current specs",
+            docs.undocumented_current_specs,
+        ),
+        ("undocumented modules", docs.undocumented_modules),
+        ("undocumented patterns", docs.undocumented_patterns),
+        (
+            "internal-only documented targets",
+            docs.internal_only_documented_targets,
+        ),
+    ];
+    if !verbose && counts.iter().all(|(_, value)| *value == 0) {
+        return;
+    }
+    sections.push(ProjectedRepoMetricSection {
+        title: "docs coverage",
+        counts: counts
+            .into_iter()
+            .filter(|(_, value)| verbose || *value > 0)
+            .map(|(label, value)| metric_count(label, value))
+            .collect(),
+        explanations: Vec::new(),
+    });
+    if !verbose {
+        return;
+    }
+    push_id_list_metric_section(
+        sections,
+        "undocumented current spec ids",
+        &docs.undocumented_current_spec_ids,
+    );
+    push_id_list_metric_section(
+        sections,
+        "undocumented module ids",
+        &docs.undocumented_module_ids,
+    );
+    push_id_list_metric_section(
+        sections,
+        "undocumented pattern ids",
+        &docs.undocumented_pattern_ids,
+    );
+    push_id_list_metric_section(
+        sections,
+        "internal-only documented target ids",
+        &docs.internal_only_documented_target_ids,
+    );
+}
+
+fn push_id_list_metric_section(
+    sections: &mut Vec<ProjectedRepoMetricSection>,
+    title: &'static str,
+    ids: &[String],
+) {
+    if ids.is_empty() {
+        return;
+    }
+    let counts = ids
+        .iter()
+        .map(|id| ProjectedRepoMetricCount {
+            label: id.clone(),
+            value: String::new(),
+        })
+        .collect::<Vec<_>>();
+    sections.push(ProjectedRepoMetricSection {
+        title,
+        counts,
+        explanations: Vec::new(),
+    });
 }
 
 fn push_grouped_metric_section(

@@ -221,7 +221,8 @@ a script or self-check needs stable data, and
 `--html` when the review benefits
 from a browsable report.
 
-Docs coverage is explicit relationship accounting, so it belongs to
-`special docs --metrics`.
-Health can still report prose that is outside docs, because that prose is not
-yet part of the docs graph.
+`docs coverage`
+is broad repo accounting: current specs, modules, and patterns that do not have
+generated public docs evidence yet. It does not inspect whether one documented
+relationship is true. Use `special trace`
+for that focused chain review.

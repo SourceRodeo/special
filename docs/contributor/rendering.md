@@ -16,15 +16,20 @@ authoring-line stripping.
 
 ## Docs Metrics
 
-Docs metrics are the docs-native graph view. Keep relationship inventory,
-generated-page reachability, target coverage, and target support audit in docs,
-not health:
+Docs metrics are the docs-native resource view. Keep relationship inventory and
+generated-page reachability in docs:
 metrics,
 relationship inventory,
-coverage,
-interconnectivity,
-target support audit, and
+and interconnectivity.
+Broad public-docs coverage belongs to health:
+docs coverage and
 docs-source declaration scoping.
+Focused relationship-chain review belongs to
+`special trace`.
+
+Preserve this command boundary in renderers and MCP descriptors: focused
+resource commands inspect their own surface, health reports broad inferred
+repo signals and gaps, and trace follows the relevant resource chain.
 
 ## MCP Output
 
@@ -35,4 +40,3 @@ MCP command,
 MCP tools,
 MCP docs output, and
 plugin version notice.
-

@@ -39,31 +39,30 @@ special docs metrics
   relationship inventory
     total references: 42
       link references: 42
-  target coverage
-    specs: 18 total, 14 documented, 14 generated, 0 internal-only, 4 undocumented
   generated docs graph
     generated pages: 7
+    local doc links: 11
     broken local doc links: 0
+    orphan pages: 0
     reachable from entrypoints: 7/7 page(s), 1 entrypoint(s)
 ```
 
-That output answers whether docs links resolve, whether the generated docs graph
-is connected, and which Special targets still lack docs evidence.
+That output answers whether docs links resolve and whether the generated docs
+graph is connected.
 
 Use `--verbose` when you need the
 relationship inventory.
-It shows each documented target, where docs refer to it, and whether the target
-has support such as verifies, attests, implementations, or pattern applications.
-The audit reports
-planned specs and unsupported current specs
-directly in the docs metrics output.
+It shows relationship source counts and docs graph detail. It does not judge the
+full resource chain behind a documented target.
 
 Use `--json` when another tool needs the same docs relationship view in a
 structured form.
 
-Use target coverage
-when the question is which specs, modules, areas, and patterns are documented
-by generated docs, internal docs, or not at all.
+Use `special health --metrics`
+when the question is which current specs, modules, or patterns lack public docs.
+Use `special trace` when a specific
+docs link needs to be followed through the relevant spec, module, pattern, and
+evidence chain.
 
 ## Output Mappings
 

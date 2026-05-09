@@ -3,6 +3,14 @@
 Use `special --help` for exact local help. This reference explains the common
 command shapes and the decision each output supports.
 
+Each focused resource command answers questions about one Special surface:
+`specs`, `arch`, `patterns`, and `docs` inspect declared resources and their
+direct evidence. `special health`
+is broader: it reports inferred repo signals, gaps, and cleanup queues, often
+before a repository has many annotations. `special trace`
+follows the relevant relationship chain when one claim, doc link, module, or
+pattern needs detailed review.
+
 ## `special specs`
 
 Use `special specs` to inspect product
@@ -132,9 +140,6 @@ special docs metrics
       link references: 42
       @documents references: 0
       @filedocuments references: 0
-  target coverage
-    specs: 18 total, 14 documented, 14 generated, 0 internal-only, 4 undocumented
-    modules: 6 total, 3 documented, 3 generated, 0 internal-only, 3 undocumented
   generated docs graph
     generated pages: 7
     local doc links: 11
@@ -143,22 +148,18 @@ special docs metrics
     reachable from entrypoints: 7/7 page(s), 1 entrypoint(s)
 ```
 
-Verbose metrics include the
-documented target support audit:
-
-```sh
-special docs --metrics --verbose
-```
-
 Decision supported: whether docs links resolve, whether generated docs pages are
-connected, which declared targets have docs evidence, whether documented targets
-have support, and whether docs output can be built safely.
+connected, and whether docs output can be built safely. Use
+`special health --metrics`
+when the question is which specs, modules, or patterns lack public docs. Use
+`special trace` when one docs
+relationship needs its full resource chain.
 
 Contract details: `special docs` supports
 target scoping,
 metrics,
 relationship metrics,
-target coverage, and
+generated docs graph metrics, and
 configured output builds.
 Generated output
 rewrites document links,
@@ -315,6 +316,7 @@ HTML. Metrics cover
 source outside architecture,
 duplicate source shapes,
 cleanup targets,
+docs coverage,
 untraced implementation,
 missing pattern applications,
 pattern clusters,

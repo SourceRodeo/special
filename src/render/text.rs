@@ -198,7 +198,11 @@ pub(super) fn render_repo_metrics_text(metrics: &RepoMetricsSummary, verbose: bo
         output.push_str(section.title);
         output.push('\n');
         for count in section.counts {
-            output.push_str(&format!("  {}: {}\n", count.label, count.value));
+            if count.value.is_empty() {
+                output.push_str(&format!("  {}\n", count.label));
+            } else {
+                output.push_str(&format!("  {}: {}\n", count.label, count.value));
+            }
         }
         append_metric_explanations_text(&mut output, "  ", &section.explanations);
     }

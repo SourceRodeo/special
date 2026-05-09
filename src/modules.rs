@@ -17,8 +17,8 @@ use crate::config::{DocsOutputConfig, PatternMetricBenchmarks, SpecialVersion};
 use crate::model::{
     ArchitectureAnalysisSummary, ArchitectureKind, ArchitectureMetricsSummary, LintReport,
     ModuleAnalysisOptions, ModuleDocument, ModuleFilter, ModuleNode, ParsedArchitecture,
-    PatternFilter, RepoArchitectureHealthMetrics, RepoDocsHealthMetrics, RepoDocument,
-    RepoMetricsSummary, RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
+    PatternFilter, RepoArchitectureHealthMetrics, RepoDocument, RepoMetricsSummary,
+    RepoPatternHealthMetrics, RepoSpecHealthMetrics, RepoTestHealthMetrics,
     RepoTraceabilityMetrics, grouped_count_map, grouped_counts,
 };
 
@@ -144,6 +144,7 @@ pub fn build_repo_document(
                         version,
                         &summary,
                         options.docs_outputs,
+                        health_signal_scope_paths(options),
                     )
                 })
                 .transpose()?,
@@ -222,11 +223,12 @@ fn health_signal_scope_paths(options: RepoDocumentOptions<'_>) -> Option<&[PathB
 }
 
 fn build_repo_metrics(
-    _root: &Path,
-    _ignore_patterns: &[String],
-    _version: SpecialVersion,
+    root: &Path,
+    ignore_patterns: &[String],
+    version: SpecialVersion,
     summary: &crate::model::ArchitectureAnalysisSummary,
-    _docs_outputs: &[DocsOutputConfig],
+    docs_outputs: &[DocsOutputConfig],
+    docs_scope_paths: Option<&[PathBuf]>,
 ) -> Result<RepoMetricsSummary> {
     let signals = summary.repo_signals.as_ref();
     let duplicate_source_shapes_by_file = signals
@@ -364,12 +366,17 @@ fn build_repo_metrics(
         duplicate_source_shapes_by_file,
         possible_missing_applications_by_file,
     };
-    let docs = RepoDocsHealthMetrics {
-        long_prose_outside_docs: signals
-            .map(|signals| signals.long_prose_outside_docs)
-            .unwrap_or_default(),
-        long_prose_outside_docs_by_file,
-    };
+    let mut docs = crate::docs::build_docs_health_metrics(
+        root,
+        ignore_patterns,
+        version,
+        docs_scope_paths.unwrap_or_default(),
+        docs_outputs,
+    )?;
+    docs.long_prose_outside_docs = signals
+        .map(|signals| signals.long_prose_outside_docs)
+        .unwrap_or_default();
+    docs.long_prose_outside_docs_by_file = long_prose_outside_docs_by_file;
     let tests = RepoTestHealthMetrics {
         exact_long_prose_assertions: signals
             .map(|signals| signals.long_exact_prose_assertions)

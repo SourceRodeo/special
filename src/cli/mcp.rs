@@ -261,7 +261,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_docs",
-            "Audit docs relationships from Special's parsed docs graph. Use metrics plus verbose target scope before raw file search when checking whether docs claims match specs, architecture, or patterns.",
+            "Audit docs relationships from Special's parsed docs graph. Use this for docs-native link validity and generated docs graph checks; use health for broad docs coverage gaps and trace for one relationship chain.",
             object_schema(vec![
                 string_array_property(
                     "target",
@@ -269,11 +269,11 @@ fn tool_definitions() -> Vec<Value> {
                 ),
                 bool_property(
                     "metrics",
-                    "Include docs relationship inventory, target coverage, and generated docs graph metrics.",
+                    "Include docs relationship inventory and generated docs graph metrics.",
                 ),
                 bool_property(
                     "verbose",
-                    "Show relationship source counts and full graph detail for target-side semantic review.",
+                    "Show relationship source counts and full generated-docs graph detail.",
                 ),
                 text_or_json_property(),
             ]),

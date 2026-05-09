@@ -4,6 +4,14 @@
 Use `special --help` for exact local help. This reference explains the common
 command shapes and the decision each output supports.
 
+Each focused resource command answers questions about one Special surface:
+`specs`, `arch`, `patterns`, and `docs` inspect declared resources and their
+direct evidence. [`special health`](documents://spec/SPECIAL.HEALTH_COMMAND)
+is broader: it reports inferred repo signals, gaps, and cleanup queues, often
+before a repository has many annotations. [`special trace`](documents://spec/SPECIAL.TRACE_COMMAND)
+follows the relevant relationship chain when one claim, doc link, module, or
+pattern needs detailed review.
+
 @implements SPECIAL.DOCUMENTATION.PUBLIC.REFERENCE.COMMANDS.SPECS
 @applies DOCS.COMMAND_REFERENCE_ENTRY
 ## `special specs`
@@ -141,9 +149,6 @@ special docs metrics
       link references: 42
       @documents references: 0
       @filedocuments references: 0
-  target coverage
-    specs: 18 total, 14 documented, 14 generated, 0 internal-only, 4 undocumented
-    modules: 6 total, 3 documented, 3 generated, 0 internal-only, 3 undocumented
   generated docs graph
     generated pages: 7
     local doc links: 11
@@ -152,22 +157,18 @@ special docs metrics
     reachable from entrypoints: 7/7 page(s), 1 entrypoint(s)
 ```
 
-Verbose metrics include the
-[documented target support audit](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.TARGET_AUDIT):
-
-```sh
-special docs --metrics --verbose
-```
-
 Decision supported: whether docs links resolve, whether generated docs pages are
-connected, which declared targets have docs evidence, whether documented targets
-have support, and whether docs output can be built safely.
+connected, and whether docs output can be built safely. Use
+[`special health --metrics`](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE)
+when the question is which specs, modules, or patterns lack public docs. Use
+[`special trace`](documents://spec/SPECIAL.TRACE_COMMAND) when one docs
+relationship needs its full resource chain.
 
 Contract details: `special docs` supports
 [target scoping](documents://spec/SPECIAL.DOCS_COMMAND.TARGET),
 [metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS),
 [relationship metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS),
-[target coverage](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE), and
+[generated docs graph metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY), and
 [configured output builds](documents://spec/SPECIAL.DOCS_COMMAND.OUTPUT.CONFIG).
 Generated output
 [rewrites document links](documents://spec/SPECIAL.DOCS.LINKS.OUTPUT),
@@ -330,6 +331,7 @@ Contract details: `special health` supports
 [source outside architecture](documents://spec/SPECIAL.HEALTH_COMMAND.UNOWNED_ITEMS),
 [duplicate source shapes](documents://spec/SPECIAL.HEALTH_COMMAND.DUPLICATION),
 [cleanup targets](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS.CLEANUP_TARGETS),
+[docs coverage](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE),
 [untraced implementation](documents://spec/SPECIAL.HEALTH_COMMAND.TRACEABILITY),
 [missing pattern applications](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.MISSING_APPLICATIONS),
 [pattern clusters](documents://spec/SPECIAL.HEALTH_COMMAND.PATTERNS.CLUSTERS.INTERPRETATION),

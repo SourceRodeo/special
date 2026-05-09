@@ -42,22 +42,19 @@ special docs build SOURCE OUTPUT refuses to write docs output over the input pat
 special docs build uses `[[docs.outputs]]` mappings from special.toml to write configured generated docs outputs without repeating paths on the command line.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS
-special docs --metrics reports documentation relationship inventory, target coverage, and generated docs graph metrics without writing files.
+special docs --metrics reports documentation relationship inventory and generated docs graph metrics without writing files or claiming cross-surface documentation coverage.
 
 @spec SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS
 special docs --metrics counts documentation relationship inventory by target kind, source shape, and generated/internal source placement without claiming cross-surface documentation coverage.
 
-@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE
-special docs --metrics reports which specs, groups, modules, areas, and patterns have documentation evidence from generated docs, internal docs, or no docs evidence.
-
 @spec SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY
 special docs --metrics reports configured generated docs pages, markdown links among those pages, broken local docs links, orphan pages, and configured-entrypoint reachability.
 
-@spec SPECIAL.DOCS_COMMAND.METRICS.TARGET_AUDIT
-special docs --metrics --verbose reports documented target support, including planned specs, current specs without verifies or attests, current modules without implementations, and patterns without applications.
+@spec SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE
+special health --metrics reports broad public-docs coverage gaps for current specs, modules, and patterns using generated docs evidence without tracing each documented relationship chain.
 
-@spec SPECIAL.DOCS_COMMAND.METRICS.COVERAGE.DOCS_SOURCE_DECLARATIONS
-special docs --metrics target coverage excludes module, area, and pattern targets that are declared, implemented, or applied by configured docs output source paths.
+@spec SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE.DOCS_SOURCE_DECLARATIONS
+special health docs coverage excludes module, area, and pattern targets that are declared, implemented, or applied by configured docs output source paths.
 */
 // @fileimplements SPECIAL.DOCS
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -77,8 +74,8 @@ use crate::config::{DocsOutputConfig, SpecialVersion};
 use crate::discovery::{DiscoveryConfig, discover_annotation_files};
 use crate::extractor::collect_comment_blocks;
 use crate::model::{
-    ArchitectureKind, Diagnostic, DiagnosticSeverity, DocumentationCoverageSummary,
-    DocumentationTargetCoverage, LintReport, NodeKind, SourceLocation,
+    ArchitectureKind, Diagnostic, DiagnosticSeverity, LintReport, NodeKind, RepoDocsHealthMetrics,
+    SourceLocation,
 };
 use crate::parser::starts_markdown_fence;
 use crate::source_paths::matches_scope_path;
@@ -179,10 +176,8 @@ pub(crate) struct DocsMetricsSummary {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entrypoint_pages: Option<usize>,
     pub target_kinds: Vec<DocsTargetKindMetrics>,
-    pub coverage: DocumentationCoverageSummary,
     pub broken_local_doc_link_details: Vec<DocsLocalLinkIssue>,
     pub orphan_page_paths: Vec<String>,
-    pub target_audit: Vec<DocsTargetAudit>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,20 +211,6 @@ pub(crate) struct DocsLocalLinkIssue {
     pub target: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct DocsTargetAudit {
-    pub kind: DocumentTargetKind,
-    pub id: String,
-    pub references: usize,
-    pub generated_references: usize,
-    pub internal_references: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub location: Option<SourceLocation>,
-    pub support: DocsTargetSupport,
-    pub issues: Vec<String>,
-    pub reference_locations: Vec<DocsTargetAuditReference>,
-}
-
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(crate) struct DocsTargetSupport {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -248,16 +229,6 @@ pub(crate) struct DocsTargetSupport {
     pub applications: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub strictness: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct DocsTargetAuditReference {
-    pub source: String,
-    pub line: usize,
-    pub reference_source: DocumentRefSource,
-    pub generated: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
 }
 
 pub(crate) fn build_docs_lint_report(
@@ -302,15 +273,21 @@ pub(crate) fn build_docs_metrics_document(
     let (document, report) = build_docs_document(root, ignore_patterns, version, scope_paths)?;
     let generated_sources = configured_output_sources(root, outputs);
     let generated_graph = build_generated_docs_graph(root, outputs, entrypoints)?;
-    let targets = DocumentTargets::load(root, ignore_patterns, version)?;
-    let metrics = docs_metrics_summary(
-        root,
-        &document,
-        &targets,
-        &generated_sources,
-        generated_graph,
-    );
+    let metrics = docs_metrics_summary(root, &document, &generated_sources, generated_graph);
     Ok((DocsMetricsDocument { metrics }, report))
+}
+
+pub(crate) fn build_docs_health_metrics(
+    root: &Path,
+    ignore_patterns: &[String],
+    version: SpecialVersion,
+    scope_paths: &[PathBuf],
+    outputs: &[DocsOutputConfig],
+) -> Result<RepoDocsHealthMetrics> {
+    let (document, _) = build_docs_document(root, ignore_patterns, version, scope_paths)?;
+    let generated_sources = configured_output_sources(root, outputs);
+    let targets = DocumentTargets::load(root, ignore_patterns, version)?;
+    Ok(docs_health_metrics(&document, &targets, &generated_sources))
 }
 
 pub(crate) fn write_docs_path(
@@ -500,18 +477,6 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
             ));
         }
     }
-    output.push_str("  target coverage\n");
-    for kind in &metrics.coverage.target_kinds {
-        output.push_str(&format!(
-            "    {}s: {} total, {} documented, {} generated, {} internal-only, {} undocumented\n",
-            kind.kind,
-            kind.total,
-            kind.documented,
-            kind.generated,
-            kind.internal_only,
-            kind.undocumented
-        ));
-    }
     output.push_str("  generated docs graph\n");
     output.push_str(&format!(
         "    generated pages: {}\n",
@@ -553,69 +518,7 @@ pub(crate) fn render_docs_metrics_text(document: &DocsMetricsDocument, verbose: 
         )),
         _ => output.push_str("    reachable from entrypoints: not configured\n"),
     }
-    if verbose && !metrics.target_audit.is_empty() {
-        output.push_str("  relationship audit:\n");
-        for target in &metrics.target_audit {
-            output.push_str(&format!(
-                "    {} {}: {} reference(s), {} generated, {} internal",
-                target.kind.as_str(),
-                target.id,
-                target.references,
-                target.generated_references,
-                target.internal_references
-            ));
-            if !target.issues.is_empty() {
-                output.push_str(&format!(" [{}]", target.issues.join(", ")));
-            }
-            output.push('\n');
-            output.push_str(&target.support.describe());
-            for reference in &target.reference_locations {
-                output.push_str(&format!(
-                    "      {}:{} {}{}\n",
-                    reference.source,
-                    reference.line,
-                    reference.reference_source.as_str(),
-                    if reference.generated {
-                        " generated"
-                    } else {
-                        " internal"
-                    }
-                ));
-            }
-        }
-    }
     output.trim_end().to_string()
-}
-
-impl DocsTargetSupport {
-    fn describe(&self) -> String {
-        let mut parts = Vec::new();
-        if let Some(planned) = self.planned {
-            parts.push(if planned { "planned" } else { "current" }.to_string());
-        }
-        if self.deprecated == Some(true) {
-            parts.push("deprecated".to_string());
-        }
-        if let Some(verifies) = self.verifies {
-            parts.push(format!("{verifies} verifies"));
-        }
-        if let Some(attests) = self.attests {
-            parts.push(format!("{attests} attests"));
-        }
-        if let Some(implements) = self.implements {
-            parts.push(format!("{implements} implements"));
-        }
-        if let Some(applications) = self.applications {
-            parts.push(format!("{applications} applications"));
-        }
-        if let Some(strictness) = self.strictness.as_deref() {
-            parts.push(format!("strictness {strictness}"));
-        }
-        if parts.is_empty() {
-            return String::new();
-        }
-        format!("      support: {}\n", parts.join(", "))
-    }
 }
 
 pub(crate) fn render_docs_metrics_json(document: &DocsMetricsDocument) -> Result<String> {
@@ -637,9 +540,8 @@ struct GeneratedDocsLink {
 }
 
 fn docs_metrics_summary(
-    root: &Path,
+    _root: &Path,
     document: &DocsDocument,
-    targets: &DocumentTargets,
     generated_sources: &[PathBuf],
     generated_graph: GeneratedDocsGraph,
 ) -> DocsMetricsSummary {
@@ -670,97 +572,9 @@ fn docs_metrics_summary(
             .into_iter()
             .map(|kind| target_kind_metrics(kind, document, generated_sources))
             .collect(),
-        coverage: documentation_coverage_summary(document, targets, generated_sources),
         broken_local_doc_link_details: generated_graph.broken_links,
         orphan_page_paths: generated_graph.orphan_pages,
-        target_audit: docs_target_audit(root, document, targets, generated_sources),
     }
-}
-
-fn docs_target_audit(
-    root: &Path,
-    document: &DocsDocument,
-    targets: &DocumentTargets,
-    generated_sources: &[PathBuf],
-) -> Vec<DocsTargetAudit> {
-    let mut references_by_target =
-        BTreeMap::<(DocumentTargetKind, String), Vec<&DocumentRef>>::new();
-    for reference in &document.references {
-        references_by_target
-            .entry((reference.target_kind, reference.target_id.clone()))
-            .or_default()
-            .push(reference);
-    }
-
-    references_by_target
-        .into_iter()
-        .map(|((kind, id), references)| {
-            let generated_references = references
-                .iter()
-                .filter(|reference| {
-                    is_generated_doc_source(&reference.location.path, generated_sources)
-                })
-                .count();
-            let support = targets.support(kind, &id);
-            let issues = target_audit_issues(kind, &support);
-            let reference_locations = references
-                .iter()
-                .map(|reference| DocsTargetAuditReference {
-                    source: display_path(root, &reference.location.path),
-                    line: reference.location.line,
-                    reference_source: reference.source,
-                    generated: is_generated_doc_source(&reference.location.path, generated_sources),
-                    text: reference.text.clone(),
-                })
-                .collect::<Vec<_>>();
-            let location = targets.target_location(kind, &id).cloned();
-            DocsTargetAudit {
-                kind,
-                id,
-                references: references.len(),
-                generated_references,
-                internal_references: references.len() - generated_references,
-                location,
-                support,
-                issues,
-                reference_locations,
-            }
-        })
-        .collect()
-}
-
-fn target_audit_issues(kind: DocumentTargetKind, support: &DocsTargetSupport) -> Vec<String> {
-    let mut issues = Vec::new();
-    if support.text.is_none() {
-        issues.push("unknown_target".to_string());
-        return issues;
-    }
-    match kind {
-        DocumentTargetKind::Spec => {
-            if support.planned == Some(true) {
-                issues.push("planned_spec".to_string());
-            }
-            if support.planned == Some(false)
-                && support.deprecated == Some(false)
-                && support.verifies.unwrap_or_default() == 0
-                && support.attests.unwrap_or_default() == 0
-            {
-                issues.push("current_spec_without_support".to_string());
-            }
-        }
-        DocumentTargetKind::Module => {
-            if support.planned == Some(false) && support.implements.unwrap_or_default() == 0 {
-                issues.push("current_module_without_implements".to_string());
-            }
-        }
-        DocumentTargetKind::Pattern => {
-            if support.applications.unwrap_or_default() == 0 {
-                issues.push("pattern_without_applications".to_string());
-            }
-        }
-        DocumentTargetKind::Group | DocumentTargetKind::Area => {}
-    }
-    issues
 }
 
 fn target_kind_metrics(
@@ -811,67 +625,121 @@ fn target_kind_metrics(
     }
 }
 
-fn documentation_coverage_summary(
+fn docs_health_metrics(
     document: &DocsDocument,
     targets: &DocumentTargets,
     generated_sources: &[PathBuf],
-) -> DocumentationCoverageSummary {
-    DocumentationCoverageSummary {
-        target_kinds: DocumentTargetKind::all()
-            .into_iter()
-            .map(|kind| documentation_target_coverage(kind, document, targets, generated_sources))
-            .collect(),
+) -> RepoDocsHealthMetrics {
+    let spec_generated_ids =
+        generated_documented_target_ids(DocumentTargetKind::Spec, document, generated_sources);
+    let module_generated_ids =
+        generated_documented_target_ids(DocumentTargetKind::Module, document, generated_sources);
+    let pattern_generated_ids =
+        generated_documented_target_ids(DocumentTargetKind::Pattern, document, generated_sources);
+    let undocumented_current_spec_ids =
+        undocumented_current_spec_ids(&spec_generated_ids, targets, generated_sources);
+    let undocumented_module_ids = undocumented_current_target_ids(
+        DocumentTargetKind::Module,
+        &module_generated_ids,
+        targets,
+        generated_sources,
+    );
+    let undocumented_pattern_ids = undocumented_target_ids(
+        DocumentTargetKind::Pattern,
+        &pattern_generated_ids,
+        targets,
+        generated_sources,
+    );
+    let internal_only_documented_target_ids =
+        internal_only_documented_target_ids(document, generated_sources);
+
+    RepoDocsHealthMetrics {
+        long_prose_outside_docs: 0,
+        undocumented_current_specs: undocumented_current_spec_ids.len(),
+        undocumented_modules: undocumented_module_ids.len(),
+        undocumented_patterns: undocumented_pattern_ids.len(),
+        internal_only_documented_targets: internal_only_documented_target_ids.len(),
+        long_prose_outside_docs_by_file: Vec::new(),
+        undocumented_current_spec_ids,
+        undocumented_module_ids,
+        undocumented_pattern_ids,
+        internal_only_documented_target_ids,
     }
 }
 
-fn documentation_target_coverage(
-    kind: DocumentTargetKind,
-    document: &DocsDocument,
+fn undocumented_current_spec_ids(
+    generated_ids: &BTreeSet<String>,
     targets: &DocumentTargets,
     generated_sources: &[PathBuf],
-) -> DocumentationTargetCoverage {
-    let target_ids = targets.coverage_ids(kind, generated_sources);
-    let mut documented = BTreeSet::new();
+) -> Vec<String> {
+    undocumented_target_ids(
+        DocumentTargetKind::Spec,
+        generated_ids,
+        targets,
+        generated_sources,
+    )
+    .into_iter()
+    .filter(|id| {
+        let support = targets.support(DocumentTargetKind::Spec, id);
+        support.planned == Some(false) && support.deprecated != Some(true)
+    })
+    .collect()
+}
+
+fn undocumented_current_target_ids(
+    kind: DocumentTargetKind,
+    generated_ids: &BTreeSet<String>,
+    targets: &DocumentTargets,
+    generated_sources: &[PathBuf],
+) -> Vec<String> {
+    undocumented_target_ids(kind, generated_ids, targets, generated_sources)
+        .into_iter()
+        .filter(|id| targets.support(kind, id).planned != Some(true))
+        .collect()
+}
+
+fn undocumented_target_ids(
+    kind: DocumentTargetKind,
+    generated_ids: &BTreeSet<String>,
+    targets: &DocumentTargets,
+    generated_sources: &[PathBuf],
+) -> Vec<String> {
+    targets
+        .coverage_ids(kind, generated_sources)
+        .into_iter()
+        .filter(|id| !generated_ids.contains(id))
+        .collect()
+}
+
+fn generated_documented_target_ids(
+    kind: DocumentTargetKind,
+    document: &DocsDocument,
+    generated_sources: &[PathBuf],
+) -> BTreeSet<String> {
+    document
+        .references
+        .iter()
+        .filter(|reference| reference.target_kind == kind)
+        .filter(|reference| is_generated_doc_source(&reference.location.path, generated_sources))
+        .map(|reference| reference.target_id.clone())
+        .collect()
+}
+
+fn internal_only_documented_target_ids(
+    document: &DocsDocument,
+    generated_sources: &[PathBuf],
+) -> Vec<String> {
     let mut generated = BTreeSet::new();
     let mut internal = BTreeSet::new();
-
     for reference in &document.references {
-        if reference.target_kind != kind {
-            continue;
-        }
-        documented.insert(reference.target_id.clone());
+        let key = format!("{} {}", reference.target_kind.as_str(), reference.target_id);
         if is_generated_doc_source(&reference.location.path, generated_sources) {
-            generated.insert(reference.target_id.clone());
+            generated.insert(key);
         } else {
-            internal.insert(reference.target_id.clone());
+            internal.insert(key);
         }
     }
-
-    let undocumented_ids = target_ids
-        .iter()
-        .filter(|id| !documented.contains(*id))
-        .cloned()
-        .collect::<Vec<_>>();
-    let internal_only = target_ids
-        .iter()
-        .filter(|id| internal.contains(*id) && !generated.contains(*id))
-        .count();
-
-    DocumentationTargetCoverage {
-        kind: kind.as_str().to_string(),
-        total: target_ids.len(),
-        documented: target_ids
-            .iter()
-            .filter(|id| documented.contains(*id))
-            .count(),
-        generated: target_ids
-            .iter()
-            .filter(|id| generated.contains(*id))
-            .count(),
-        internal_only,
-        undocumented: undocumented_ids.len(),
-        undocumented_ids,
-    }
+    internal.difference(&generated).cloned().collect::<Vec<_>>()
 }
 
 fn configured_output_sources(root: &Path, outputs: &[DocsOutputConfig]) -> Vec<PathBuf> {
@@ -1792,10 +1660,6 @@ impl DocumentTargets {
             DocumentTargetKind::Area => &self.areas,
             DocumentTargetKind::Pattern => &self.patterns,
         }
-    }
-
-    fn target_location(&self, kind: DocumentTargetKind, id: &str) -> Option<&SourceLocation> {
-        self.targets(kind).get(id)
     }
 
     fn support(&self, kind: DocumentTargetKind, id: &str) -> DocsTargetSupport {

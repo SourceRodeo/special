@@ -3,7 +3,7 @@
 Rendered document, filter, metrics, and lint report domain types.
 */
 // @fileimplements SPECIAL.MODEL.OVERVIEW
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::BTreeMap;
 
 use super::{ArchitectureAnalysisSummary, Diagnostic, DiagnosticSeverity, ModuleNode, SpecNode};
@@ -143,8 +143,20 @@ pub struct RepoPatternHealthMetrics {
 #[derive(Debug, Clone, Serialize)]
 pub struct RepoDocsHealthMetrics {
     pub long_prose_outside_docs: usize,
+    pub undocumented_current_specs: usize,
+    pub undocumented_modules: usize,
+    pub undocumented_patterns: usize,
+    pub internal_only_documented_targets: usize,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub long_prose_outside_docs_by_file: Vec<GroupedCount>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub undocumented_current_spec_ids: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub undocumented_module_ids: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub undocumented_pattern_ids: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub internal_only_documented_target_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -173,22 +185,6 @@ pub fn grouped_count_map(counts: BTreeMap<String, usize>) -> Vec<GroupedCount> {
         .into_iter()
         .map(|(value, count)| GroupedCount { value, count })
         .collect()
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DocumentationCoverageSummary {
-    pub target_kinds: Vec<DocumentationTargetCoverage>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DocumentationTargetCoverage {
-    pub kind: String,
-    pub total: usize,
-    pub documented: usize,
-    pub generated: usize,
-    pub internal_only: usize,
-    pub undocumented: usize,
-    pub undocumented_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

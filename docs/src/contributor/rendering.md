@@ -18,15 +18,20 @@ strips authoring annotations from the output. The build surface is governed by
 
 ## Docs Metrics
 
-Docs metrics are the docs-native graph view. Keep relationship inventory,
-generated-page reachability, target coverage, and target support audit in docs,
-not health:
+Docs metrics are the docs-native resource view. Keep relationship inventory and
+generated-page reachability in docs:
 [metrics](documents://spec/SPECIAL.DOCS_COMMAND.METRICS),
 [relationship inventory](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.RELATIONSHIPS),
-[coverage](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE),
-[interconnectivity](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY),
-[target support audit](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.TARGET_AUDIT), and
-[docs-source declaration scoping](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.COVERAGE.DOCS_SOURCE_DECLARATIONS).
+and [interconnectivity](documents://spec/SPECIAL.DOCS_COMMAND.METRICS.INTERCONNECTIVITY).
+Broad public-docs coverage belongs to health:
+[docs coverage](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE) and
+[docs-source declaration scoping](documents://spec/SPECIAL.HEALTH_COMMAND.DOCS.COVERAGE.DOCS_SOURCE_DECLARATIONS).
+Focused relationship-chain review belongs to
+[`special trace`](documents://spec/SPECIAL.TRACE_COMMAND).
+
+Preserve this command boundary in renderers and MCP descriptors: focused
+resource commands inspect their own surface, health reports broad inferred
+repo signals and gaps, and trace follows the relevant resource chain.
 
 ## MCP Output
 
@@ -37,4 +42,3 @@ behavior:
 [MCP tools](documents://spec/SPECIAL.MCP_COMMAND.TOOLS),
 [MCP docs output](documents://spec/SPECIAL.MCP_COMMAND.DOCS_OUTPUT), and
 [plugin version notice](documents://spec/SPECIAL.MCP_COMMAND.PLUGIN_VERSION_NOTICE).
-
