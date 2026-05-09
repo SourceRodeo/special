@@ -25,13 +25,15 @@ This can be used before or after Special is integrated.
 4. Read the attached `@implements` or `@fileimplements` body.
 5. Decide whether the code actually performs that responsibility.
 6. Use `special arch MODULE.ID --metrics --verbose` when you need complexity, coupling, ownership, or hidden-item evidence.
-7. If pattern applications appear, inspect them with `special patterns PATTERN.ID --verbose`.
+7. Use `special trace arch --id MODULE.ID` when you need one module-to-implementation review packet.
+8. If pattern applications appear, inspect them with `special patterns PATTERN.ID --verbose`.
 
 Useful commands:
 
 ```sh
 special arch MODULE.ID --verbose
 special arch MODULE.ID --metrics --verbose
+special trace arch --id MODULE.ID
 special arch --unimplemented
 special lint
 ```

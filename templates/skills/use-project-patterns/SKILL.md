@@ -22,11 +22,12 @@ The repo does not need Special patterns yet. This skill can introduce the first 
 1. Start with the problem shape: what situation keeps recurring?
 2. Look for existing examples in nearby code.
 3. If Special is present, run `special patterns` and then `special patterns PATTERN.ID --verbose`.
-4. If there is no pattern yet, define one only when it will guide future code.
-5. Write the pattern as rationale plus fit criteria, not just a name.
-6. Attach `@applies PATTERN.ID` to source items that actually demonstrate the approach.
-7. Use `@fileapplies PATTERN.ID` only when the whole file is the application.
-8. Use `@strictness high|medium|low` when similarity expectations matter.
+4. Use `special health --metrics --target PATH` when you are still deciding whether a repeated shape should become a pattern, helper extraction, or no action.
+5. If there is no pattern yet, define one only when it will guide future code.
+6. Write the pattern as rationale plus fit criteria, not just a name.
+7. Attach `@applies PATTERN.ID` to source items that actually demonstrate the approach.
+8. Use `@fileapplies PATTERN.ID` only when the whole file is the application.
+9. Use `@strictness high|medium|low` when similarity expectations matter.
 
 Example definition:
 
@@ -52,6 +53,7 @@ fn summarize_repo_traceability(facts: LanguageFacts) -> RepoTraceabilitySummary 
 - If the shared idea is only a principle or style rule, put it in docs/module text/lint instead.
 - If pattern applications are too different, split or rewrite the pattern.
 - If `special patterns --metrics` reports possible missing applications, inspect them manually; do not treat them as lint failures.
+- If health reports a repeated structure that does not fit an existing pattern, inspect the concrete examples before creating a new pattern.
 - After edits, run `special patterns --metrics --target PATH` when available.
 
 Read [references/pattern-workflow.md](references/pattern-workflow.md) for examples and [references/trigger-evals.md](references/trigger-evals.md) for trigger examples.

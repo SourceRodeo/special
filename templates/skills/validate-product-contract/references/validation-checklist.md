@@ -6,8 +6,9 @@ Use this checklist when deciding whether a claim is honestly supported:
 2. Confirm the support is attached to that exact claim, not just a nearby parent or child.
 3. Confirm the support body is self-contained enough to judge locally.
 4. Confirm the verify sits at the right abstraction boundary for the claim.
-5. Use `special specs --metrics` when you need broader support or lifecycle counts.
-6. Confirm the claim is current only if the support is genuinely good enough.
+5. Use `special trace specs --id SPEC.ID` when you need the claim and its support evidence in one packet.
+6. Use `special specs --metrics` when you need broader support or lifecycle counts.
+7. Confirm the claim is current only if the support is genuinely good enough.
 
 Good pairing:
 

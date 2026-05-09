@@ -41,6 +41,20 @@ written. Keep the same safety expectations as the CLI: explicit configured
 outputs or an explicit target/output pair, no source overwrite, no output inside
 the input tree, and no overwrite of files that still contain docs evidence.
 
+If MCP tools are unavailable, use the equivalent CLI commands:
+
+| MCP tool | CLI fallback |
+| --- | --- |
+| `special_status` | `special` and `special lint` |
+| `special_specs` | `special specs ...` |
+| `special_arch` | `special arch ...` |
+| `special_patterns` | `special patterns ...` |
+| `special_docs` | `special docs ...` |
+| `special_docs_output` | `special docs build ...` |
+| `special_trace` | `special trace ...` |
+| `special_health` | `special health ...` |
+| `special_lint` | `special lint` |
+
 ## Editing Guidance
 
 - Treat `specs/`, architecture declarations, pattern declarations, and docs

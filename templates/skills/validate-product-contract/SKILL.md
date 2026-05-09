@@ -24,13 +24,15 @@ This skill can introduce Special if the claim is currently untracked.
 3. If you do not know the id, run `special specs --current` or `special specs --metrics` first.
 4. Read the claim before reading the verify.
 5. Read the attached `@verifies` or `@attests` body.
-6. Ask whether the artifact proves that exact claim through observable behavior or durable evidence.
+6. Use `special trace specs --id SPEC.ID` when you need the current claim, proof attachment, and related evidence in one packet.
+7. Ask whether the artifact proves that exact claim through observable behavior or durable evidence.
 
 Useful commands:
 
 ```sh
 special specs --current
 special specs EXPORT.CSV.HEADER --verbose
+special trace specs --id EXPORT.CSV.HEADER
 special specs --metrics
 special lint
 ```

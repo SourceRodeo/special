@@ -19,8 +19,9 @@ SKILL_ROOTS = [
 COMMAND_OPTIONS = {
     "": {"--help", "--version"},
     "arch": {"--current", "--html", "--json", "--metrics", "--planned", "--unimplemented", "--verbose"},
+    "diff": {"--json", "--metrics", "--target", "--verbose"},
     "docs": {"--json", "--metrics", "--output", "--target", "--verbose"},
-    "health": {"--html", "--json", "--metrics", "--symbol", "--target", "--verbose"},
+    "health": {"--html", "--json", "--metrics", "--symbol", "--target", "--verbose", "--within"},
     "init": set(),
     "lint": set(),
     "mcp": set(),
@@ -38,12 +39,14 @@ COMMAND_OPTIONS = {
         "--unsupported",
         "--verbose",
     },
+    "trace": {"--id", "--json", "--target"},
 }
 
-OPTIONS_WITH_VALUES = {"--destination", "--symbol", "--target"}
+OPTIONS_WITH_VALUES = {"--destination", "--id", "--symbol", "--target", "--within"}
 OPTIONS_WITH_OPTIONAL_VALUES = {"--output"}
 POSITIONAL_COMMANDS = {"arch", "patterns", "specs"}
 DOCS_BUILD_OPTIONS = {"--output", "--target"}
+TRACE_SURFACES = {"arch", "docs", "patterns", "specs"}
 
 
 @dataclass(frozen=True)
@@ -146,6 +149,8 @@ def validate_command_example(example: CommandExample) -> list[str]:
         index += 1
     docs_build = subcommand == "docs" and index < len(tokens) and tokens[index] == "build"
     if docs_build:
+        index += 1
+    if subcommand == "trace" and index < len(tokens) and tokens[index] in TRACE_SURFACES:
         index += 1
     active_options = DOCS_BUILD_OPTIONS if docs_build else COMMAND_OPTIONS[subcommand]
 

@@ -6,10 +6,11 @@ Use this checklist when deciding whether repeated code should define or apply a 
 2. Check existing code examples.
 3. Run `special patterns` if Special is configured.
 4. Compare the candidate code to the pattern's rationale, constraints, and source applications.
-5. Apply the pattern only when the code is intentionally following the approach.
-6. If the code is a near-exact repeat, extract a helper or component.
-7. If the code shares only a broad value, use docs/module text/lint instead.
-8. Run `special patterns --metrics --target PATH` after changes when available.
+5. Use health metrics when the question starts from raw repeated structure rather than a known pattern.
+6. Apply the pattern only when the code is intentionally following the approach.
+7. If the code is a near-exact repeat, extract a helper or component.
+8. If the code shares only a broad value, use docs/module text/lint instead.
+9. Run `special patterns --metrics --target PATH` after changes when available.
 
 Good pattern definition:
 
@@ -40,7 +41,9 @@ Useful commands:
 ```sh
 special patterns
 special patterns PATTERN.ID --verbose
+special patterns PATTERN.ID --metrics --verbose
 special patterns --metrics
+special health --metrics --target src/foo.rs
 special patterns --metrics --target src/foo.rs
 special patterns --metrics --target src/foo.rs --symbol parse_config
 special arch MODULE.ID

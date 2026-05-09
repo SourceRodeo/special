@@ -55,6 +55,14 @@ needs repo setup, configuration review, or validation.
    special docs --metrics
    ```
 
+   For docs claim audits, use docs metrics as the inventory and trace for the
+   focused relationship packet:
+
+   ```sh
+   special docs --metrics --verbose --target docs/src
+   special trace docs --target docs/src/guide.md
+   ```
+
 6. If Codex MCP integration is needed, verify the server through the plugin or
    with a minimal JSON-RPC client. The server command is:
 
