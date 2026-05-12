@@ -28,15 +28,21 @@ pub fn install_skills(root: &Path) -> std::process::Output {
 
 pub fn bundled_skill_ids() -> Vec<&'static str> {
     vec![
+        "audit-docs-relationships",
         "define-product-specs",
         "evolve-module-architecture",
         "find-planned-work",
         "inspect-current-spec-state",
+        "install-or-update-special",
+        "interpret-special-health",
+        "review-special-trace",
         "setup-special-project",
         "ship-product-change",
+        "special-workflow",
         "use-project-patterns",
         "validate-architecture-implementation",
         "validate-product-contract",
+        "write-special-docs",
     ]
 }
 

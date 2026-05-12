@@ -198,6 +198,7 @@ Representative output shape for a small repo:
 ```text
 special trace specs
 packets: 1
+guidance: this is a review packet; relationship existence does not prove semantic alignment.
 
 spec EXPORT.CSV.HEADERS @ specs/export.md:7
   text: CSV exports include a header row with selected column names.

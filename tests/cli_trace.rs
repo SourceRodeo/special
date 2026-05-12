@@ -140,6 +140,8 @@ fn trace_arch_text_includes_implementation_attachment() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
 
     assert!(stdout.contains("module APP.EXPORT"));
+    assert!(stdout.contains("review packet"));
+    assert!(stdout.contains("does not prove"));
     assert!(stdout.contains("@implements"));
     assert!(stdout.contains("export_rows"));
 

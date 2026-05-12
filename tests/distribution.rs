@@ -85,6 +85,9 @@ special keeps a marketplace-installable Codex plugin source tree under `codex-pl
 @spec SPECIAL.DISTRIBUTION.CODEX_PLUGIN.VERSION_AWARENESS
 special's Codex plugin manifest version and MCP startup version argument match the package version.
 
+@spec SPECIAL.DISTRIBUTION.CODEX_PLUGIN.SKILL_PARITY
+special's Codex plugin and fallback `special skills` surface ship the same workflow skill ids.
+
 @spec SPECIAL.DISTRIBUTION.SKILL_DOCS.GENERATED_SOURCE
 special's shipped fallback and Codex plugin skill markdown files are generated from docs source files whose source carries Special documentation evidence, attach to their owning skill-level docs module, and use docs patterns for repeated internal structure.
 
@@ -461,6 +464,27 @@ fn markdown_files_under(root: &Path) -> Vec<PathBuf> {
     files
 }
 
+fn skill_ids_under(root: &Path) -> Vec<String> {
+    let mut ids = fs::read_dir(root)
+        .unwrap_or_else(|error| panic!("{}: {error}", root.display()))
+        .map(|entry| {
+            entry
+                .unwrap_or_else(|error| panic!("{}: {error}", root.display()))
+                .path()
+        })
+        .filter(|path| path.is_dir())
+        .filter(|path| path.join("SKILL.md").is_file())
+        .map(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .expect("skill directory should be utf-8")
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+    ids.sort();
+    ids
+}
+
 fn skill_module_id(prefix: &str, relative: &Path) -> String {
     let skill_name = relative
         .components()
@@ -469,6 +493,28 @@ fn skill_module_id(prefix: &str, relative: &Path) -> String {
         .expect("skill source path should start with a skill directory");
     let normalized = skill_name.replace('-', "_").to_ascii_uppercase();
     format!("SPECIAL.DOCUMENTATION.SKILLS.{prefix}.{normalized}")
+}
+
+#[test]
+// @verifies SPECIAL.DISTRIBUTION.CODEX_PLUGIN.SKILL_PARITY
+fn codex_plugin_skills_do_not_lag_fallback_workflows() {
+    let fallback_source = skill_ids_under(&repo_root().join("docs/src/skills/templates/skills"));
+    let plugin_source = skill_ids_under(&repo_root().join("docs/src/skills/codex-plugin/skills"));
+    let fallback_shipped = skill_ids_under(&repo_root().join("templates/skills"));
+    let plugin_shipped = skill_ids_under(&repo_root().join("codex-plugin/special/skills"));
+
+    assert_eq!(
+        fallback_source, plugin_source,
+        "plugin skill source should expose the same workflow ids as fallback source"
+    );
+    assert_eq!(
+        fallback_shipped, fallback_source,
+        "fallback shipped skills should match fallback source"
+    );
+    assert_eq!(
+        plugin_shipped, plugin_source,
+        "plugin shipped skills should match plugin source"
+    );
 }
 
 #[test]

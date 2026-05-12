@@ -154,8 +154,8 @@ Check docs relationships:
 special docs --metrics
 ```
 
-Use docs links for claims a reader relies on. The source markdown stays dense
-and traceable; the generated markdown stays readable.
+Use docs links for claims a reader relies on. The source markdown carries the
+review relationship; the generated markdown stays readable.
 
 @implements SPECIAL.DOCUMENTATION.PUBLIC.QUICKSTART.HEALTH
 @applies DOCS.CROSS_SURFACE_WORKFLOW

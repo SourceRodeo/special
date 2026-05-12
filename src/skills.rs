@@ -176,6 +176,36 @@ const SETUP_SPECIAL_PROJECT_ASSETS: &[SkillAsset] = &[SkillAsset {
     contents: include_str!("../templates/skills/setup-special-project/SKILL.md"),
 }];
 
+const INSTALL_OR_UPDATE_SPECIAL_ASSETS: &[SkillAsset] = &[SkillAsset {
+    relative_path: "SKILL.md",
+    contents: include_str!("../templates/skills/install-or-update-special/SKILL.md"),
+}];
+
+const SPECIAL_WORKFLOW_ASSETS: &[SkillAsset] = &[SkillAsset {
+    relative_path: "SKILL.md",
+    contents: include_str!("../templates/skills/special-workflow/SKILL.md"),
+}];
+
+const WRITE_SPECIAL_DOCS_ASSETS: &[SkillAsset] = &[SkillAsset {
+    relative_path: "SKILL.md",
+    contents: include_str!("../templates/skills/write-special-docs/SKILL.md"),
+}];
+
+const AUDIT_DOCS_RELATIONSHIPS_ASSETS: &[SkillAsset] = &[SkillAsset {
+    relative_path: "SKILL.md",
+    contents: include_str!("../templates/skills/audit-docs-relationships/SKILL.md"),
+}];
+
+const REVIEW_SPECIAL_TRACE_ASSETS: &[SkillAsset] = &[SkillAsset {
+    relative_path: "SKILL.md",
+    contents: include_str!("../templates/skills/review-special-trace/SKILL.md"),
+}];
+
+const INTERPRET_SPECIAL_HEALTH_ASSETS: &[SkillAsset] = &[SkillAsset {
+    relative_path: "SKILL.md",
+    contents: include_str!("../templates/skills/interpret-special-health/SKILL.md"),
+}];
+
 const BUNDLED_SKILLS: &[BundledSkill] = &[
     BundledSkill {
         id: "ship-product-change",
@@ -221,6 +251,36 @@ const BUNDLED_SKILLS: &[BundledSkill] = &[
         id: "setup-special-project",
         summary: "Configure and validate Special in a project.",
         assets: SETUP_SPECIAL_PROJECT_ASSETS,
+    },
+    BundledSkill {
+        id: "install-or-update-special",
+        summary: "Install or update the Special binary and Codex plugin.",
+        assets: INSTALL_OR_UPDATE_SPECIAL_ASSETS,
+    },
+    BundledSkill {
+        id: "special-workflow",
+        summary: "Use Special surfaces with MCP or CLI fallback.",
+        assets: SPECIAL_WORKFLOW_ASSETS,
+    },
+    BundledSkill {
+        id: "write-special-docs",
+        summary: "Author generated docs source with traceable claims.",
+        assets: WRITE_SPECIAL_DOCS_ASSETS,
+    },
+    BundledSkill {
+        id: "audit-docs-relationships",
+        summary: "Review docs claims against linked Special targets.",
+        assets: AUDIT_DOCS_RELATIONSHIPS_ASSETS,
+    },
+    BundledSkill {
+        id: "review-special-trace",
+        summary: "Use trace packets for focused alignment review.",
+        assets: REVIEW_SPECIAL_TRACE_ASSETS,
+    },
+    BundledSkill {
+        id: "interpret-special-health",
+        summary: "Turn health output into scoped follow-up work.",
+        assets: INTERPRET_SPECIAL_HEALTH_ASSETS,
     },
 ];
 

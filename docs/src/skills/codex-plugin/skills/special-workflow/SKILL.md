@@ -1,6 +1,6 @@
 ---
 name: special-workflow
-description: 'Use this skill when working in a repository that uses Special. Prefer Special MCP tools to inspect repo claims, proof, ownership, patterns, docs, lint, and health before falling back to shell commands.'
+description: 'Use this skill when working in a repository that uses Special. Use Special MCP tools when available, and use equivalent CLI commands when MCP is unavailable.'
 ---
 @filedocuments spec SPECIAL.MCP_COMMAND.TOOLS
 
@@ -21,7 +21,8 @@ claims, proof, ownership, patterns, docs, trace, health, or lint context.
 ## Workflow
 @applies DOCS.SKILL_WORKFLOW_SECTION
 
-1. Check project status with `special_status`.
+1. Check project status with `special_status` when MCP is available, or run
+   `special` and `special lint` through the CLI.
 2. If the repo is existing or unfamiliar, start with [`special_health`](documents://spec/SPECIAL.HEALTH_COMMAND.METRICS) and
    [`special_patterns`](documents://spec/SPECIAL.PATTERNS.METRICS) metrics before adding annotations. Treat health as an
    investigation queue: source outside architecture suggests ownership work,
@@ -78,9 +79,10 @@ If MCP tools are unavailable, use the equivalent CLI commands:
   [`@implements`](documents://spec/SPECIAL.MODULE_PARSE.IMPLEMENTS.ITEM_SCOPE).
 - When changing recurring implementation shape, update [`@pattern`](documents://spec/SPECIAL.PATTERNS.DEFINITIONS) and
   [`@applies`](documents://spec/SPECIAL.PATTERNS.SOURCE_APPLICATIONS).
-- When changing reader-facing or contributor docs, prefer dense [`documents://`](documents://spec/SPECIAL.DOCS.LINKS.POLYMORPHIC)
-  links in docs source, then check docs metrics. Use [`@documents`](documents://spec/SPECIAL.DOCS.DOCUMENTS_LINES) only when an
-  entire natural block documents one target.
+- When changing reader-facing or contributor docs, use [`documents://`](documents://spec/SPECIAL.DOCS.LINKS.POLYMORPHIC)
+  links only where the surrounding prose actually documents the linked target.
+  Use ordinary markdown links for navigation or "see also" references. Use
+  [`@documents`](documents://spec/SPECIAL.DOCS.DOCUMENTS_LINES) when an entire natural block documents one target.
 - When auditing docs claims, do not build the inventory with raw text search.
   Start from `special_docs` metrics plus verbose target detail so ignored files,
   docs-source rules, generated-output rules, and parsed relationship semantics

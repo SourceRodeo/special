@@ -182,6 +182,9 @@ pub(crate) fn render_trace_text(document: &TraceDocument) -> String {
             output.push_str(&format!("  {path}\n"));
         }
     }
+    output.push_str(
+        "guidance: this is a review packet; relationship existence does not prove semantic alignment.\n",
+    );
     output.push('\n');
 
     for packet in &document.packets {

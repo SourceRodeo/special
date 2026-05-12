@@ -240,6 +240,24 @@ The fallback skill that helps agents define, apply, and review recurring project
 ### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SETUP_SPECIAL_PROJECT
 The fallback skill that helps agents configure or validate Special in a project that already has the binary available.
 
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.INSTALL_OR_UPDATE_SPECIAL
+The fallback skill that helps agents install or update the native Special binary and, when needed, the Codex plugin.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.SPECIAL_WORKFLOW
+The fallback skill that helps agents use Special surfaces with MCP when available and CLI commands otherwise.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.WRITE_SPECIAL_DOCS
+The fallback skill that helps agents author generated docs source with real documentation relationships, docs modules, and docs patterns.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.AUDIT_DOCS_RELATIONSHIPS
+The fallback skill that helps agents review docs relationships by tracing each claim through its linked target and support chain.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.REVIEW_SPECIAL_TRACE
+The fallback skill that helps agents use trace packets as alignment review context instead of treating relationship existence as proof.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.FALLBACK.INTERPRET_SPECIAL_HEALTH
+The fallback skill that helps agents interpret health output as broad repo analysis and pick scoped follow-up work.
+
 ### @area SPECIAL.DOCUMENTATION.SKILLS.PLUGIN
 Codex plugin skills shipped with the marketplace-installable Special plugin.
 
@@ -251,6 +269,42 @@ Plugin guidance for configuring a repository that has Special available.
 
 ### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.SPECIAL_WORKFLOW
 Plugin guidance for using MCP tools and CLI fallbacks across specs, architecture, patterns, docs, trace, health, and lint.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.DEFINE_PRODUCT_SPECS
+Plugin guidance for turning requirements and product ideas into current or planned Special specs.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.INSPECT_CURRENT_SPEC_STATE
+Plugin guidance for inspecting current supported product claims and proof state.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.VALIDATE_PRODUCT_CONTRACT
+Plugin guidance for reviewing whether a product claim is honestly supported.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.SHIP_PRODUCT_CHANGE
+Plugin guidance for updating specs, implementation, proofs, architecture, and patterns while shipping one change.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.FIND_PLANNED_WORK
+Plugin guidance for finding planned specs and migrating durable roadmap prose into planned product claims.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.EVOLVE_MODULE_ARCHITECTURE
+Plugin guidance for changing architecture ownership and module boundaries.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.VALIDATE_ARCHITECTURE_IMPLEMENTATION
+Plugin guidance for comparing a module's declared responsibility with its implementation.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.USE_PROJECT_PATTERNS
+Plugin guidance for defining, applying, and reviewing recurring project patterns.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.WRITE_SPECIAL_DOCS
+Plugin guidance for authoring generated docs source with real documentation relationships, docs modules, and docs patterns.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.AUDIT_DOCS_RELATIONSHIPS
+Plugin guidance for reviewing docs relationships by tracing each claim through its linked target and support chain.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.REVIEW_SPECIAL_TRACE
+Plugin guidance for using trace packets as alignment review context instead of treating relationship existence as proof.
+
+### @module SPECIAL.DOCUMENTATION.SKILLS.PLUGIN.INTERPRET_SPECIAL_HEALTH
+Plugin guidance for interpreting health output as broad repo analysis and picking scoped follow-up work.
 
 ### @area SPECIAL.DOCUMENTATION.CONTRIBUTOR
 Generated documentation for changing and shipping Special itself.

@@ -264,7 +264,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_docs",
-            "Audit docs relationships from Special's parsed docs graph. Use this for docs-native link validity, generated docs graph checks, public docs coverage gaps, and trace for one relationship chain.",
+            "Audit docs relationships from Special's parsed docs graph. Use this for relationship inventory, generated docs graph checks, and public docs coverage gaps; a found relationship is review context, not proof that prose matches the target.",
             object_schema(vec![
                 string_array_property(
                     "target",
@@ -297,7 +297,7 @@ fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "special_trace",
-            "Build deterministic relationship packets for specs, docs, architecture, or patterns. Use this for explicit docs-to-spec, spec-to-proof, module-to-implementation, and pattern-to-application audits.",
+            "Build deterministic relationship packets for specs, docs, architecture, or patterns. Use this for explicit docs-to-spec, spec-to-proof, module-to-implementation, and pattern-to-application audits, then compare the claim, prose, code, and evidence yourself.",
             object_schema(vec![
                 trace_surface_property(),
                 string_property("id", "Optional id or id subtree to scope trace packets."),

@@ -85,7 +85,15 @@ fn docs_self_check_metrics_keep_generated_docs_connected_and_traceable() {
     assert!(generated_pages >= 22);
     assert!(number_at(&json, &["metrics", "local_doc_links"]) >= 25);
     assert_eq!(number_at(&json, &["metrics", "broken_local_doc_links"]), 0);
-    assert!(number_at(&json, &["metrics", "orphan_pages"]) <= 15);
+    let orphan_paths = array_at(&json, &["metrics", "orphan_page_paths"]);
+    assert!(
+        orphan_paths.iter().all(|path| {
+            let path = path.as_str().unwrap_or_default();
+            path.starts_with("templates/skills/")
+                || path.starts_with("codex-plugin/special/skills/")
+        }),
+        "only generated skill pages should be outside the public docs entrypoint graph: {orphan_paths:?}"
+    );
     assert!(number_at(&json, &["metrics", "reachable_pages_from_entrypoints"]) >= 20);
     assert!(number_at(&json, &["metrics", "entrypoint_pages"]) >= 1);
 

@@ -83,6 +83,9 @@ installed bundled skills use the `.agents/skills/SKILL_ID/SKILL.md` layout.
 @spec SPECIAL.SKILLS.COMMAND.INSTALLS_SETUP_SPECIAL_PROJECT_SKILL
 `special skills install` includes the `setup-special-project` bundled skill.
 
+@spec SPECIAL.SKILLS.COMMAND.INSTALLS_AGENT_WORKFLOW_SKILLS
+`special skills install` includes install/update, broad workflow, docs authoring, docs audit, trace review, and health interpretation bundled skills.
+
 @spec SPECIAL.SKILLS.COMMAND.BUNDLES_REFERENCES_FOR_PROGRESSIVE_DISCLOSURE
 installed bundled skills keep their reference files for progressive disclosure.
 
@@ -710,6 +713,28 @@ fn skills_install_setup_special_project_skill() {
     let skill = fs::read_to_string(root.join(".agents/skills/setup-special-project/SKILL.md"))
         .expect("setup-special-project skill should exist");
     assert_eq!(skill, bundled_skill_markdown("setup-special-project"));
+}
+
+#[test]
+// @verifies SPECIAL.SKILLS.COMMAND.INSTALLS_AGENT_WORKFLOW_SKILLS
+fn skills_install_agent_workflow_skills() {
+    let root = temp_skills_repo("special-cli-skills-docs-trace-health");
+    let output = install_skills(&root);
+    assert!(output.status.success());
+
+    for skill_id in [
+        "install-or-update-special",
+        "special-workflow",
+        "write-special-docs",
+        "audit-docs-relationships",
+        "review-special-trace",
+        "interpret-special-health",
+    ] {
+        let skill_path = root.join(format!(".agents/skills/{skill_id}/SKILL.md"));
+        let skill = fs::read_to_string(&skill_path)
+            .unwrap_or_else(|error| panic!("{}: {error}", skill_path.display()));
+        assert_eq!(skill, bundled_skill_markdown(skill_id));
+    }
 }
 
 #[test]
