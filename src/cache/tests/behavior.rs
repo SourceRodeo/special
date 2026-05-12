@@ -7,7 +7,9 @@ use crate::config::SpecialVersion;
 use crate::model::ModuleAnalysisOptions;
 
 use super::super::fingerprint::{
-    RepoAnalysisScopeKind, language_pack_scope_facts_fingerprint, scoped_repo_analysis_fingerprint,
+    RepoAnalysisScopeKind, architecture_analysis_fingerprint_for_engine,
+    language_pack_scope_facts_fingerprint, language_pack_scope_facts_fingerprint_for_engine,
+    repo_analysis_fingerprint_for_engine, scoped_repo_analysis_fingerprint,
 };
 use super::super::storage::cache_file_path;
 use super::super::storage::{read_blob_cache, write_blob_cache};
@@ -187,6 +189,26 @@ fn target_and_within_analysis_fingerprints_are_disjoint() {
 }
 
 #[test]
+fn repo_analysis_fingerprint_invalidates_on_engine_change() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-repo-analysis-engine");
+    write_repo_fixture(&root);
+    let parsed_repo =
+        load_or_parse_repo(&root, &[], SpecialVersion::V1).expect("parse should succeed");
+
+    let first =
+        repo_analysis_fingerprint_for_engine(&root, &[], SpecialVersion::V1, &parsed_repo, 1)
+            .expect("first fingerprint should be built");
+    let second =
+        repo_analysis_fingerprint_for_engine(&root, &[], SpecialVersion::V1, &parsed_repo, 2)
+            .expect("second fingerprint should be built");
+
+    assert_ne!(first, second);
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
 fn language_pack_scope_facts_cache_reuses_fact_blob() {
     let _guard = cache_test_lock();
     let root = temp_root("special-cache-language-pack-scope-facts-hit");
@@ -214,6 +236,35 @@ fn language_pack_scope_facts_cache_reuses_fact_blob() {
     )
     .expect("cached fact load should succeed");
     assert_eq!(second, b"scope-facts-v1");
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
+fn language_pack_scope_facts_fingerprint_invalidates_on_engine_change() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-language-pack-engine");
+    write_repo_fixture(&root);
+    let source_files = vec![root.join("app.rs")];
+
+    let first = language_pack_scope_facts_fingerprint_for_engine(
+        &root,
+        "rust",
+        &source_files,
+        "tool=v1",
+        1,
+    )
+    .expect("first fingerprint should succeed");
+    let second = language_pack_scope_facts_fingerprint_for_engine(
+        &root,
+        "rust",
+        &source_files,
+        "tool=v1",
+        2,
+    )
+    .expect("second fingerprint should succeed");
+
+    assert_ne!(first, second);
 
     std::fs::remove_dir_all(&root).expect("temp root should be removed");
 }
@@ -403,6 +454,41 @@ fn architecture_analysis_cache_invalidates_after_file_change() {
         second.architecture_analysis_hits
     );
     assert!(third.architecture_analysis_misses > second.architecture_analysis_misses);
+
+    std::fs::remove_dir_all(&root).expect("temp root should be removed");
+}
+
+#[test]
+fn architecture_analysis_fingerprint_invalidates_on_engine_change() {
+    let _guard = cache_test_lock();
+    let root = temp_root("special-cache-arch-analysis-engine");
+    write_repo_fixture(&root);
+
+    let options = ModuleAnalysisOptions {
+        coverage: true,
+        metrics: true,
+        traceability: false,
+    };
+    let first = architecture_analysis_fingerprint_for_engine(
+        &root,
+        &[],
+        SpecialVersion::V1,
+        true,
+        options,
+        1,
+    )
+    .expect("first fingerprint should be built");
+    let second = architecture_analysis_fingerprint_for_engine(
+        &root,
+        &[],
+        SpecialVersion::V1,
+        true,
+        options,
+        2,
+    )
+    .expect("second fingerprint should be built");
+
+    assert_ne!(first, second);
 
     std::fs::remove_dir_all(&root).expect("temp root should be removed");
 }

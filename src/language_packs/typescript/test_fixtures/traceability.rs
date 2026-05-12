@@ -128,6 +128,35 @@ pub fn write_typescript_reference_traceability_fixture(root: &Path) {
 }
 
 // @applies TEST_FIXTURE.REPRESENTATIVE_PROJECT
+pub fn write_typescript_descriptor_traceability_fixture(root: &Path) {
+    create_dirs(root, &["_project", "specs", "src"]);
+    write_special_toml(root);
+    write_architecture(
+        root,
+        "# Architecture\n\n### @module APP\nApp module.\n\n### @module ACTIONS\nAction module.\n",
+    );
+    write_specs(
+        root,
+        "### @group APP\nApp root.\n\n### @spec APP.DESCRIPTOR_FLOW\nDescriptor dispatch reaches its action handlers.\n",
+    );
+    write_file(
+        root,
+        "src/actions.ts",
+        "// @fileimplements ACTIONS\nexport function submitPayment() {\n    return persistPayment();\n}\n\nexport function persistPayment() {\n    return 1;\n}\n\nexport function resetPayment() {\n    return 0;\n}\n\nexport function orphanAction() {\n    return -1;\n}\n",
+    );
+    write_file(
+        root,
+        "src/registry.ts",
+        "// @fileimplements APP\nimport { resetPayment, submitPayment } from \"./actions\";\n\nconst paymentDescriptor = {\n    execute: submitPayment,\n    rollback: resetPayment,\n};\n\nexport function runPaymentDescriptor() {\n    return paymentDescriptor.execute();\n}\n\nexport function orphanDescriptor() {\n    return paymentDescriptor.rollback();\n}\n",
+    );
+    write_file(
+        root,
+        "src/registry.test.ts",
+        "import { runPaymentDescriptor } from \"./registry\";\n\n// @verifies APP.DESCRIPTOR_FLOW\nexport function verifies_descriptor_flow() {\n    return runPaymentDescriptor();\n}\n",
+    );
+}
+
+// @applies TEST_FIXTURE.REPRESENTATIVE_PROJECT
 pub fn write_typescript_cycle_traceability_fixture(root: &Path) {
     create_dirs(root, &["_project", "specs", "src"]);
     write_special_toml(root);

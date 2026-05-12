@@ -65,6 +65,9 @@ special health combines parser and TypeScript compiler edges so import-alias cal
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.REFERENCE_EDGES
 special health combines parser and TypeScript compiler reference edges so callback-style TypeScript support can trace to the owned implementation item that is passed through an intermediary helper.
 
+@spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.DESCRIPTOR_FUNCTION_EDGES
+special health combines parser and TypeScript compiler reference edges so descriptor-table function fields can trace through object-property dispatch to the owned implementation items they reference.
+
 @spec SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.JSX_REFERENCE_EDGES
 special health combines parser and TypeScript compiler reference edges so TSX component references in JSX can trace through the rendered component stack to the owned implementation items they reference.
 
@@ -185,7 +188,8 @@ use support::{
     write_unreached_code_module_analysis_fixture,
 };
 use typescript_test_fixtures::{
-    write_typescript_context_traceability_fixture, write_typescript_effect_traceability_fixture,
+    write_typescript_context_traceability_fixture,
+    write_typescript_descriptor_traceability_fixture, write_typescript_effect_traceability_fixture,
     write_typescript_event_traceability_fixture,
     write_typescript_forwarded_callback_traceability_fixture,
     write_typescript_hook_callback_traceability_fixture,
@@ -1899,6 +1903,56 @@ fn repo_surfaces_typescript_reference_backed_traceability() {
                 .iter()
                 .any(|item| { item["path"] == "src/app.ts" && item["name"] == "orphanImpl" })
         );
+    } else {
+        assert_typescript_traceability_unavailable(&json);
+    }
+
+    fs::remove_dir_all(&root).expect("temp repo should be cleaned up");
+}
+
+#[test]
+// @verifies SPECIAL.HEALTH_COMMAND.TRACEABILITY.TYPESCRIPT.DESCRIPTOR_FUNCTION_EDGES
+fn repo_surfaces_typescript_descriptor_function_traceability() {
+    let root = temp_repo_dir("special-cli-repo-traceability-typescript-descriptor");
+    write_typescript_descriptor_traceability_fixture(&root);
+
+    let output = run_special(&root, &["health", "--json", "--verbose"]);
+    assert!(output.status.success());
+
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("json output should be valid json");
+
+    if json["analysis"]["traceability_unavailable_reason"].is_null() {
+        let traceability = &json["analysis"]["traceability"];
+        let current_items = traceability["current_spec_items"]
+            .as_array()
+            .expect("current spec items should be an array");
+        for (path, name) in [
+            ("src/registry.ts", "runPaymentDescriptor"),
+            ("src/actions.ts", "submitPayment"),
+            ("src/actions.ts", "persistPayment"),
+        ] {
+            assert!(
+                current_items
+                    .iter()
+                    .any(|item| { item["path"] == path && item["name"] == name })
+            );
+        }
+
+        let unexplained = traceability["unexplained_items"]
+            .as_array()
+            .expect("unsupported items should be an array");
+        for (path, name) in [
+            ("src/registry.ts", "orphanDescriptor"),
+            ("src/actions.ts", "resetPayment"),
+            ("src/actions.ts", "orphanAction"),
+        ] {
+            assert!(
+                unexplained
+                    .iter()
+                    .any(|item| { item["path"] == path && item["name"] == name })
+            );
+        }
     } else {
         assert_typescript_traceability_unavailable(&json);
     }

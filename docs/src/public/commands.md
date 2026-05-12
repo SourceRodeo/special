@@ -209,7 +209,10 @@ Representative output shape for a small repo:
 ```text
 special trace specs
 packets: 1
-guidance: this is a review packet; relationship existence does not prove semantic alignment.
+guidance:
+  Review the packet manually; relationship existence does not prove semantic alignment.
+  Compare the target text, references, and evidence before marking the relationship aligned.
+  For specs, compare each behavior claim to the verifier and attester evidence.
 
 spec EXPORT.CSV.HEADERS @ specs/export.md:7
   text: CSV exports include a header row with selected column names.

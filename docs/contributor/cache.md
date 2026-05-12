@@ -20,6 +20,7 @@ spec ids. Treat these behaviors as maintainer-facing:
 
 - content edits invalidate parsed repo and architecture cache entries
 - scoped repo analysis cache entries are separate from full-repo analysis
+- rebuilt or upgraded Special analyzer binaries invalidate analysis cache entries
 - concurrent fills single-flight instead of corrupting cache files
 - stale locks are recovered before a new fill proceeds
 - wait status is emitted when another process owns the cache fill
@@ -29,6 +30,6 @@ spec ids. Treat these behaviors as maintainer-facing:
 
 Re-key a cache only when the input boundary changes: parser dialect, source
 content, configured ignore rules, language-pack fact schema, toolchain contract,
-or the shape of the serialized analysis output. Do not re-key just to hide a
-determinism issue; fix the unstable input or output ordering first.
-
+the analyzer engine, or the shape of the serialized analysis output. Do not
+re-key just to hide a determinism issue; fix the unstable input or output
+ordering first.

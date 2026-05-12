@@ -24,6 +24,15 @@ fn trace_specs_json_includes_verifier_evidence_body() {
 
     assert_eq!(json["surface"], Value::from("specs"));
     assert_eq!(json["summary"]["packets"], Value::from(1));
+    assert!(
+        json["guidance"]
+            .as_array()
+            .expect("guidance should be present")
+            .iter()
+            .any(|item| item
+                .as_str()
+                .is_some_and(|text| text.contains("semantic alignment")))
+    );
     assert_eq!(
         json["packets"][0]["target"]["id"],
         Value::from("APP.EXPORT")
@@ -140,7 +149,7 @@ fn trace_arch_text_includes_implementation_attachment() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
 
     assert!(stdout.contains("module APP.EXPORT"));
-    assert!(stdout.contains("review packet"));
+    assert!(stdout.contains("relationship existence"));
     assert!(stdout.contains("does not prove"));
     assert!(stdout.contains("@implements"));
     assert!(stdout.contains("export_rows"));

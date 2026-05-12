@@ -89,6 +89,20 @@ function itemNameOffset(sourceFile, item) {
   return sourceFile.getPositionOfLineAndCharacter(lineIndex, item.start_column);
 }
 
+function isSyntheticTestCallbackRoot(sourceFile, item) {
+  if (!item.is_test) return false;
+  if (!/^(it|test)(\.|$)/.test(item.name)) return false;
+
+  const lineIndex = Math.max(0, item.start_line - 1);
+  const lineStarts = sourceFile.getLineStarts();
+  const lineStart = lineStarts[Math.min(lineIndex, lineStarts.length - 1)] || 0;
+  const lineEnd =
+    lineIndex + 1 < lineStarts.length ? lineStarts[lineIndex + 1] : sourceFile.end;
+  const start = Math.min(lineStart + item.start_column, lineEnd);
+  const lineText = sourceFile.text.slice(start, lineEnd).trimStart();
+  return lineText === item.name || lineText.startsWith(`${item.name}(`);
+}
+
 function matchDeclaredItem(ts, grouped, decl) {
   const sourceFile = decl.getSourceFile();
   if (!sourceFile || sourceFile.isDeclarationFile) return null;
@@ -227,6 +241,7 @@ function main() {
     if (!trackedFiles.has(normalizedPath)) return;
     const sourceFile = program.getSourceFile(normalizedPath);
     if (!sourceFile) return;
+    if (isSyntheticTestCallbackRoot(sourceFile, item)) return;
     const position = itemNameOffset(sourceFile, item);
     referenceQueryCount += 1;
     const referenceGroups = languageService.findReferences(normalizedPath, position) || [];

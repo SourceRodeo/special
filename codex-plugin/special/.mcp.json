@@ -2,7 +2,7 @@
   "mcpServers": {
     "special": {
       "command": "special",
-      "args": ["mcp", "--special-version=0.10.0"]
+      "args": ["mcp", "--special-version=0.10.1"]
     }
   }
 }

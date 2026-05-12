@@ -519,6 +519,7 @@ struct SourceCallableItem {
     name: String,
     qualified_name: String,
     path: PathBuf,
+    is_test: bool,
     calls: Vec<SourceCall>,
     start_line: usize,
     end_line: usize,
@@ -788,6 +789,7 @@ fn callable_tool_trace_input(
                 stable_id: item.stable_id.clone(),
                 name: item.name.clone(),
                 path: root.join(&item.path).display().to_string(),
+                is_test: item.is_test,
                 start_line: item.start_line,
                 end_line: item.end_line,
                 start_column: item.start_column,
@@ -1380,6 +1382,7 @@ fn collect_callable_items(
             name: item.name,
             qualified_name: item.qualified_name,
             path: path.clone(),
+            is_test: item.is_test,
             calls: item.calls,
             start_line: item.span.start_line,
             end_line: item.span.end_line,
@@ -1605,6 +1608,7 @@ struct ToolTraceItemInput {
     stable_id: String,
     name: String,
     path: String,
+    is_test: bool,
     start_line: usize,
     end_line: usize,
     start_column: usize,
@@ -1655,11 +1659,12 @@ mod tests {
         ParsedSourceGraph, SourceInvocation, SourceInvocationKind, SourceItem, SourceItemKind,
         SourceLanguage, SourceSpan,
     };
+    use crate::test_support::TempProjectDir;
 
     use super::{
-        CachedParsedSourceGraph, build_traceability_inputs_for_typescript,
-        file_graph_with_isolated_sources,
-        typescript_entry_fingerprint, write_embedded_tool_script,
+        CachedParsedSourceGraph, build_tool_call_edges, build_traceability_inputs_for_typescript,
+        file_graph_with_isolated_sources, parse_typescript_source_graphs,
+        typescript_entry_fingerprint, typescript_runtime, write_embedded_tool_script,
     };
 
     #[test]
@@ -1736,6 +1741,69 @@ mod tests {
     }
 
     #[test]
+    fn synthetic_typescript_test_callbacks_do_not_query_framework_callee_references() {
+        let root = TempProjectDir::new("special-typescript-test-callback-reference-target");
+        fs::create_dir_all(root.join("src")).expect("src dir should be created");
+        fs::write(root.join(".tool-versions"), "nodejs 24.15.0\n")
+            .expect("toolchain file should be written");
+        fs::write(root.join("special.toml"), "version = \"1\"\nroot = \".\"\n")
+            .expect("special.toml should be written");
+        fs::write(
+            root.join("tsconfig.json"),
+            "{\"compilerOptions\":{\"target\":\"ES2022\",\"module\":\"CommonJS\"},\"include\":[\"src/**/*.ts\"]}\n",
+        )
+        .expect("tsconfig should be written");
+        fs::write(
+            root.join("src/vitest.ts"),
+            "export function it(_name: string, callback: () => unknown) {\n  return callback();\n}\n",
+        )
+        .expect("vitest shim should be written");
+        fs::write(
+            root.join("src/app.ts"),
+            "export function firstPath() {\n  return 1;\n}\n\nexport function secondPath() {\n  return 2;\n}\n",
+        )
+        .expect("app source should be written");
+        fs::write(
+            root.join("src/app.test.ts"),
+            "import { it } from \"./vitest\";\nimport { firstPath, secondPath } from \"./app\";\n\nit(\"first\", () => {\n  firstPath();\n});\n\nit(\"second\", () => {\n  secondPath();\n});\n",
+        )
+        .expect("test source should be written");
+        assert!(
+            typescript_runtime(root.path()).is_some(),
+            "TypeScript reference tests require Node and TypeScript tooling"
+        );
+
+        let source_files = [
+            PathBuf::from("src/vitest.ts"),
+            PathBuf::from("src/app.ts"),
+            PathBuf::from("src/app.test.ts"),
+        ];
+        let graphs = parse_typescript_source_graphs(root.path(), &source_files);
+        let tool_edges =
+            build_tool_call_edges(root.path(), &graphs).expect("TypeScript call graph should build");
+        let test_roots = graphs[Path::new("src/app.test.ts")]
+            .items
+            .iter()
+            .filter(|item| item.is_test && item.name == "it")
+            .map(|item| item.stable_id.clone())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(test_roots.len(), 2);
+
+        let first_path_id = stable_id_for_name(&graphs, "firstPath");
+        let second_path_id = stable_id_for_name(&graphs, "secondPath");
+        let test_root_callees = test_roots
+            .iter()
+            .flat_map(|id| tool_edges.get(id).into_iter().flatten().cloned())
+            .collect::<BTreeSet<_>>();
+        assert!(test_root_callees.contains(&first_path_id));
+        assert!(test_root_callees.contains(&second_path_id));
+        assert!(
+            test_root_callees.is_disjoint(&test_roots),
+            "unexpected synthetic-test edge"
+        );
+    }
+
+    #[test]
     fn embedded_tool_script_uses_unique_paths_and_cleans_up_on_drop() {
         let first = write_embedded_tool_script("special-test-helper.cjs", "console.log('a');")
             .expect("first helper should be written");
@@ -1790,5 +1858,18 @@ mod tests {
             start_byte: 0,
             end_byte: 10,
         }
+    }
+
+    fn stable_id_for_name(
+        graphs: &BTreeMap<PathBuf, ParsedSourceGraph>,
+        name: &str,
+    ) -> String {
+        graphs
+            .values()
+            .flat_map(|graph| graph.items.iter())
+            .find(|item| item.name == name)
+            .unwrap_or_else(|| panic!("item {name} should be present"))
+            .stable_id
+            .clone()
     }
 }

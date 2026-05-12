@@ -1,5 +1,6 @@
 discovery_paths = ["_project/BACKLOG.md", "_project/research/2026-05-07-swarm-review-disposition.md"]
 authoring_paths = ["_project/**", "kimura.toml"]
+inbox_path = "_project/inbox/TODO.md"
 always_allowed_commands = []
 
 [vcs]

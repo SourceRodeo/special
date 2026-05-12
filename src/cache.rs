@@ -1,6 +1,6 @@
 /**
 @module SPECIAL.CACHE
-Persistent parsed and analysis cache for health and architecture surfaces. This module memoizes parsed repo annotations, parsed architecture declarations, and whole unscoped analysis summaries across command invocations using discovered-file metadata plus language-pack environment fingerprints as invalidation inputs. It should stay a reusable substrate underneath `special`, `special specs`, `special arch`, and `special health` rather than caching rendered output shapes.
+Persistent parsed and analysis cache for health and architecture surfaces. This module memoizes parsed repo annotations, parsed architecture declarations, and whole unscoped analysis summaries across command invocations using discovered-file metadata, language-pack environment fingerprints, and the Special analyzer engine identity as invalidation inputs. It should stay a reusable substrate underneath `special`, `special specs`, `special arch`, and `special health` rather than caching rendered output shapes.
 */
 // @fileimplements SPECIAL.CACHE
 use std::path::Path;

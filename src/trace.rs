@@ -3,7 +3,7 @@
 Builds deterministic relationship packets for audit workflows over specs, docs, architecture, and patterns.
 
 @spec SPECIAL.TRACE_COMMAND
-special trace emits deterministic relationship packets for explicit Special surfaces without making natural-language truth judgments.
+special trace emits deterministic relationship packets for explicit Special surfaces with in-packet review guidance and without making natural-language truth judgments.
 
 @spec SPECIAL.TRACE_COMMAND.SPECS
 special trace specs emits current spec packets with verifier and attestation evidence bodies.
@@ -67,6 +67,7 @@ pub(crate) struct TraceOptions {
 pub(crate) struct TraceDocument {
     pub surface: TraceSurface,
     pub summary: TraceSummary,
+    pub guidance: Vec<String>,
     pub packets: Vec<TracePacket>,
 }
 
@@ -161,6 +162,7 @@ pub(crate) fn build_trace_document(
     Ok(TraceDocument {
         surface,
         summary,
+        guidance: trace_guidance(surface),
         packets,
     })
 }
@@ -182,9 +184,10 @@ pub(crate) fn render_trace_text(document: &TraceDocument) -> String {
             output.push_str(&format!("  {path}\n"));
         }
     }
-    output.push_str(
-        "guidance: this is a review packet; relationship existence does not prove semantic alignment.\n",
-    );
+    output.push_str("guidance:\n");
+    for guidance in &document.guidance {
+        output.push_str(&format!("  {guidance}\n"));
+    }
     output.push('\n');
 
     for packet in &document.packets {
@@ -246,6 +249,33 @@ pub(crate) fn render_trace_text(document: &TraceDocument) -> String {
         output.push('\n');
     }
     output
+}
+
+fn trace_guidance(surface: TraceSurface) -> Vec<String> {
+    let mut guidance = vec![
+        "Review the packet manually; relationship existence does not prove semantic alignment."
+            .to_string(),
+        "Compare the target text, references, and evidence before marking the relationship aligned."
+            .to_string(),
+    ];
+    guidance.push(
+        match surface {
+            TraceSurface::Specs => {
+                "For specs, compare each behavior claim to the verifier and attester evidence."
+            }
+            TraceSurface::Docs => {
+                "For docs, compare the surrounding prose to the linked target and support evidence."
+            }
+            TraceSurface::Arch => {
+                "For architecture, compare the module responsibility to attached implementation bodies."
+            }
+            TraceSurface::Patterns => {
+                "For patterns, compare the pattern definition to application bodies and fit context."
+            }
+        }
+        .to_string(),
+    );
+    guidance
 }
 
 fn spec_packets(root: &Path, parsed_repo: &ParsedRepo, options: &TraceOptions) -> Vec<TracePacket> {

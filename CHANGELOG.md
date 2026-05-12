@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.10.1 - 2026-05-12
+
+- Fixed the Codex plugin skill distribution gap so plugin users receive the
+  same generated Special workflow skills as the fallback `special skills`
+  surface, with MCP-first guidance and CLI fallbacks.
+- Added trace-packet guidance to text and JSON output so agents review claim,
+  prose, code, and evidence alignment instead of treating relationship
+  existence as proof.
+- Fixed TypeScript health traceability over inline test callbacks, removing
+  runaway framework-reference edges and cutting a large scoped TS health run
+  from 98,005 semantic edges to 6,499.
+- Added TypeScript descriptor/object-property function traceability coverage so
+  descriptor-dispatched implementation can be reached without hiding unused
+  descriptor branches.
+- Fixed analysis cache invalidation so rebuilding or upgrading Special
+  invalidates repo, architecture, and language-pack fact caches tied to the old
+  analyzer binary.
+
 ## 0.10.0 - 2026-05-09
 
 - Expanded docs-as-code into a generated documentation system for public docs,
